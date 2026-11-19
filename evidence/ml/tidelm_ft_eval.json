@@ -1,0 +1,188 @@
+{
+ "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+ "adapter": "models/tidelm-adapter",
+ "n_plan": 300,
+ "n_extract": 200,
+ "plan": {
+  "valid_json": 1.0,
+  "intent_accuracy": 0.99,
+  "tool_accuracy": 0.99,
+  "exact_plan_accuracy": 0.9667
+ },
+ "extract": {
+  "valid_json": 0.985,
+  "record_precision": 0.986,
+  "record_recall": 0.9525,
+  "record_f1": 0.969,
+  "field_accuracy": 0.9929,
+  "injection_flag_accuracy": 0.985
+ },
+ "median_latency_s": 2.84,
+ "sample_failures": [
+  {
+   "input": "Comet Kitchen jodi taka na dey?",
+   "expected": {
+    "intent": "what_if",
+    "calls": [
+     {
+      "tool": "what_if",
+      "args": {
+       "customer_delays": {},
+       "extra_expense": null,
+       "drop_invoice_customer": "Comet Kitchen"
+      }
+     }
+    ]
+   },
+   "got": "<think>\n\n</think>\n\n{\"intent\": \"customer_insight\", \"calls\": [{\"tool\": \"customer_report\", \"args\": {\"customer\": \"Comet Kitchen\"}}]}"
+  },
+  {
+   "input": "what should I do? even if it costs more, I want it sae",
+   "expected": {
+    "intent": "rescue_plan",
+    "calls": [
+     {
+      "tool": "propose_plan",
+      "args": {
+       "exclude_counterparties": [],
+       "max_discount_pct": null,
+       "prefer": "lowest_risk"
+      }
+     }
+    ]
+   },
+   "got": "<think>\n\n</think>\n\n{\"intent\": \"rescue_plan\", \"calls\": [{\"tool\": \"propose_plan\", \"args\": {\"exclude_counterparties\": [], \"max_discount_pct\": null, \"prefer\": \"lowest_cost\"}}]}"
+  },
+  {
+   "input": "ekta plan banao, jhuki kom hok",
+   "expected": {
+    "intent": "rescue_plan",
+    "calls": [
+     {
+      "tool": "propose_plan",
+      "args": {
+       "exclude_counterparties": [],
+       "max_discount_pct": null,
+       "prefer": "lowest_risk"
+      }
+     }
+    ]
+   },
+   "got": "<think>\n\n</think>\n\n{\"intent\": \"rescue_plan\", \"calls\": [{\"tool\": \"propose_plan\", \"args\": {\"exclude_counterparties\": [], \"max_discount_pct\": null, \"prefer\": \"lowest_cost\"}}]}"
+  },
+  {
+   "input": "kon customer der e taka dey?",
+   "expected": {
+    "intent": "customer_insight",
+    "calls": [
+     {
+      "tool": "customer_report",
+      "args": {
+       "customer": null
+      }
+     }
+    ]
+   },
+   "got": "<think>\n\n</think>\n\n{\"intent\": \"customer_insight\", \"calls\": [{\"tool\": \"customer_report\", \"args\": {\"customer\": \"der e taka\"}}]}"
+  },
+  {
+   "input": "Comet Holdings jodi 10 din pore taka dey?",
+   "expected": {
+    "intent": "what_if",
+    "calls": [
+     {
+      "tool": "what_if",
+      "args": {
+       "customer_delays": {
+        "Comet Holdings": 10
+       },
+       "extra_expense": null,
+       "drop_invoice_customer": null
+      }
+     }
+    ]
+   },
+   "got": "<think>\n\n</think>\n\n{\"intent\": \"customer_insight\", \"calls\": [{\"tool\": \"customer_report\", \"args\": {\"customer\": \"Comet Holdings\"}}]}"
+  },
+  {
+   "input": "if everyone pays slw what happens",
+   "expected": {
+    "intent": "forecast",
+    "calls": [
+     {
+      "tool": "project_cash",
+      "args": {
+       "scenario": "stress"
+      }
+     }
+    ]
+   },
+   "got": "<think>\n\n</think>\n\n{\"intent\": \"forecast\", \"calls\": [{\"tool\": \"project_cash\", \"args\": {\"scenario\": \"likely\"}}]}"
+  },
+  {
+   "input": "shobaike reminder dao",
+   "expected": {
+    "intent": "reminders",
+    "calls": [
+     {
+      "tool": "draft_reminders",
+      "args": {
+       "customers": []
+      }
+     }
+    ]
+   },
+   "got": "<think>\n\n</think>\n\n{\"intent\": \"reminders\", \"calls\": [{\"tool\": \"draft_reminders\", \"args\": {\"customers\": [\"dao\"]}}]}"
+  },
+  {
+   "input": "if everyone ays slow what happens",
+   "expected": {
+    "intent": "forecast",
+    "calls": [
+     {
+      "tool": "project_cash",
+      "args": {
+       "scenario": "stress"
+      }
+     }
+    ]
+   },
+   "got": "<think>\n\n</think>\n\n{\"intent\": \"forecast\", \"calls\": [{\"tool\": \"project_cash\", \"args\": {\"scenario\": \"likely\"}}]}"
+  },
+  {
+   "input": "ekta plan banao, jhuki kom hok",
+   "expected": {
+    "intent": "rescue_plan",
+    "calls": [
+     {
+      "tool": "propose_plan",
+      "args": {
+       "exclude_counterparties": [],
+       "max_discount_pct": null,
+       "prefer": "lowest_risk"
+      }
+     }
+    ]
+   },
+   "got": "<think>\n\n</think>\n\n{\"intent\": \"rescue_plan\", \"calls\": [{\"tool\": \"propose_plan\", \"args\": {\"exclude_counterparties\": [], \"max_discount_pct\": null, \"prefer\": \"lowest_cost\"}}]}"
+  },
+  {
+   "input": "Kestrel Tbk jodi taka na dey?",
+   "expected": {
+    "intent": "what_if",
+    "calls": [
+     {
+      "tool": "what_if",
+      "args": {
+       "customer_delays": {},
+       "extra_expense": null,
+       "drop_invoice_customer": "Kestrel Tbk"
+      }
+     }
+    ]
+   },
+   "got": "<think>\n\n</think>\n\n{\"intent\": \"customer_insight\", \"calls\": [{\"tool\": \"customer_report\", \"args\": {\"customer\": \"Kestrel Tbk\"}}]}"
+  }
+ ],
+ "test_set": "data/tidelm"
+}

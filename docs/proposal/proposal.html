@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tideway: Project Idea Proposal, MU AI Builders Hackathon 2026</title>
+<style>
+@page { size: A4; margin: 11mm 13mm 10mm; }
+* { box-sizing: border-box; }
+body { margin: 0; font: 9.4pt/1.4 "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: #17213a; }
+.bn { font-family: "Nirmala UI", "Noto Sans Bengali", "Vrinda", sans-serif; }
+header { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; padding-bottom: 7px; border-bottom: 2.5px solid #0f766e; }
+header h1 { margin: 0; font-size: 21pt; letter-spacing: -.3px; color: #0b2a45; }
+header h1 span { color: #0f766e; }
+header .sub { margin: 2px 0 0; font-size: 10.5pt; color: #33415c; }
+header .meta { text-align: right; font-size: 8.4pt; color: #4a5672; line-height: 1.35; }
+header .meta strong { color: #0b2a45; }
+h2 { margin: 11px 0 4px; font-size: 11.6pt; color: #0b2a45; break-after: avoid; }
+h2 .n { display: inline-block; width: 19px; height: 19px; margin-right: 6px; border-radius: 50%; background: #0f766e; color: #fff; font-size: 9pt; line-height: 19px; text-align: center; }
+h3 { margin: 7px 0 2px; font-size: 9.8pt; color: #0f766e; break-after: avoid; }
+p { margin: 3px 0 5px; }
+ul { margin: 2px 0 5px; padding-left: 15px; } li { margin: 1px 0; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 6px; font-size: 8.6pt; break-inside: avoid; }
+th, td { padding: 3.5px 6px; border-bottom: 1px solid #dde3ec; text-align: left; vertical-align: top; }
+th { background: #eef6f5; color: #0b2a45; font-weight: 650; }
+.callout { margin: 6px 0; padding: 6px 9px; border-left: 3px solid #0f766e; background: #f2f8f7; font-size: 9.2pt; }
+.flow { display: flex; gap: 4px; margin: 6px 0 4px; font-size: 8.3pt; }
+.flow div { flex: 1; padding: 5px 4px; border-radius: 6px; text-align: center; background: #e7f3f1; color: #0b2a45; }
+.flow div.p { background: #fdf3dc; } .flow b { display: block; font-size: 8.8pt; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.small { font-size: 8.3pt; color: #4a5672; }
+.page-break { break-before: page; }
+code { font: 8.3pt Consolas, monospace; background: #f1f3f7; padding: 0 3px; border-radius: 3px; }
+footer { margin-top: 6px; padding-top: 5px; border-top: 1px solid #dde3ec; font-size: 7.8pt; color: #5b6680; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Tideway <span>· AI cash-flow and fraud-safety copilot for Bangladesh's small businesses</span></h1>
+    <p class="sub">Sees the cash gap coming, catches mobile-money scams, explains everything in <span class="bn">বাংলা</span>, and lets people decide.</p>
+  </div>
+  <div class="meta"><strong>MU AI Builders Hackathon 2026</strong><br>Track 04: FinTech &amp; Financial Intelligence<br>Team: The Last BrainCell (BUET)<br>Project Idea Proposal</div>
+</header>
+
+<h2><span class="n">1</span>Problem identification and why it matters</h2>
+<p>Bangladesh's cottage, micro and small enterprises (shops, caterers, print studios, wholesalers, service firms) employ a large share of the country's workforce, yet almost none has a finance team. Three problems hit them at once:</p>
+<ul>
+  <li><strong>Cash gaps on salary day.</strong> A profitable business can still miss payroll because customers pay late while suppliers and staff must be paid on time. Owners usually find out on the day, then borrow from informal lenders at high cost or delay wages.</li>
+  <li><strong>Mobile-money fraud.</strong> Payments now flow through bKash, Nagad and Rocket. Shopkeepers are targeted by fake "cash-in" SMS sent from personal numbers, "I sent money to you by mistake, please send it back" calls, PIN/OTP theft by fake "office" callers, and advance-fee prize or loan scams. A single loss can wipe out a week's profit.</li>
+  <li><strong>Thin credit files.</strong> Banks and microfinance institutions (MFIs) cannot see a micro-business's real cash flow, so good businesses are refused formal credit or priced as high risk.</li>
+</ul>
+<div class="callout">Existing tools address one piece at a time (accounting apps, MFS awareness campaigns, credit bureaus) and mostly in English. None gives a small-business owner a forward-looking, fraud-aware view of their own cash in their own language, with guaranteed human control over money.</div>
+
+<h2><span class="n">2</span>Proposed AI-powered solution</h2>
+<p><strong>Tideway</strong> is a copilot that reads the business's records and messages, predicts, plans and warns, but <strong>can never move money by itself</strong>. Its workflow:</p>
+<div class="flow">
+  <div><b>Read</b>paste a bKash / bank SMS or invoice; AI drafts records</div>
+  <div><b>Check</b>Scam Shield screens every message for fraud</div>
+  <div><b>Predict</b>14-day cash forecast, 1,000 simulated futures, late-payer model</div>
+  <div><b>Propose</b>cheapest safe rescue: supplier deferral, early-pay discount, reminders</div>
+  <div class="p"><b>Approve</b>a person approves with a PIN; two people for large amounts</div>
+  <div class="p"><b>Prove</b>signed single-use mandate; tamper-evident audit trail</div>
+</div>
+<table>
+  <tr><th style="width:24%">Feature</th><th>What the owner gets</th></tr>
+  <tr><td><strong>Cash weather</strong></td><td>The lowest-cash day, the reserve gap and the odds of a shortfall, 14 days ahead, explained in plain words.</td></tr>
+  <tr><td><strong>Rescue plan</strong></td><td>An optimiser ranks supplier deferrals, early-payment discounts and zero-cost reminders by true cost; payroll is never deferred. Simulated counterparties accept, counter or refuse.</td></tr>
+  <tr><td><strong>Scam Shield</strong></td><td>Paste any MFS SMS or caller script: verdict (likely scam / suspicious / no known red flags), risk score, reasons in English and <span class="bn">বাংলা</span>, and safe next steps (check the balance in the official app or USSD code; never return money because of an SMS).</td></tr>
+  <tr><td><strong>Ask in <span class="bn">বাংলা</span></strong></td><td>"<span class="bn">এই মাসে কি বেতন দিতে পারব?</span>" ("Can I pay salaries this month?") is answered in Bangla from the ledger's own numbers: payroll, risk, late payers, what-if, credit checks, rescue plans.</td></tr>
+  <tr><td><strong>Credit passport and lender radar</strong></td><td>A digitally signed summary of the business's cash-flow health that a bank or MFI can verify offline; a portfolio radar shows lenders which SME clients are heading for trouble weeks early.</td></tr>
+</table>
+
+<h3>AI approach</h3>
+<table>
+  <tr><th style="width:22%">Model</th><th>Role</th><th style="width:31%">Data and status</th></tr>
+  <tr><td><strong>TidePay</strong></td><td>Predicts how many days late each open invoice will be paid (probability per lateness band); drives the "likely" forecast and credit checks.</td><td>Federated training across 40 simulated SMEs; mean error 8.56 days vs 10.23 for a history rule on 7,427 unseen synthetic invoices.</td></tr>
+  <tr><td><strong>TideLM</strong></td><td>A small open LLM (Qwen3, LoRA fine-tuned) that turns questions and pasted alerts into typed tool plans and draft records. It only proposes; validators check every call and figure.</td><td>Runs on a laptop GPU, no cloud. Exact plans 21% → 93% after fine-tuning on held-out synthetic tests. Rule-based fallback when no model is installed.</td></tr>
+  <tr><td><strong>Scam Shield model</strong></td><td>Naive Bayes over words and character n-grams (handles Bangla script and Banglish spelling), combined with explainable red-flag rules and a sender check.</td><td>104 labelled synthetic messages; rules + model flagged 9/9 held-out scams with 0/11 false alarms. Small set: next step is real, consented scam reports.</td></tr>
+  <tr><td><strong>Monte Carlo + optimiser</strong></td><td>1,000 seeded futures estimate shortfall odds; an exact optimiser searches rescue bundles under the owner's policy limits.</td><td>Deterministic, auditable, integer-money arithmetic.</td></tr>
+</table>
+
+<h2><span class="n">3</span>Target users and expected impact</h2>
+<table>
+  <tr><th style="width:20%">User</th><th style="width:38%">Pain today</th><th>How Tideway helps</th></tr>
+  <tr><td><strong>Micro and small business owners</strong> (shops, caterers, print, wholesale, services)</td><td>Salary-day surprises; no time for spreadsheets; MFS scams; English-only tools.</td><td>Early warning with the odds of a shortfall, a ranked rescue plan, Scam Shield and answers in <span class="bn">বাংলা</span>, free on the Starter plan.</td></tr>
+  <tr><td><strong>MFS merchants and agents</strong></td><td>Fake cash-in SMS and wrong-send refund tricks at the counter.</td><td>A 10-second check before handing over goods, with the reason and the official way to verify.</td></tr>
+  <tr><td><strong>Accountants and finance staff</strong></td><td>Manual entry from SMS and invoices; redirected or duplicate payments.</td><td>Draft records from pasted alerts (saved only after confirmation), payment-integrity scan, two-person approval.</td></tr>
+  <tr><td><strong>Banks, MFIs and SME desks</strong></td><td>Thin files; late signals of distress.</td><td>Verifiable cash-flow passports and an early-warning portfolio radar for their SME book.</td></tr>
+</table>
+<h3>Expected impact (what we will measure in a pilot)</h3>
+<ul>
+  <li><strong>Earlier warning:</strong> days of notice before a reserve or payroll breach, compared with the owner's current practice.</li>
+  <li><strong>Cheaper rescue:</strong> cost of the approved plan (discounts and deferrals) vs. the informal loan the owner would otherwise take.</li>
+  <li><strong>Fewer fraud losses:</strong> scam messages caught before goods or money left the shop; false-alarm rate kept low so owners keep trusting it.</li>
+  <li><strong>Financial inclusion:</strong> owners who use a credit passport in a bank or MFI conversation, and the outcome.</li>
+  <li><strong>Financial literacy:</strong> owners who can explain their cash position after using the Bangla assistant for a month.</li>
+</ul>
+<p class="small">We do not claim user results yet: every figure in this proposal comes from synthetic test data and is labelled as such.</p>
+
+<h2><span class="n">4</span>Innovation and feasibility</h2>
+<div class="two">
+<div>
+<h3>What is new</h3>
+<ul>
+  <li><strong>One copilot for cash and fraud.</strong> Forecasting, rescue planning and MFS scam checking share the same ledger, so a suspicious "payment received" never silently fixes a forecast.</li>
+  <li><strong>AI that cannot move money.</strong> The agent can only read and propose. Only a PIN-approved, signed, expiring, single-use mandate can execute; text inside a message can never grant authority.</li>
+  <li><strong>Bangla-first and number-safe.</strong> Answers are templates filled with tool outputs, so translation can never change a figure.</li>
+  <li><strong>Explainable fraud verdicts</strong> in two languages, with the official way to verify.</li>
+  <li><strong>On-device AI:</strong> private ledgers stay on the owner's computer; works offline.</li>
+</ul>
+</div>
+<div>
+<h3>Why it is feasible</h3>
+<ul>
+  <li><strong>A working prototype already exists</strong> (open source, MIT): web app, three Sylhet demo businesses in BDT, Scam Shield, Bangla assistant, treasury hub, lender radar.</li>
+  <li>Runs on any laptop with Python 3.11, no paid API, no internet needed for the core app.</li>
+  <li>579 automated tests; a 30-case self-test blocks 25/25 simulated attacks (prompt injection, payee change, tampering, replay).</li>
+  <li>Security by design: role checks, CSRF, rate limits, kill switch, hash-chained audit with an independent witness.</li>
+</ul>
+</div>
+</div>
+<table>
+  <tr><th style="width:30%">Risk</th><th>Mitigation</th></tr>
+  <tr><td>Scam model trained on synthetic data</td><td>Rules carry the critical signals; collect consented, anonymised scam reports with a held-out set; publish false-alarm rate.</td></tr>
+  <tr><td>Owners do not type records</td><td>Paste SMS or photograph invoices; drafts are created automatically; CSV import.</td></tr>
+  <tr><td>Wrong advice on money</td><td>AI proposes only; people approve; every figure is recomputed by code, never written by the model.</td></tr>
+  <tr><td>Data privacy</td><td>On-device by default; any cloud model is opt-in, and the app shows exactly what it would see first.</td></tr>
+</table>
+
+<h2><span class="n">5</span>Business model and sustainability</h2>
+<table>
+  <tr><th style="width:24%">Revenue stream</th><th>Who pays</th><th style="width:34%">Price (illustrative)</th></tr>
+  <tr><td><strong>Freemium SaaS</strong></td><td>Starter: free for one business and 3 seats (Scam Shield, Bangla assistant, cash weather). Growth: more seats and businesses, rescue planning, exports.</td><td>Starter free; Growth ৳990 per month</td></tr>
+  <tr><td><strong>Lender licence (B2B2C)</strong></td><td>Banks' SME desks and MFIs license the portfolio radar and offer Tideway free to their SME clients as an engagement and risk tool.</td><td>Per-client annual licence</td></tr>
+  <tr><td><strong>Passport verification</strong></td><td>Lenders pay a small fee per verified credit passport, cheaper than a field visit.</td><td>Per verification</td></tr>
+  <tr><td><strong>Partnerships</strong></td><td>MFS providers, trade associations and NGOs distribute Scam Shield as a fraud-awareness tool.</td><td>Sponsored seats</td></tr>
+</table>
+<ul>
+  <li><strong>Low running cost:</strong> AI runs on the user's device, so serving cost per user is near zero; no per-query cloud bill.</li>
+  <li><strong>Sustainability:</strong> free core keeps micro-businesses included; lenders fund the platform because earlier warnings reduce their defaults. Open-source core builds trust; hosted sync, lender dashboards and support are paid.</li>
+  <li><strong>Roadmap:</strong> (1) pilot with 20 Sylhet SMEs and one MFI; (2) consented real scam dataset and Bangla voice input; (3) read-only bank and MFS statement import with user consent; (4) regulatory review before any live payment integration. Until then, Tideway stays a sandbox and moves no real money.</li>
+</ul>
+
+<footer>Tideway · The Last BrainCell, BUET · Source: github.com/ramim167/tideway-mu-2026 · All business data in the prototype is synthetic; no real bank, MFS account or money is connected. MFS brand names are used only to describe the messages users receive.</footer>
+</body>
+</html>

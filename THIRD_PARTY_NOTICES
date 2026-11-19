@@ -1,0 +1,100 @@
+Tideway uses Python's standard library for runtime code.
+
+The MIT license covers Tideway application code only. Model weights, base-model
+architectures, runtimes and optional tools retain the licenses of their authors.
+
+Optional models and inference:
+
+* TideLM is a Tideway-trained LoRA adapter for Qwen/Qwen3-4B-Instruct-2507,
+  converted to 4-bit MLX by mlx-community. The base model is Apache-2.0.
+  Upstream: https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507
+  Conversion: https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit
+  License copy: licenses/Qwen3-Apache-2.0.txt
+* TideVision uses mlx-community/Qwen2.5-VL-3B-Instruct-4bit, derived from
+  Qwen/Qwen2.5-VL-3B-Instruct, without a Tideway fine-tune. The upstream
+  Qwen RESEARCH LICENSE AGREEMENT permits non-commercial research/evaluation;
+  commercial use requires a separate license. Redistribution carries additional
+  notice and license obligations. No vision weights are included in this package.
+  Qwen is licensed under the Qwen RESEARCH LICENSE AGREEMENT,
+  Copyright (c) Alibaba Cloud. All Rights Reserved.
+  Upstream: https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct
+  Conversion: https://huggingface.co/mlx-community/Qwen2.5-VL-3B-Instruct-4bit
+  License copy: licenses/Qwen2.5-VL-3B-Research.txt
+* MLX, mlx-lm and mlx-vlm are optional Apple Silicon inference/training tools.
+  MLX and mlx-lm use MIT; mlx-vlm uses MIT. Their upstream notices remain
+  applicable when installed or redistributed. No runtime/weights are bundled.
+  https://github.com/ml-explore/mlx
+  https://github.com/ml-explore/mlx-lm
+  https://github.com/Blaizzy/mlx-vlm
+* Pillow (HPND) is optional for photo processing and slide image crops.
+  https://github.com/python-pillow/Pillow/blob/main/LICENSE
+* The optional `scripts/local_demo_model.py` helper provisions compatible GGUF
+  text models separately. `compact` uses Qwen/Qwen2.5-1.5B-Instruct-GGUF
+  (Q4_K_M); `qwen3-4b` uses unsloth/Qwen3-4B-Instruct-2507-GGUF (Q4_K_M),
+  derived from Qwen/Qwen3-4B-Instruct-2507. Both model cards identify Apache-2.0.
+  These are third-party models/conversions, not Tideway-trained adapters, and
+  they do not inherit the released TideLM MLX evaluation scores.
+  https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF
+  https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF
+  https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507
+  Apache-2.0 license copy: licenses/Qwen3-Apache-2.0.txt
+* The helper downloads an optional checksum-pinned llama.cpp native runtime
+  from ggml-org/llama.cpp release b11678. llama.cpp is MIT; downloaded runtime
+  archives can contain additional component notices that remain applicable.
+  The helper records model/runtime provenance and supports an explicit external
+  cache directory. No GGUF weights, runtime executables, DLLs or dylibs are
+  included in the source/submission package.
+  https://github.com/ggml-org/llama.cpp
+  https://github.com/ggml-org/llama.cpp/blob/master/LICENSE
+
+Build and demo tooling:
+
+* Playwright (Apache-2.0) and a locally installed Chrome/Chromium/Edge are used
+  for the optional recording script. Neither is bundled in the source package.
+* FFmpeg encodes the demo. The encoder's own build-specific license applies;
+  its binary is not redistributed here. The demo credits synthetic narration
+  generated locally using the installed Windows System.Speech voice.
+
+Model scope and reproducibility are documented in docs/MODEL_CARD.md.
+
+Optional verification tooling:
+
+* The optional browser verification script (`scripts/capture_screens.mjs`)
+  uses Node.js built-in WebSocket support and an installed Chromium/Chrome
+  browser. These tools are not bundled in the application runtime and remain
+  subject to their own licenses and installation terms.
+* The optional AI adapter sends consented requests to the OpenAI Responses API.
+  OpenAI services, models, SDK/API terms, and retention policies are external
+  to this repository. No API key or provider asset is included here.
+
+The supplied synthetic records and generated screenshots are fictional demo
+material authored for this project. Do not replace them with private customer
+data without reviewing consent, licensing, and applicable law.
+
+Contest-upgrade evaluation and visual QA:
+
+* The core evaluation and linked-delay scripts use the Python standard library.
+  Synthetic fixtures and newly generated reports are project-authored evidence.
+* Optional PDF inspection uses pypdf and PyMuPDF, and photo/layout tests use
+  Pillow. `requirements-evaluation.txt` pins the QA environment used here.
+  These packages are installed separately, retain their upstream license terms,
+  and are not bundled in the source archive. No video was recorded or encoded
+  during the contest-upgrade workflow.
+
+Fonts (bundled in web/fonts/, Latin subset WOFF2 from Google Fonts):
+
+* Space Grotesk, Copyright 2020 The Space Grotesk Project Authors. SIL Open
+  Font License 1.1. https://github.com/floriankarsten/space-grotesk
+  License copy: licenses/SpaceGrotesk-OFL.txt
+* Unbounded, Copyright 2022 The Unbounded Project Authors. SIL Open Font
+  License 1.1. https://github.com/googlefonts/unbounded
+  License copy: licenses/Unbounded-OFL.txt
+* JetBrains Mono, Copyright 2020 The JetBrains Mono Project Authors. SIL Open
+  Font License 1.1. https://github.com/JetBrains/JetBrainsMono
+  License copy: licenses/JetBrainsMono-OFL.txt
+
+Illustration:
+
+* web/img/hero.webp was generated for Tideway with an AI image model
+  (gpt-image-2.5 via ElevenLabs) from an original prompt; no third-party
+  artwork, logos or text are included.
