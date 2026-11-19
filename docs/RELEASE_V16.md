@@ -41,7 +41,7 @@ Older evidence files under `evidence/` describe v15 runs and keep their original
 - **Fix a cash gap** opens with a plain summary: each step in one sentence, total cost, whether salaries can be paid,
   who must agree, and one approve button.
 - **Phones** get an app-style bottom tab bar (Home, Fix gap, Ask, Scam check, Menu).
-- **Visual style:** deep forest green with a bright lime signature, aurora-lit hero surfaces, bento cards and flat,
+- **Visual style ("Emerald & Champagne"):** obsidian-emerald base, champagne-gold accents used sparingly, warm ivory pages, aurora-lit hero surfaces, bento cards and flat,
   high-contrast number cards; landing content no longer hides until scrolled.
 - The end-to-end browser test (`node scripts/capture_screens.mjs`) now covers Home, the Bangla switch and Scam check,
   and passes with the owner-view, decision-lab and 406-combination currency checks.
