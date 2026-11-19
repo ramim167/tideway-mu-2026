@@ -1330,3 +1330,337 @@ body.busy::after { background: var(--grad); }
 .home-chart-legend .key.bad { background: #c2453b; }
 .rescue-summary { border-color: #e7dcc0; background: linear-gradient(140deg, var(--lime-soft), #fff 55%); }
 .shield-meter-fill.clear { fill: #2f8f63; }
+
+/* ==========================================================================
+   Page polish: every page shares the same premium frame.
+   Dark emerald quick-start band, gold-edged help card, refined cards,
+   tables, pills, alerts and page-specific touches.
+   ========================================================================== */
+
+/* Quick start: a dark emerald band that frames the page instead of cluttering it */
+.quick-start { position: relative; overflow: hidden; color: #eef3ef; border: 0; border-radius: 24px; background: var(--aurora); box-shadow: var(--shadow-lift); }
+.quick-start::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(255, 255, 255, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .035) 1px, transparent 1px); background-size: 40px 40px; mask-image: radial-gradient(80% 100% at 80% 0%, #000 15%, transparent 70%); }
+.quick-start > * { position: relative; z-index: 1; }
+.quick-start .eyebrow { color: #cdb98d; }
+.quick-start h2 { color: #fff; font-size: 18px; }
+.quick-start p, .quick-start .quick-start-help { color: rgba(236, 243, 239, .72); }
+.quick-start-steps li { border: 1px solid rgba(255, 255, 255, .12); border-radius: 18px; color: #eef3ef; background: rgba(255, 255, 255, .05); transition: border-color var(--dur-2), background-color var(--dur-2); }
+.quick-start-steps li:hover { border-color: rgba(217, 188, 130, .35); background: rgba(255, 255, 255, .08); }
+.quick-start-steps li.current { border-color: rgba(217, 188, 130, .6); background: rgba(217, 188, 130, .12); box-shadow: inset 0 3px 0 var(--lime); }
+.quick-start-steps h3 { color: #fff; font-size: 14px; }
+.quick-start-steps p { color: rgba(236, 243, 239, .7); }
+.quick-start-number { color: var(--forest-900); background: var(--grad); font-weight: 800; }
+.quick-start .button.ghost { color: #fff; background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .22); }
+.quick-start .button.ghost:hover:not(:disabled) { color: #fff; background: rgba(217, 188, 130, .16); border-color: rgba(217, 188, 130, .55); }
+.quick-start .tw-term { border-bottom-color: rgba(217, 188, 130, .7); }
+
+/* Help card: gold edge and badge */
+.tw-page-help { position: relative; border: 1px solid var(--line); border-left: 4px solid var(--lime); background: linear-gradient(100deg, #fffdf8, #fff 40%); }
+.tw-help-badge { color: var(--forest-900); background: var(--grad); }
+.tw-help-lead strong { font-family: var(--display); }
+.tw-chip { color: var(--ink-2); background: #f1eee5; }
+.tw-chip.tw-safe { color: var(--clear); background: var(--clear-soft); }
+.tw-term { border-bottom-color: #c9a45f; }
+.tw-help-tools .button[aria-pressed="true"] { color: var(--emerald); background: var(--teal-soft); border-color: #bcd6c8; }
+
+/* Topbar */
+.topbar { background: rgba(251, 249, 244, .86); }
+.title-block h1 { font-size: 26px; letter-spacing: -.03em; }
+
+/* Cards and section headings */
+.card h3, .card-head h3 { font-family: var(--display); font-size: 17px; letter-spacing: -.01em; }
+.card-head p { font-size: 13px; }
+.card:hover { box-shadow: 0 1px 2px rgba(15, 23, 20, .05), 0 14px 34px rgba(15, 23, 20, .07); }
+.card, .metric { transition: box-shadow var(--dur-3); }
+.metric { position: relative; overflow: hidden; }
+.metric::after { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, var(--lime), transparent 70%); opacity: .7; }
+.metric.bad::after { background: linear-gradient(90deg, #c2453b, transparent 70%); }
+.metric.good::after { background: linear-gradient(90deg, #2f8f63, transparent 70%); }
+.home-tile::after { display: none; }
+.kv div, .compare div, .scorecard div { border: 1px solid var(--line); border-radius: 14px; background: #faf8f3; }
+.eyebrow { color: var(--gold-ink); }
+
+/* Tables: gold-ink headings, airy rows, rounded frame */
+.table-wrap { border: 1px solid var(--line); border-radius: 16px; overflow: auto; background: #fff; }
+.table-wrap table { margin: 0; }
+th { padding-top: 12px; padding-bottom: 12px; color: var(--gold-ink); background: #faf7ef; font-size: 11.5px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+td { border-bottom: 1px solid #f0ece2; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: #fbf8f0; }
+
+/* Pills, tags, alerts */
+.pill { border: 1px solid transparent; }
+.pill.storm { border-color: #f1c9c4; }
+.pill.unsettled { border-color: #efd7ad; }
+.pill.clear, .pill.ok { border-color: #c4e2d0; }
+.pill.info { border-color: #cfe0ea; }
+.pill.mock { color: var(--gold-ink); background: var(--lime-soft); border-color: #e7dcc0; }
+.tag { border-radius: 6px; }
+.alert { border: 1px solid var(--line); border-left-width: 4px; }
+.alert.critical { border-color: #f1c9c4; border-left-color: var(--storm); background: var(--storm-soft); }
+.alert.warning { border-color: #efd7ad; border-left-color: var(--unsettled); background: var(--unsettled-soft); }
+.alert.info { border-color: #d4e4ec; border-left-color: var(--blue); background: var(--blue-soft); }
+.alert.success { border-color: #c4e2d0; border-left-color: var(--clear); background: var(--clear-soft); }
+
+/* Cash forecast banner: emerald panel; status shown by the badge colour and the words */
+.brief, .brief.storm, .brief.unsettled, .brief.clear { color: #fff; background: var(--aurora); border: 0; border-radius: 26px; box-shadow: var(--shadow-lift); }
+.brief.storm .weather-badge { color: #fff; background: linear-gradient(135deg, #d9574c, #b8382e); box-shadow: 0 10px 28px rgba(184, 56, 46, .4); }
+.brief.unsettled .weather-badge { color: #241500; background: linear-gradient(135deg, #f0c26b, #d39a32); }
+.brief.clear .weather-badge { color: var(--forest-900); background: var(--grad); }
+.brief .button.ghost { color: #fff; background: rgba(255, 255, 255, .07); border-color: rgba(255, 255, 255, .24); }
+.owner-toolbar .pill { color: var(--gold-ink); background: var(--lime-soft); border-color: #e7dcc0; }
+.owner-results > div { border-radius: 18px; background: #faf8f3; border-color: var(--line); }
+.owner-option { border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: var(--shadow); }
+
+/* Charts: emerald likely path, champagne what-if */
+.chart .line-likely { stroke: var(--emerald); }
+.chart .line-what { stroke: #c9a45f; }
+.chart .fan { fill: rgba(30, 122, 90, .14); }
+.legend i.likely { background: var(--emerald); }
+.legend i.what { background: #c9a45f; }
+
+/* Assistant */
+.chat-log { gap: 12px; }
+.chat-log .agent { border-radius: 20px 20px 20px 6px; }
+.chat-log .user { color: #fbf8f1; background: linear-gradient(135deg, var(--emerald), #13694f); border-radius: 20px 20px 6px 20px; box-shadow: 0 8px 20px rgba(14, 90, 67, .18); }
+.chat-form input { border-radius: 999px; padding-inline: 18px; }
+
+/* Inbox and Scam check drafts */
+.draft { border-radius: 18px; background: #fff; }
+.photo-drop { border-radius: 18px; }
+
+/* Safety settings: kill switch and scorecard */
+.switch-card { border: 1px solid #c4e2d0; border-left: 4px solid var(--clear); border-radius: 20px; background: linear-gradient(100deg, var(--clear-soft), #fff 60%); }
+.switch-card.paused { border-color: #f1c9c4; border-left-color: var(--storm); background: linear-gradient(100deg, var(--storm-soft), #fff 60%); }
+.scorecard div strong, .scorecard div b { font-family: var(--display); }
+
+/* Team: member and invite cards */
+.member-list li { border-radius: 16px; background: #fff; }
+.plan-summary { background: linear-gradient(150deg, var(--lime-soft), #fff 60%); border-color: #e7dcc0; }
+
+/* Treasury, Lender radar and Decision lab tabs: refined pill tabs */
+.lab-tabs .button, .tw-tabs .button, .pf-tabs .button { border-radius: 999px; }
+.lab-tabs .button.primary, .tw-tabs .button.primary, .pf-tabs .button.primary,
+.lab-tabs .button[aria-selected="true"], .tw-tabs .button[aria-selected="true"], .pf-tabs .button[aria-selected="true"] {
+  color: #fbf8f1; background: var(--forest-800); border-color: var(--forest-800); box-shadow: 0 6px 16px rgba(15, 38, 32, .2); }
+.lab-json { background: #faf8f3; border-color: var(--line); color: var(--ink); }
+
+/* Dialogs */
+dialog { background: #fffdf9; }
+dialog h2 { font-family: var(--display); letter-spacing: -.02em; }
+.approve-summary .review-summary { background: #faf8f3; border-color: #e7dcc0; }
+.review-summary, .owner-results > div { background: #faf8f3; }
+
+/* Footer */
+.footer { border-top: 1px solid var(--line); margin: 18px 30px 0; padding-inline: 0; }
+@media (max-width: 860px) { .footer { margin: 12px 16px 0; } }
+/* Owner view header: the same emerald panel as Home */
+.owner-view .owner-head { position: relative; overflow: hidden; color: #fff; border: 0; border-radius: 24px; background: var(--aurora); box-shadow: var(--shadow-lift); }
+.owner-view .owner-head h2, .owner-view .owner-head h3 { color: #fff; }
+.owner-view .owner-head p, .owner-view .owner-head .muted, .owner-view .owner-head .hint { color: rgba(236, 243, 239, .78); }
+.owner-view .owner-head .eyebrow { color: #cdb98d; }
+.owner-view .owner-head .pill { color: #ecd8aa; background: rgba(217, 188, 130, .12); border-color: rgba(217, 188, 130, .3); }
+.owner-view .owner-head .button.ghost { color: #fff; background: rgba(255, 255, 255, .07); border-color: rgba(255, 255, 255, .24); }
+.owner-view .owner-head .button.ghost:hover:not(:disabled) { background: rgba(217, 188, 130, .16); border-color: rgba(217, 188, 130, .55); }
+/* helper.css loads after this file, so the help-card accents use the element id to win */
+#tw-page-help { border: 1px solid var(--line); border-left: 4px solid var(--lime); background: linear-gradient(100deg, #fffdf8, #fff 40%); }
+#tw-page-help .tw-help-badge { color: var(--forest-900); background: var(--grad); }
+#tw-page-help .tw-chip { color: var(--ink-2); background: #f1eee5; }
+#tw-page-help .tw-chip.tw-safe { color: var(--clear); background: var(--clear-soft); }
+
+/* ==========================================================================
+   Jewel-tone pages. Every page has its own colour, carried through its header
+   band, quick-start panel, buttons, highlights and table headings, while the
+   emerald-and-gold sidebar ties the product together.
+   All accents: white text 5.7:1 to 10:1, accent text on white the same.
+   ========================================================================== */
+body { --accent: #0e5a43; --accent-dark: #0b3d2e; --accent-light: #2f9e76; --accent-soft: #e6f2ec; --accent-line: #c4e0d1; }
+body[data-page="home"]      { --accent: #0e5a43; --accent-dark: #0b3d2e; --accent-light: #2f9e76; --accent-soft: #e6f2ec; --accent-line: #c4e0d1; }
+body[data-page="overview"]  { --accent: #1d4f91; --accent-dark: #12325e; --accent-light: #4a8bdb; --accent-soft: #e8f0fb; --accent-line: #c5d8f2; }
+body[data-page="rescue"]    { --accent: #9a560a; --accent-dark: #5e3405; --accent-light: #e3a33b; --accent-soft: #fcf1de; --accent-line: #f0d7a8; }
+body[data-page="assistant"] { --accent: #5b3a9c; --accent-dark: #371f66; --accent-light: #9a7be0; --accent-soft: #f0ebfa; --accent-line: #d8ccf3; }
+body[data-page="shield"]    { --accent: #a12b45; --accent-dark: #5e1426; --accent-light: #e0637d; --accent-soft: #fbe9ec; --accent-line: #f2c6cf; }
+body[data-page="inbox"]     { --accent: #0d6b78; --accent-dark: #08404a; --accent-light: #35b3c2; --accent-soft: #e2f4f6; --accent-line: #bde3e8; }
+body[data-page="whatif"]    { --accent: #3b3fa3; --accent-dark: #22256b; --accent-light: #7c82ea; --accent-soft: #ecedfb; --accent-line: #cfd1f5; }
+body[data-page="records"]   { --accent: #34506e; --accent-dark: #1d3044; --accent-light: #7b9cbf; --accent-soft: #edf2f7; --accent-line: #cfdbe7; }
+body[data-page="team"]      { --accent: #8a4426; --accent-dark: #4f240f; --accent-light: #d4895c; --accent-soft: #f9ede5; --accent-line: #ecd0bd; }
+body[data-page="lab"]       { --accent: #7a2e7f; --accent-dark: #46164b; --accent-light: #c46bcb; --accent-soft: #f7eaf8; --accent-line: #e8c9ea; }
+body[data-page="treasury"]  { --accent: #14477a; --accent-dark: #0a2a4a; --accent-light: #d9bc82; --accent-soft: #e9f0f8; --accent-line: #c8d8ea; }
+body[data-page="portfolio"] { --accent: #0f5868; --accent-dark: #08333d; --accent-light: #2fb39a; --accent-soft: #e3f3f1; --accent-line: #bfe3dc; }
+body[data-page="security"]  { --accent: #8e2233; --accent-dark: #4d0f19; --accent-light: #e0566a; --accent-soft: #fbeaec; --accent-line: #f0c6cc; }
+body[data-page="evidence"]  { --accent: #3c4350; --accent-dark: #1f242d; --accent-light: #c9a45f; --accent-soft: #f1efe9; --accent-line: #ddd6c6; }
+
+body { --page-grad:
+  radial-gradient(60% 120% at 0% 0%, color-mix(in srgb, var(--accent-light) 45%, transparent) 0%, transparent 60%),
+  radial-gradient(50% 140% at 100% 0%, rgba(217, 188, 130, .22) 0%, transparent 60%),
+  linear-gradient(120deg, var(--accent) 0%, var(--accent-dark) 100%); }
+
+/* Header band in the page colour */
+.topbar { color: #fff; background: var(--page-grad); border-bottom: 0; box-shadow: 0 10px 30px color-mix(in srgb, var(--accent-dark) 30%, transparent); backdrop-filter: none; }
+.title-block h1 { color: #fff; }
+.title-block .eyebrow { color: rgba(255, 255, 255, .78); }
+.topbar .control-field { color: rgba(255, 255, 255, .78); }
+.topbar .control-field input, .topbar .control-field select { color: var(--ink); background: rgba(255, 255, 255, .96); border-color: transparent; }
+.topbar .button.ghost { color: #fff; background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .28); }
+.topbar .button.ghost:hover:not(:disabled) { color: #fff; background: rgba(255, 255, 255, .22); border-color: rgba(255, 255, 255, .5); }
+.topbar .tw-help-tools .button[aria-pressed="true"] { color: var(--accent-dark); background: #fff; border-color: #fff; }
+.topbar .lang-toggle { color: var(--forest-900) !important; background: var(--grad) !important; border-color: transparent !important; }
+.shell > main { background: radial-gradient(60% 30% at 100% 0%, color-mix(in srgb, var(--accent-light) 14%, transparent), transparent 70%), var(--canvas); }
+
+/* Quick-start band and dark panels follow the page colour */
+.quick-start { background: var(--page-grad); }
+.quick-start-steps li.current { border-color: rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .14); box-shadow: inset 0 3px 0 var(--lime); }
+
+/* Buttons and controls on light surfaces */
+.button.primary { color: #fff; background: var(--accent); border-color: var(--accent); box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 28%, transparent); }
+.button.primary:hover:not(:disabled) { color: #fff; background: var(--accent-dark); border-color: var(--accent-dark); box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 36%, transparent); }
+.button.teal { color: #fff; background: var(--accent-dark); border-color: var(--accent-dark); }
+.button.teal:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
+.button.ghost:hover:not(:disabled), .button.light:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.lab-tabs .button.teal { color: #fff; background: var(--accent); border-color: var(--accent); box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 30%, transparent); }
+.field input:focus, .field select:focus, .field textarea:focus, .search:focus, .chat-form input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-light) 30%, transparent); }
+.text-link, details summary { color: var(--accent); }
+.chip:hover { color: var(--accent-dark); background: var(--accent-soft); border-color: var(--accent-line); }
+.pill.teal { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-line); }
+
+/* Highlights: card accents, metric bars, table headings, help card */
+.eyebrow { color: var(--accent); }
+.quick-start .eyebrow { color: #ecd8aa; }
+.metric::after { background: linear-gradient(90deg, var(--accent-light), transparent 75%); opacity: .9; }
+.card { border-top: 3px solid var(--accent-line); }
+.home .card, .home-hero, .home-task, .rescue-summary, .owner-head, .quick-start, .shield-result { border-top-width: 0; }
+th { color: var(--accent); background: var(--accent-soft); border-bottom-color: var(--accent-line); }
+tbody tr:hover td { background: color-mix(in srgb, var(--accent-soft) 60%, #fff); }
+#tw-page-help { border-left-color: var(--accent); background: linear-gradient(100deg, var(--accent-soft), #fff 45%); }
+#tw-page-help .tw-help-badge { color: #fff; background: linear-gradient(135deg, var(--accent-light), var(--accent)); }
+.quick-start-number, .rescue-steps li::before, .step-no { color: #fff; background: var(--accent); }
+.kv div, .compare div, .scorecard div { background: color-mix(in srgb, var(--accent-soft) 55%, #fff); border-color: var(--accent-line); }
+.chat-log .user { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 22%, transparent); }
+.chart .line-likely { stroke: var(--accent); }
+.shield-meter-track { fill: var(--accent-soft); }
+.draft, .action-card, .member-list li { border-color: var(--accent-line); }
+.bundle.recommended { border-color: var(--accent-light); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-light) 30%, transparent), var(--shadow); }
+.rescue-summary { border-color: var(--accent-line); background: linear-gradient(140deg, var(--accent-soft), #fff 55%); }
+.plan-summary { border-color: var(--accent-line); background: linear-gradient(150deg, var(--accent-soft), #fff 60%); }
+
+/* Phone tab bar shows the page colour on the active tab */
+@media (max-width: 860px) {
+  .tab-item.active { color: #fff; background: var(--accent); box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 40%, transparent); }
+  .tab-item.active .icon { color: #fff; }
+  .tab-item.active .tab-sub { color: rgba(255, 255, 255, .8); }
+}
+
+/* Sidebar: each menu item shows its page colour as a small dot when active */
+.nav-item.active { box-shadow: inset 3px 0 0 var(--accent-light); }
+.nav-item.active .icon { color: var(--accent-light); }
+
+/* Home keeps emerald-and-gold hero panels; the colourful task cards each wear their page colour */
+.home-task[data-view="rescue"] .home-task-icon { color: #9a560a; background: #fcf1de; }
+.home-task[data-view="shield"] .home-task-icon { color: #a12b45; background: #fbe9ec; }
+.home-task[data-view="assistant"] .home-task-icon { color: #5b3a9c; background: #f0ebfa; }
+.home-task[data-view="inbox"] .home-task-icon { color: #0d6b78; background: #e2f4f6; }
+.home-task[data-view="shield"]:hover { border-color: #f2c6cf; }
+.home-task[data-view="assistant"]:hover { border-color: #d8ccf3; }
+.home-task[data-view="inbox"]:hover { border-color: #bde3e8; }
+.home-task[data-view="shield"] .home-task-go { color: #a12b45; }
+.home-task[data-view="assistant"] .home-task-go { color: #5b3a9c; }
+.home-task[data-view="inbox"] .home-task-go { color: #0d6b78; }
+.home-task:first-child { background: radial-gradient(70% 90% at 0% 0%, rgba(227, 163, 59, .35), transparent 60%), linear-gradient(140deg, #9a560a, #5e3405); }
+.home-task:first-child .home-task-icon { color: #5e3405; background: var(--grad); }
+.home-task:first-child .home-task-text span { color: rgba(255, 246, 232, .86); }
+
+/* ==========================================================================
+   Duotone mesh pages. Each page pairs two contrasting colours plus a glow:
+   the header band, quick-start panel, active menu item, buttons and accents
+   all use that page's pairing. White text on every button colour: 5.2:1 to 10.4:1.
+   --c1 deep base · --c2 main colour · --c3 contrasting glow · --accent button
+   ========================================================================== */
+body { --c1: #064e3b; --c2: #0f766e; --c3: #f4c267; --accent: #0f766e; --accent-soft: #e5f4f1; --accent-line: #bfe3dc; }
+body[data-page="home"]      { --c1: #064e3b; --c2: #0f766e; --c3: #f4c267; --accent: #0f766e; --accent-soft: #e5f4f1; --accent-line: #bfe3dc; }
+body[data-page="overview"]  { --c1: #0b1f4b; --c2: #1565c0; --c3: #22d3ee; --accent: #1565c0; --accent-soft: #e6f2fd; --accent-line: #bcdaf6; }
+body[data-page="rescue"]    { --c1: #7c2d12; --c2: #ea580c; --c3: #fbbf24; --accent: #c2410c; --accent-soft: #fff1e6; --accent-line: #fbd2b1; }
+body[data-page="assistant"] { --c1: #3b0764; --c2: #7c3aed; --c3: #f472b6; --accent: #7c3aed; --accent-soft: #f4edfe; --accent-line: #ddccfb; }
+body[data-page="shield"]    { --c1: #4c0519; --c2: #be123c; --c3: #fb923c; --accent: #be123c; --accent-soft: #fdecef; --accent-line: #f8c4cf; }
+body[data-page="inbox"]     { --c1: #083344; --c2: #0e7490; --c3: #a3e635; --accent: #0e7490; --accent-soft: #e4f5f8; --accent-line: #b9e3ec; }
+body[data-page="whatif"]    { --c1: #1e1b4b; --c2: #4338ca; --c3: #38bdf8; --accent: #4338ca; --accent-soft: #ecebfd; --accent-line: #cfcdf7; }
+body[data-page="records"]   { --c1: #0f172a; --c2: #334155; --c3: #5eead4; --accent: #334155; --accent-soft: #eef2f6; --accent-line: #d2dae4; }
+body[data-page="team"]      { --c1: #831843; --c2: #e11d48; --c3: #fdba74; --accent: #be185d; --accent-soft: #fdedf3; --accent-line: #f6c6d8; }
+body[data-page="lab"]       { --c1: #4a044e; --c2: #a21caf; --c3: #fb923c; --accent: #a21caf; --accent-soft: #fbeefd; --accent-line: #efc9f3; }
+body[data-page="treasury"]  { --c1: #0c1e3e; --c2: #1e3a8a; --c3: #facc15; --accent: #1e3a8a; --accent-soft: #eaf0fb; --accent-line: #c9d6f2; }
+body[data-page="portfolio"] { --c1: #042f2e; --c2: #0d9488; --c3: #a78bfa; --accent: #0f766e; --accent-soft: #e6f6f4; --accent-line: #bfe6e1; }
+body[data-page="security"]  { --c1: #18181b; --c2: #9f1239; --c3: #f43f5e; --accent: #9f1239; --accent-soft: #fdecef; --accent-line: #f5c3cd; }
+body[data-page="evidence"]  { --c1: #1c1917; --c2: #44403c; --c3: #eab308; --accent: #57534e; --accent-soft: #f5f3ef; --accent-line: #dedad2; }
+
+body {
+  --accent-dark: var(--c1);
+  --accent-light: var(--c3);
+  --page-grad:
+    radial-gradient(55% 140% at 0% 0%, color-mix(in srgb, var(--c3) 55%, transparent) 0%, transparent 58%),
+    radial-gradient(60% 160% at 100% 100%, color-mix(in srgb, var(--c2) 95%, transparent) 0%, transparent 62%),
+    radial-gradient(40% 90% at 70% 0%, color-mix(in srgb, var(--c3) 22%, transparent) 0%, transparent 70%),
+    linear-gradient(120deg, var(--c1) 0%, var(--c2) 100%);
+  --btn-grad: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 70%, var(--c1)) 100%);
+}
+
+/* Header band and quick-start panel wear the page's mesh */
+.topbar, .quick-start { background: var(--page-grad); }
+.topbar { box-shadow: 0 12px 34px color-mix(in srgb, var(--c1) 32%, transparent); }
+.quick-start { box-shadow: 0 18px 44px color-mix(in srgb, var(--c1) 28%, transparent); }
+.quick-start-steps li.current { border-color: color-mix(in srgb, var(--c3) 75%, #fff); background: rgba(255, 255, 255, .16); box-shadow: inset 0 3px 0 var(--c3); }
+.quick-start-number { color: var(--c1); background: linear-gradient(135deg, #fff, color-mix(in srgb, var(--c3) 55%, #fff)); }
+.quick-start .eyebrow { color: color-mix(in srgb, var(--c3) 70%, #fff); }
+.shell > main { background:
+  radial-gradient(55% 28% at 100% 0%, color-mix(in srgb, var(--c3) 16%, transparent), transparent 70%),
+  radial-gradient(45% 24% at 0% 12%, color-mix(in srgb, var(--c2) 8%, transparent), transparent 70%), var(--canvas); }
+
+/* Active menu item lights up in the page's gradient */
+.nav-item.active { color: #fff; background: var(--page-grad); box-shadow: 0 8px 22px color-mix(in srgb, var(--c2) 35%, transparent); }
+.nav-item.active .icon { color: #fff; }
+.nav-item.active .nav-sub { color: rgba(255, 255, 255, .82); }
+.nav-item.active .nav-badge { color: var(--c1); background: #fff; }
+
+/* Buttons: gradient in the page colour */
+.button.primary, .lab-tabs .button.teal { color: #fff; background: var(--btn-grad); border-color: transparent; box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 32%, transparent); }
+.button.primary:hover:not(:disabled), .lab-tabs .button.teal:hover:not(:disabled) { color: #fff; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 85%, #fff), var(--accent)); box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 42%, transparent); }
+.button.teal { color: #fff; background: var(--c1); border-color: var(--c1); }
+:is(.hero, .demo-card, .home-hero, .brief, .home-task:first-child, .plan-card:nth-child(2)) .button.primary { color: var(--forest-900); background: var(--grad); }
+
+/* Accents on light surfaces */
+.eyebrow, th, .text-link, details summary { color: var(--accent); }
+th { background: var(--accent-soft); border-bottom-color: var(--accent-line); }
+.card { border-top: 3px solid transparent; border-image: linear-gradient(90deg, var(--c2), var(--c3)) 1; border-image-slice: 1 0 0 0; }
+.home .card, .home-hero, .home-task, .rescue-summary, .owner-head, .quick-start, .shield-result, .brief { border-image: none; }
+.metric::after { background: linear-gradient(90deg, var(--c2), var(--c3), transparent 85%); }
+#tw-page-help { border-left-color: var(--c2); background: linear-gradient(100deg, var(--accent-soft), #fff 45%); }
+#tw-page-help .tw-help-badge { color: #fff; background: linear-gradient(135deg, var(--c2), var(--c1)); }
+.quick-start-number, .rescue-steps li::before, .step-no { color: #fff; background: linear-gradient(135deg, var(--c2), var(--c1)); }
+.chat-log .user { background: linear-gradient(135deg, var(--c2), var(--c1)); }
+.chart .line-likely { stroke: var(--c2); }
+.chart .line-what { stroke: color-mix(in srgb, var(--c3) 80%, #000); }
+.chart .fan { fill: color-mix(in srgb, var(--c3) 16%, transparent); }
+.shield-meter-track { fill: var(--accent-soft); }
+.pill.teal { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-line); }
+.kv div, .compare div, .scorecard div { background: color-mix(in srgb, var(--accent-soft) 55%, #fff); border-color: var(--accent-line); }
+.rescue-summary, .plan-summary { border-color: var(--accent-line); background: linear-gradient(140deg, var(--accent-soft), #fff 55%); }
+.bundle.recommended { border-color: color-mix(in srgb, var(--c3) 60%, var(--c2)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c3) 30%, transparent), var(--shadow); }
+
+/* Phone tab bar: active tab in the page's gradient */
+@media (max-width: 860px) {
+  .tab-item.active { color: #fff; background: var(--page-grad); box-shadow: 0 6px 18px color-mix(in srgb, var(--c2) 45%, transparent); }
+}
+
+/* Home task cards each preview their page's pairing */
+.home-task[data-view="rescue"] .home-task-icon { color: #fff; background: linear-gradient(135deg, #ea580c, #7c2d12); }
+.home-task[data-view="shield"] .home-task-icon { color: #fff; background: linear-gradient(135deg, #be123c, #fb923c); }
+.home-task[data-view="assistant"] .home-task-icon { color: #fff; background: linear-gradient(135deg, #7c3aed, #f472b6); }
+.home-task[data-view="inbox"] .home-task-icon { color: #fff; background: linear-gradient(135deg, #0e7490, #a3e635); }
+.home-task[data-view="shield"] .home-task-go { color: #be123c; }
+.home-task[data-view="assistant"] .home-task-go { color: #7c3aed; }
+.home-task[data-view="inbox"] .home-task-go { color: #0e7490; }
+.home-task:first-child { color: #fff; background:
+  radial-gradient(60% 90% at 0% 0%, rgba(251, 191, 36, .45), transparent 60%),
+  radial-gradient(70% 120% at 100% 100%, rgba(234, 88, 12, .9), transparent 65%),
+  linear-gradient(135deg, #7c2d12, #ea580c); }
+.home-task:first-child .home-task-icon { color: #7c2d12; background: #fff; }
+.home-task:first-child .home-task-go { color: #fde68a; }
+.home-task:first-child .home-task-text span { color: rgba(255, 247, 237, .9); }

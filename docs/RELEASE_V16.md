@@ -45,3 +45,7 @@ Older evidence files under `evidence/` describe v15 runs and keep their original
   high-contrast number cards; landing content no longer hides until scrolled.
 - The end-to-end browser test (`node scripts/capture_screens.mjs`) now covers Home, the Bangla switch and Scam check,
   and passes with the owner-view, decision-lab and 406-combination currency checks.
+- **A colour pairing for every page:** each page has its own two-colour mesh gradient (for example violet and pink
+  for Ask Tideway, crimson and orange for Scam check, rust and amber for Fix a cash gap, midnight blue and cyan for
+  Cash forecast). It runs through the header band, quick-start panel, active menu item, buttons and accents. White
+  text on every button colour is 5.2:1 to 10.4:1.

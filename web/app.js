@@ -517,6 +517,7 @@ function render() {
   if (labNav) labNav.hidden = state.config?.features?.decision_lab === false;
   if (state.view === "lab" && labNav?.hidden) state.view = "overview";
   const [title, subtitle] = ((state.lang === "bn" ? VIEWS_BN : VIEWS)[state.view]) || VIEWS.home;
+  document.body.dataset.page = state.view;  // each page carries its own jewel-tone colour scheme (not data-view: that attribute means "navigate")
   const more = $("#nav-more");
   if (more && MORE_TOOLS.includes(state.view)) more.open = true;
   const bnUi = state.lang === "bn";
