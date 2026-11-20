@@ -646,7 +646,8 @@ class Agent:
         follow = conversation.suggestions(conversation.situation(self.app, business_id, target_date), topic, focus,
                                           exclude=(message.strip(),), lang=lang)
         return {"text": answer, "mode": "local", "mode_label": "Deterministic assistant (no model inference)",
-                "model_called": False, "trace": trace, "unverified_numbers": [], "suggestions": follow, "lang": lang}
+                "model_called": False, "trace": trace, "unverified_numbers": [], "suggestions": follow, "lang": lang,
+                "understood": not (topic is None and not trace)}
 
     def _localized(self, kind, details, business_id, target_date, target, snapshot, lang, role, actor, trace):
         """(answer, topic, focus) for a recognised non-English question, from the tools the English rules use."""

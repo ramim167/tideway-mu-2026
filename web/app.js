@@ -7,7 +7,7 @@ const freshInbox = () => ({text: "", photo: "", photoName: "", transcript: "", d
 const state = {
   config: null, operator: null, businessId: "", targetDate: "", view: "home", lang: savedLang(),
   dashboard: null, run: null, receipt: null, chat: [], audit: null, auditError: "", selftest: null, drill: null,
-  whatif: freshWhatIf(), demoDelay: null, demoRequest: null, inbox: freshInbox(), recordFilter: "all", recordQuery: "", aiConsent: false,
+  whatif: freshWhatIf(), demoDelay: null, demoRequest: null, inbox: freshInbox(), recordFilter: "all", recordQuery: "", aiConsent: savedAi(),
   busy: false, approving: null, displayCurrency: "", team: null, teamError: "", invite: null, speaking: false, ownerDetailed: false,
   policyDraft: {}, chatDraft: ""
 };
@@ -21,6 +21,12 @@ function setLanguage(next) {
   state.lang = next === "bn" ? "bn" : "en";
   try { localStorage.setItem("tideway:lang", state.lang); } catch (_) { /* optional preference */ }
   if (state.dashboard) render(); else syncLanguage();
+}
+function savedAi() { try { return localStorage.getItem("tideway:ai") === "1"; } catch (_) { return false; } }
+function setAi(on) {
+  state.aiConsent = Boolean(on);
+  try { localStorage.setItem("tideway:ai", state.aiConsent ? "1" : "0"); } catch (_) { /* optional preference */ }
+  if (state.view === "assistant") render();
 }
 function savedLang() { try { return localStorage.getItem("tideway:lang") === "bn" ? "bn" : "en"; } catch (_) { return "en"; } }
 // Plain page names first; the technical detail stays in the subtitle for accountants and judges.
@@ -280,7 +286,7 @@ function resetSessionState() {
   window.TidewayTreasury.reset();
   window.TidewayPortfolio.reset();
   Object.assign(state, {view: "home", dashboard: null, run: null, receipt: null, chat: [], audit: null, auditError: "",
-    selftest: null, drill: null, whatif: freshWhatIf(), demoDelay: null, demoRequest: null, inbox: freshInbox(), aiConsent: false, approving: null,
+    selftest: null, drill: null, whatif: freshWhatIf(), demoDelay: null, demoRequest: null, inbox: freshInbox(), aiConsent: savedAi(), approving: null,
     team: null, teamError: "", invite: null, ownerDetailed: false, policyDraft: {}, chatDraft: "", displayCurrency: ""});
 }
 
@@ -1201,12 +1207,14 @@ function renderAssistant() {
       ? "আসসালামু আলাইকুম, আমি Tideway। জিজ্ঞেস করুন: বেতন দিতে পারবেন কি না, এই মাসে ঝুঁকি কতটা, কার কাছ থেকে আগে টাকা চাইবেন, কোনো ক্রেতা দেরিতে দিলে কী হবে, বা একটি উদ্ধার পরিকল্পনা। বাংলা, Banglish বা English, যেভাবে খুশি লিখুন। আমি ব্যাখ্যা ও প্রস্তাব দিতে পারি; টাকা অনুমোদন বা পাঠাতে পারি না।"
       : "Hi, I'm Tideway. Ask me whether payroll is safe, how risky the month looks, who to chase, a what-if such as \"what if Nila Traders pays 10 days late\", or ask me for a rescue plan. I can explain and propose; I can't approve or move money."});
   const prompts = on ? TIDELM_PROMPTS.map(p=>p.replace('on 50,000?',`on ${displayCurrency()} ${displayCurrency()===currency()?'50,000':'500'}?`)) : LOCAL_PROMPTS;
-  const consent = on ? "" : state.config.ai_configured ? `<label class="check small"><input id="ai-consent" type="checkbox" ${state.aiConsent ? "checked" : ""}> Use the AI model for this message (names are pseudonymised; ledger descriptions are omitted; inspect your question for private text)</label><button type="button" class="button small ghost" data-action="privacy-preview-chat">Inspect outgoing request before consent</button>` : `<p class="hint">Local agent mode: answers come from deterministic tools, no network. An optional LLM mode is available when a key is configured.</p>`;
+  const aiReady = !on && state.config.ai_configured;
+  const aiSwitch = aiReady ? `<div class="ai-switch-row"><label class="ai-switch"><input id="ai-consent" type="checkbox" role="switch" ${state.aiConsent ? "checked" : ""}><span class="ai-switch-track" aria-hidden="true"></span><span class="ai-switch-label">AI answers</span></label><span class="small muted">${state.aiConsent ? "On: questions go to the cloud AI with names hidden." : "Off: the offline assistant answers. Turn on for free-form questions."}</span><button type="button" class="button small ghost" data-action="privacy-preview-chat">See what is sent</button></div>` : "";
+  const consent = on || aiReady ? "" : `<p class="hint">Local agent mode: answers come from deterministic tools, no network. An optional LLM mode is available when a key is configured.</p>`;
   const mode = on ? `<div class="row chat-mode"><span class="pill teal">${icon("spark")}${esc(tidelmLabel())}</span></div>` : "";
   return `<section class="grid split"><div class="card chat ${on ? "with-mode" : ""}">${mode}<div class="chat-log" id="chat-log" aria-live="polite">${state.chat.map((item, index) => item.pending
       ? `<div class="msg agent pending" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>${esc(item.role === "user" ? item.text : moneyProse(item.text))}</div>`
-      : `<div class="msg ${item.role === "user" ? "user" : "agent"} ${item.unverified?.length || item.rejected ? "warn" : ""}">${esc(item.role === "user" ? item.text : moneyProse(item.text))}${item.trace?.length ? `<div class="trace">${item.trace.map((t) => `<span>${esc(t.tool)} · ${esc(t.permission)}</span>`).join("")}</div>` : ""}${item.copilot ? copilotHtml(item.copilot) : ""}${item.question && !item.rejected ? feedbackHtml(item, index) : ""}${index === state.chat.length - 1 && item.role !== "user" ? suggestionsHtml(item.suggestions || (index === 0 ? prompts.slice(0, 3) : [])) : ""}</div>`).join("")}</div>
-    <p class="hint">Money in questions: include ${esc(displayCurrency())}, e.g. ${esc(displayCurrency())} 100. Dates, days and percentages keep their own units.</p><form id="chat-form" class="chat-form"><label class="sr-only" for="chat-input">Your question</label><input id="chat-input" value="${esc(state.chatDraft)}" maxlength="2000" placeholder="${on ? "Ask in any language…" : "Ask about payroll, risk, a what-if or a plan…"}" autocomplete="off" required><button class="button primary" type="submit">${icon("send")}Ask</button></form></div>
+      : `<div class="msg ${item.role === "user" ? "user" : "agent"} ${item.unverified?.length || item.rejected ? "warn" : ""}">${esc(item.role === "user" ? item.text : moneyProse(item.text))}${item.trace?.length ? `<div class="trace">${item.trace.map((t) => `<span>${esc(t.tool)} · ${esc(t.permission)}</span>`).join("")}</div>` : ""}${item.copilot ? copilotHtml(item.copilot) : ""}${item.aiNudge && state.config.ai_configured && !state.aiConsent ? `<div class="ai-nudge"><button type="button" class="button small primary" data-action="ai-retry" data-prompt="${esc(item.question)}">${icon("spark")}Turn on AI and ask again</button></div>` : ""}${item.question && !item.rejected ? feedbackHtml(item, index) : ""}${index === state.chat.length - 1 && item.role !== "user" ? suggestionsHtml(item.suggestions || (index === 0 ? prompts.slice(0, 3) : [])) : ""}</div>`).join("")}</div>
+    ${aiSwitch}<p class="hint">Money in questions: include ${esc(displayCurrency())}, e.g. ${esc(displayCurrency())} 100. Dates, days and percentages keep their own units.</p><form id="chat-form" class="chat-form"><label class="sr-only" for="chat-input">Your question</label><input id="chat-input" value="${esc(state.chatDraft)}" maxlength="2000" placeholder="${on ? "Ask in any language…" : "Ask about payroll, risk, a what-if or a plan…"}" autocomplete="off" required><button class="button primary" type="submit">${icon("send")}Ask</button></form></div>
     <div class="card">${on ? "" : `${tidelmStatusCard("Ask Tideway still works with the local tool agent.")}<div class="section-gap"></div>`}<h3>Try asking</h3><div class="chips">${prompts.map((prompt) => `<button class="chip" data-action="prompt" data-prompt="${esc(prompt)}">${esc(prompt)}</button>`).join("")}</div>
     ${consent ? `<div class="section-gap">${consent}</div>` : ""}
     ${feedbackSummaryHtml()}
@@ -1247,7 +1255,8 @@ async function ask(message) {
     state.chat.push({role: "agent", text: result.rejected, rejected: true});
   } else if (result?.chat) {
     const chat = result.chat;
-    state.chat.push({role: "agent", text: chat.text, trace: chat.trace, unverified: chat.unverified_numbers, suggestions: chat.suggestions, question: text});
+    state.chat.push({role: "agent", text: chat.text, trace: chat.trace, unverified: chat.unverified_numbers, suggestions: chat.suggestions, question: text,
+      aiNudge: chat.mode === "local" && chat.understood === false && !consent});
     if ((chat.trace || []).some((item) => item.tool === "compare_plans")) await act("Reload", () => loadDashboard());
   }
   render();
@@ -1814,6 +1823,7 @@ document.addEventListener("click", async (event) => {
         break;
       }
       case "prompt": await ask(data.prompt); break;
+      case "ai-retry": setAi(true); await ask(data.prompt); break;
       case "privacy-preview-chat": await window.TidewayLab.previewChat($("#chat-input").value); break;
       case "whatif-reset": state.whatif = freshWhatIf(); render(); break;
       case "demo-stale": {
@@ -1876,7 +1886,7 @@ document.addEventListener("change", async (event) => {
     // Context changes apply only after a successful load; on failure the control shows the current context again.
     if (target.id === "business-select") { if (!await act("Business", () => loadDashboard({businessId: target.value, resetTarget: true}))) syncContextControls(); }
     else if (target.id === "target-date") { if (!target.value || !await act("Date", () => loadDashboard({targetDate: target.value}))) syncContextControls(); }
-    else if (target.id === "ai-consent") { state.aiConsent = target.checked; }
+    else if (target.id === "ai-consent") { setAi(target.checked); }
     else if (target.id === "display-currency") { changeDisplayCurrency(target.value); }
     else if (target.id === "record-filter") { state.recordFilter = target.value; render(); }
     else if (target.id === "whatif-drop") { state.whatif.drop = target.value; }
