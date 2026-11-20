@@ -255,14 +255,12 @@ def _sec04():
         state_after_retry = app.store.snapshot(BUSINESS)["state"]
         execution_rows_after_retry = len(app.store.executions(BUSINESS))
         stored = app.store.execution_by_key(BUSINESS, "sec04-one")["receipt"]
-        # The first response adds a witness checkpoint after the durable
-        # receipt is stored; compare both responses with that stored receipt.
-        first_without_runtime_fields = {key: value for key, value in first.items()
-                                        if key not in ("replayed", "witness")}
+        # The checkpoint is durable. Both reads must return the same witness.
+        first_without_replay_marker = {key: value for key, value in first.items() if key != "replayed"}
         second_without_replay_marker = {key: value for key, value in second.items() if key != "replayed"}
         proof = {
             "negotiation_ready": negotiated["status"] == "ready",
-            "same_receipt_returned": (first_without_runtime_fields == stored == second_without_replay_marker),
+            "same_receipt_returned": (stored["witness"]["cosigned"] and first_without_replay_marker == stored == second_without_replay_marker),
             "replay_marker_present": second.get("replayed") is True,
             "execution_rows_before_retry": execution_rows_before_retry,
             "execution_rows_after_retry": execution_rows_after_retry,

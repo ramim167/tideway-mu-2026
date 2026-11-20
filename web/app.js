@@ -1060,6 +1060,7 @@ function receiptCard(receipt, earlier = false) {
     ${inEffect ? "" : `<div class="alert warning">${icon("alert")}<div><strong>The sandbox was reset after this execution</strong><span>These schedule changes are no longer in effect; the current projection does not include them. The receipt is kept as evidence.</span></div></div>`}
     <div class="before-after"><div class="kv"><div><span>Likely low before</span><strong class="negative">${money(before.minimum_cash_minor)}</strong></div><div><span>Shortfall before</span><strong>${money(before.reserve_shortfall_minor)}</strong></div></div><span class="arrow">→</span><div class="kv"><div><span>Likely low after</span><strong class="positive">${money(after.minimum_cash_minor)}</strong></div><div><span>Shortfall after</span><strong>${money(after.reserve_shortfall_minor)}</strong></div></div></div>
     <div class="status-strip section-gap"><span class="tag">receipt ${esc((receipt.receipt_id || "").slice(0, 10))}…</span><span class="tag">state v${esc(receipt.state_before?.version ?? "—")} → v${esc(receipt.state_after?.version ?? "—")}</span><span class="tag">idempotency ${esc((receipt.idempotency_key || "").slice(0, 18))}</span><span class="tag">audit ${esc((receipt.audit_hash || "").slice(0, 10))}…</span>${receipt.witness?.cosigned ? `<span class="tag good">witness cosigned ${esc(receipt.witness.size)} entries</span>` : ""}${receipt.replayed ? `<span class="tag">replayed: no second execution</span>` : ""}</div>
+    ${!receipt.witness?.cosigned ? `<div class="alert warning section-gap"><div><strong>Witness ${esc(receipt.witness?.status || "pending")}</strong><span>${esc(receipt.witness?.reason || "Execution is recorded. This receipt has no confirmed witness checkpoint.")}</span></div>${canApprove() ? `<button class="button ghost" data-action="execute" data-mandate="${esc(receipt.mandate_id)}" data-key="${esc(receipt.idempotency_key)}">Retry witness checkpoint</button>` : ""}</div>` : ""}
     <div class="row section-gap">${actions.some((action) => action.type === "supplier_deferral") ? `<a class="button ghost" href="/api/export?kind=iso20022&business_id=${encodeURIComponent(state.businessId)}">${icon("download")}ISO 20022 pain.001 draft (never sent)</a>` : ""}<a class="button ghost" href="/api/export?kind=receipts&business_id=${encodeURIComponent(state.businessId)}&display_currency=${encodeURIComponent(displayCurrency())}">${icon("download")}Receipts CSV</a></div>
     <details class="section-gap"><summary>Full receipt</summary><pre>${esc(JSON.stringify(receipt, null, 2))}</pre></details></section>`;
 }
@@ -1812,8 +1813,7 @@ async function mandateAction(path, mandateId, extra = {}, message = "") {
   return result;
 }
 
-async function execute(mandateId) {
-  const key = `exec-${mandateId}`;
+async function execute(mandateId, key = `exec-${mandateId}`) {
   const result = await act("Execute", async () => {
     let receipt;
     try {
@@ -1935,7 +1935,7 @@ document.addEventListener("click", async (event) => {
       case "counter": await mandateAction("/api/mandate/counter", data.mandate, {}, "Counter-offer turned into a new proposal. It needs fresh approval."); state.view = "rescue"; break;
       case "replan": await mandateAction("/api/mandate/replan", data.mandate, {}, "Re-planned without the counterparty that refused."); break;
       case "cancel-mandate": await mandateAction("/api/mandate/cancel", data.mandate, {}, "Mandate cancelled. Nothing was executed."); break;
-      case "execute": await execute(data.mandate); break;
+      case "execute": await execute(data.mandate, data.key); break;
       case "verify-mandate": await verifyMandate(data.mandate, false); break;
       case "tamper-mandate": await verifyMandate(data.mandate, true); break;
       case "remind": {

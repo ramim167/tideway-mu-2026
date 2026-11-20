@@ -14,9 +14,11 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import os
 import re
 import secrets
 import sqlite3
+import tempfile
 import uuid
 from copy import deepcopy
 from contextlib import contextmanager
@@ -322,43 +324,104 @@ class Store(EventStoreMixin):
             return {}, "unreadable"
         return data, None
 
-    def _witness_read(self):
-        return self._witness_read_status()[0]
-
     def _witness_write(self, data):
         if self.witness_path is None:
             self._witness_memory = dict(data)
             return
-        self.witness_path.write_text(json.dumps(data, sort_keys=True, indent=1))
+        with tempfile.NamedTemporaryFile(mode="w", dir=self.witness_path.parent, delete=False) as pending:
+            try:
+                json.dump(data, pending, sort_keys=True, indent=1)
+                pending.flush()
+                os.fsync(pending.fileno())
+                pending.close()
+                os.replace(pending.name, self.witness_path)
+            finally:
+                Path(pending.name).unlink(missing_ok=True)
 
     def _witness_signature(self, item):
         body = canonical_json({key: item[key] for key in ("business_id", "size", "head_hash", "cosigned_at")})
         return hmac.new(self.witness_key, body.encode(), hashlib.sha256).hexdigest()
 
-    def witness_cosign(self, business_id):
-        """Cosign the current chain head only if the previous head is still in place."""
-        with self.connect() as db:
-            rows = db.execute("SELECT id,entry_hash FROM audit WHERE business_id=? ORDER BY id", (business_id,)).fetchall()
-        data = self._witness_read()
-        previous = data.get(business_id)
-        if previous and (len(rows) < previous["size"] or rows[previous["size"] - 1]["entry_hash"] != previous["head_hash"]):
-            return {"cosigned": False, "reason": "The chain no longer contains the previously witnessed head."}
-        item = {"business_id": business_id, "size": len(rows), "head_hash": rows[-1]["entry_hash"] if rows else "0" * 64,
-                "cosigned_at": utc_now()}
+    def _witness_authenticated(self, business_id, item):
+        try:
+            return (isinstance(item, dict) and item["business_id"] == business_id
+                    and type(item["size"]) is int and item["size"] >= 0
+                    and hmac.compare_digest(self._witness_signature(item), item["signature"]))
+        except (KeyError, TypeError, ValueError):
+            return False
+
+    def _checkpoint(self, db, business_id):
+        # BEGIN IMMEDIATE in the caller serializes the shared file's entire
+        # read/validate/replace cycle across all workers and all businesses.
+        data, problem = self._witness_read_status()
+        markers = {row["key"][8:]: row["value"] for row in
+                   db.execute("SELECT key,value FROM metadata WHERE key LIKE 'witness:%'")}
+        if problem == "unreadable" or any(key not in data for key in markers):
+            return {"cosigned": False, "status": "blocked", "reason": "Previously recorded witness data is missing or unreadable."}
+        for key, prior in data.items():
+            if not self._witness_authenticated(key, prior):
+                return {"cosigned": False, "status": "blocked", "reason": "Existing witness signature is invalid."}
+            # Older databases stored only the checkpoint time. A newly written
+            # marker also detects replacement by an earlier, valid signed file.
+            marker = markers.get(key, "")
+            if marker.startswith("{"):
+                expected = json.loads(marker)
+                if prior["size"] < expected["size"] or (prior["size"] == expected["size"]
+                                                        and prior["head_hash"] != expected["head_hash"]):
+                    return {"cosigned": False, "status": "blocked", "reason": "Previously recorded witness head is missing."}
+            elif marker and prior["cosigned_at"] < marker:
+                return {"cosigned": False, "status": "blocked", "reason": "Previously recorded witness time is newer."}
+        rows = db.execute("SELECT * FROM audit WHERE business_id=? ORDER BY id", (business_id,)).fetchall()
+        head = "0" * 64
+        for row in rows:
+            if row["previous_hash"] != head or row["entry_hash"] != _entry_digest(head, business_id, row):
+                return {"cosigned": False, "status": "blocked", "reason": "The audit chain is inconsistent."}
+            head = row["entry_hash"]
+        prior = data.get(business_id)
+        if prior and prior["size"] and (prior["size"] > len(rows) or rows[prior["size"] - 1]["entry_hash"] != prior["head_hash"]):
+            return {"cosigned": False, "status": "blocked", "reason": "The chain no longer contains the previously witnessed head."}
+        item = {"business_id": business_id, "size": len(rows), "head_hash": head, "cosigned_at": utc_now()}
         item["signature"] = self._witness_signature(item)
         data[business_id] = item
         self._witness_write(data)
-        with self.connect() as db:
-            db.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES (?,?)",
-                       (self._witness_marker_key(business_id), item["cosigned_at"]))
-        return {"cosigned": True, **item}
+        db.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES (?,?)",
+                   (self._witness_marker_key(business_id), canonical_json(item)))
+        return {"cosigned": True, "status": "cosigned", **item}
+
+    def witness_cosign(self, business_id, receipt_id=None):
+        pending = {"cosigned": False, "status": "pending", "reason": "Checkpoint storage is unavailable. Retry with the same execution key."}
+        try:
+            with self.connect() as db:
+                db.execute("BEGIN IMMEDIATE")
+                self._business_row(db, business_id)
+                if receipt_id:
+                    row = db.execute("SELECT receipt_json FROM executions WHERE business_id=? AND id=?",
+                                     (business_id, receipt_id)).fetchone()
+                    receipt = json.loads(row["receipt_json"])
+                    if receipt.get("witness", {}).get("cosigned"):
+                        return receipt["witness"]
+                try:
+                    witness = self._checkpoint(db, business_id)
+                except OSError:
+                    witness = pending
+                if receipt_id:
+                    receipt["witness"] = witness
+                    db.execute("UPDATE executions SET receipt_json=? WHERE business_id=? AND id=?",
+                               (canonical_json(receipt), business_id, receipt_id))
+            return witness
+        except sqlite3.OperationalError:
+            # The financial transaction has already committed with a pending
+            # receipt. Its exact key can resume checkpointing after recovery.
+            return pending
 
     def evidence(self, business_id):
         with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            witness_data, witness_error = self._witness_read_status()
             self._business_row(db, business_id)
             rows = [dict(row) for row in db.execute("SELECT * FROM audit WHERE business_id=? ORDER BY id", (business_id,))]
-            expected_witness = db.execute("SELECT 1 FROM metadata WHERE key=?",
-                                         (self._witness_marker_key(business_id),)).fetchone() is not None
+            marker = db.execute("SELECT value FROM metadata WHERE key=?",
+                                (self._witness_marker_key(business_id),)).fetchone()
         valid, previous, first_bad = True, "0" * 64, None
         for index, row in enumerate(rows):
             ok = row["previous_hash"] == previous and row["entry_hash"] == _entry_digest(previous, business_id, row)
@@ -373,20 +436,21 @@ class Store(EventStoreMixin):
                 valid = False
             except TypeError:
                 valid = False
-        witness_data, _ = self._witness_read_status()
         witnessed = witness_data.get(business_id)
         witness = {"present": bool(witnessed)}
         if witnessed:
             size = witnessed.get("size") if isinstance(witnessed, dict) else None
             head_hash = witnessed.get("head_hash") if isinstance(witnessed, dict) else None
             cosigned_at = witnessed.get("cosigned_at") if isinstance(witnessed, dict) else None
-            try:
-                signature_ok = isinstance(witnessed, dict) and isinstance(witnessed.get("signature"), str) and \
-                    hmac.compare_digest(self._witness_signature(witnessed), witnessed["signature"])
-            except (KeyError, TypeError, ValueError):
-                signature_ok = False
-            size_ok = isinstance(size, int) and not isinstance(size, bool) and size > 0
-            in_place = size_ok and len(rows) >= size and rows[size - 1]["entry_hash"] == head_hash
+            signature_ok = self._witness_authenticated(business_id, witnessed)
+            size_ok = type(size) is int and size >= 0
+            in_place = size_ok and len(rows) >= size and (rows[size - 1]["entry_hash"] if size else "0" * 64) == head_hash
+            if signature_ok and marker:
+                if marker[0].startswith("{"):
+                    recorded = json.loads(marker[0])
+                    in_place = in_place and size >= recorded["size"] and (size != recorded["size"] or head_hash == recorded["head_hash"])
+                else:
+                    in_place = in_place and cosigned_at >= marker[0]
             witness.update({"size": size, "head_hash": head_hash, "cosigned_at": cosigned_at,
                             "signature_valid": signature_ok, "consistent": signature_ok and in_place})
             problems = []
@@ -398,7 +462,7 @@ class Store(EventStoreMixin):
             if problems:
                 valid = False
                 witness["problem"] = " ".join(problems)
-        elif expected_witness:
+        elif marker or witness_error == "unreadable":
             valid = False
             witness.update({"signature_valid": False, "consistent": False,
                             "problem": "The previously recorded witness is missing; the witness file may have been deleted or is unreadable."})
@@ -1600,6 +1664,12 @@ class Store(EventStoreMixin):
                        promises=snapshot["state"]["promises"], lookahead_days=policy["lookahead_days"])
 
     def execute(self, business_id, mandate_id, idempotency_key, operator, actor):
+        receipt = self._execute_once(business_id, mandate_id, idempotency_key, operator, actor)
+        if not receipt.get("witness", {}).get("cosigned"):
+            receipt["witness"] = self.witness_cosign(business_id, receipt["receipt_id"])
+        return receipt
+
+    def _execute_once(self, business_id, mandate_id, idempotency_key, operator, actor):
         if not idempotency_ok(idempotency_key):
             raise ValidationError("idempotency_key must contain 1-120 safe characters.")
         with self.connect() as db:
@@ -1677,6 +1747,7 @@ class Store(EventStoreMixin):
             db.execute(f"UPDATE mandates SET status='invalidated' WHERE business_id=? AND kind='bundle' AND id<>? "
                        f"AND status IN {BUNDLE_LIVE}", (business_id, mandate_id))
             receipt = {"receipt_id": uuid.uuid4().hex, "status": "executed", "business_id": business_id,
+                       "witness": {"cosigned": False, "status": "pending"},
                        "currency": snapshot["business"]["currency"],
                        "mandate_id": mandate_id, "mandate_signature": document["signature"], "plan_id": document["plan_id"],
                        "bundle_id": document["bundle_id"], "idempotency_key": idempotency_key,
@@ -1699,7 +1770,6 @@ class Store(EventStoreMixin):
                                                                       "state_before", "state_after", "executed_by", "risk", "approvals")}))
             db.execute("INSERT INTO executions(id,business_id,mandate_id,idempotency_key,receipt_json,created_at) VALUES (?,?,?,?,?,?)",
                        (receipt["receipt_id"], business_id, mandate_id, idempotency_key, canonical_json(receipt), utc_now()))
-        receipt["witness"] = self.witness_cosign(business_id)
         return receipt
 
     def send_reminder(self, business_id, action, reply, operator, actor, standing_mandate_id=None):
