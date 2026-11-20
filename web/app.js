@@ -37,6 +37,7 @@ const VIEWS = {
   assistant: ["Ask Tideway", "Ask in বাংলা or English; answers come from your own numbers, never guesses"],
   shield: ["Scam check", "Check a bKash, Nagad or Rocket message for fraud before you act on it"],
   inbox: ["Add from SMS", "Paste a message; Tideway drafts the record; nothing is saved until you confirm"],
+  learn: ["Money lessons", "Six one-minute lessons on running your business's money, with your own numbers"],
   whatif: ["What if…?", "Try a late payment or a big expense and see the effect; nothing is saved"],
   records: ["Records", "Every invoice, bill and payment behind the numbers"],
   team: ["Team", "Who can see and act for this business, pending invites and your plan"],
@@ -52,6 +53,7 @@ const VIEWS_BN = {
   rescue: ["টাকার ঘাটতি মেটান", "সবচেয়ে কম খরচের নিরাপদ সমাধান; মানুষ অনুমোদন করে; পিন ছাড়া কিছু হয় না"],
   assistant: ["প্রশ্ন করুন", "বাংলা বা ইংরেজিতে প্রশ্ন করুন; উত্তর আসে আপনার নিজের হিসাব থেকে"],
   shield: ["প্রতারণা যাচাই", "কিছু করার আগে বিকাশ, নগদ বা রকেটের মেসেজ যাচাই করুন"],
+  learn: ["টাকার পাঠ", "আপনার নিজের হিসাব দিয়ে ব্যবসার টাকা সামলানোর ছয়টি ছোট পাঠ"],
   inbox: ["এসএমএস থেকে হিসাব", "মেসেজ পেস্ট করুন; টাইডওয়ে হিসাব লিখে দেবে; আপনি নিশ্চিত না করা পর্যন্ত কিছু সংরক্ষণ হয় না"],
   whatif: ["যদি এমন হয়?", "দেরিতে পেমেন্ট বা বড় খরচ ধরে দেখুন; কিছু সংরক্ষণ হয় না"],
   records: ["হিসাবের খাতা", "সব চালান, বিল ও লেনদেন"],
@@ -564,7 +566,7 @@ function render() {
   const renderers = {home: () => window.TidewayHome.render(), overview: renderOverview, rescue: renderRescue, assistant: renderAssistant, inbox: renderInbox, whatif: renderWhatIf,
     records: renderRecords, team: renderTeam, security: renderSecurity, evidence: renderEvidence,
     lab: () => window.TidewayLab.render(), treasury: () => window.TidewayTreasury.render(),
-    portfolio: () => window.TidewayPortfolio.render(), shield: () => window.TidewayShield.render()};
+    portfolio: () => window.TidewayPortfolio.render(), shield: () => window.TidewayShield.render(), learn: () => window.TidewayLearn.render()};
   $("#fx-note").hidden = !state.displayCurrency || state.displayCurrency === currency();
   $("#fx-note").textContent=`You view and enter amounts in ${displayCurrency()}. Converted values (≈) use illustrative fixed rates. Entries are converted to the ${currency()} ledger; signed source documents retain their original units.`;
   const entering = playEntrance(lastScene.split("|")[1]);
@@ -591,6 +593,7 @@ window.TidewayLab.bind(render);
 window.TidewayTreasury.bind(render);
 window.TidewayShield.bind(render);
 window.TidewayHome.bind(render);
+window.TidewayLearn.bind(render);
 window.TidewayPortfolio.bind(render);
 window.TidewayOwner.bind(render);
 
@@ -899,6 +902,50 @@ function actionTerms(action) {
   return "";
 }
 
+// ---- customer and supplier messages in বাংলা --------------------------------------------------------------
+// Written in the browser from the same fields as the English message (name, amount, invoice, dates), for the
+// owner to copy into SMS or WhatsApp. Display only: the signed plan and the sandbox message stay unchanged.
+const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
+const BN_MONTH_NAMES = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
+const bnDigits = (value) => String(value).replace(/[0-9]/g, (digit) => BN_DIGITS[digit]);
+function bnDate(value) {
+  if (!value) return "";
+  const d = new Date(`${String(value).slice(0, 10)}T12:00:00Z`);
+  return `${bnDigits(d.getUTCDate())} ${BN_MONTH_NAMES[d.getUTCMonth()]}`;
+}
+function bnAmount(minor, code) {
+  if (!isNum(minor)) return "";
+  if ((code || currency()) !== "BDT") return money(minor, code);
+  return `${bnDigits((minor / 100).toLocaleString("en-IN", {maximumFractionDigits: 2}))} টাকা`;
+}
+function bnMessage(item) {
+  const biz = state.dashboard?.business?.name || "";
+  const hello = `আসসালামু আলাইকুম ${item.counterparty}, ${biz} থেকে বলছি।`;
+  if (item.type === "collection_reminder") {
+    const opener = {friendly: "একটু মনে করিয়ে দিচ্ছি", polite: "বিনীতভাবে মনে করিয়ে দিচ্ছি", firm: "জরুরি ভিত্তিতে মনে করিয়ে দিচ্ছি"}[item.tone] || "বিনীতভাবে মনে করিয়ে দিচ্ছি";
+    return `${hello} ${opener}: চালান ${item.record_id}-এর ${bnAmount(item.amount_minor, item.currency)} পরিশোধের তারিখ ${bnDate(item.to_date)}। কবে দিতে পারবেন জানালে উপকার হবে।`
+      + (item.grade === "D" ? " কোনো সমস্যা থাকলে কিস্তিতে দেওয়ার ব্যবস্থাও করা যায়।" : "") + " ধন্যবাদ।";
+  }
+  if (item.type === "supplier_deferral") {
+    return `${hello} বিল ${item.record_id}-এর ${bnAmount(item.amount_minor, item.currency)} কি ${bnDate(item.from_date)}-এর বদলে ${bnDate(item.to_date)} তারিখে দিতে পারি? বিলের বাকি অংশ নির্ধারিত সময়েই দেব। রাজি থাকলে জানাবেন, অথবা অন্য শর্ত বলবেন। ধন্যবাদ।`;
+  }
+  if (item.type === "early_payment_offer") {
+    const discount = isNum(item.discount_bps) ? bnDigits(String(item.discount_bps / 100)) : "";
+    return `${hello} চালান ${item.record_id} (${bnAmount(item.face_minor, item.currency)}) যদি ${bnDate(item.to_date)} তারিখের মধ্যে পরিশোধ করেন, তাহলে ${bnAmount(item.amount_minor, item.currency)} পেলেই পুরো পরিশোধ ধরে নেব (${discount}% আগাম পরিশোধ ছাড়)। ধন্যবাদ।`;
+  }
+  return "";
+}
+// The message to show and copy: Bangla when the app is in বাংলা (English kept under a fold), English otherwise.
+function messageHtml(item) {
+  const english = moneyProse(item.message || "");
+  const bn = state.lang === "bn" ? bnMessage(item) : "";
+  const text = bn || english;
+  if (!text) return "";
+  return `<div class="message-preview" ${bn ? 'lang="bn"' : ""}>${esc(text)}</div>
+    <div class="message-tools"><button type="button" class="button small ghost" data-action="copy-message" data-text="${esc(text)}">${icon("records")}Copy message</button>
+    ${bn && english ? `<details class="small"><summary>English version</summary><div class="message-preview" lang="en">${esc(english)}</div></details>` : ""}</div>`;
+}
+
 function actionCard(action) {
   const kind = action.type === "supplier_deferral" ? "Supplier deferral" : action.type === "early_payment_offer" ? "Early-payment offer" : action.type;
   const provenance = Object.entries(action.provenance || {}).map(([field, source]) => `<span title="${esc(source)}">${icon("check")} ${esc(field)} ← ${esc(source.split(":")[0])}</span>`).join("");
@@ -906,7 +953,7 @@ function actionCard(action) {
     <div class="terms">${actionTerms(action)}</div>
     ${provenance ? `<div class="provenance" aria-label="Where each value comes from">${provenance}</div>` : ""}
     ${isNum(action.shortfall_without_minor) ? `<p class="small muted">Without this action the plan is ${action.shortfall_without_minor > 0 ? `still ${money(action.shortfall_without_minor)} short` : "still safe (it reduces risk)"}.</p>` : ""}
-    <details><summary>Message the agent would send (sandbox only)</summary><div class="message-preview">${esc(moneyProse(action.message))}</div></details></div>`;
+    <details><summary>Message the agent would send (sandbox only)</summary>${messageHtml(action)}</details></div>`;
 }
 
 function bundleCard(plan, bundle, index) {
@@ -1091,7 +1138,7 @@ function renderRescue() {
     if ((plan.reminders || []).length) {
       parts.push(`<section class="card section-gap"><div class="card-head"><div><h3>Collection reminders, ranked by risk to the plan</h3><p>Zero-cash messages. A reply is a promise to pay: tracked, never counted as cash.${policy.autonomy_level === "delegate" ? " Under delegated autonomy the agent may send these alone (5 a day)." : ""}</p></div></div>
         ${plan.reminders.map((item) => { const sent = (d.messages || []).find((message) => message.record_id === item.record_id); return `<div class="action-card"><div class="row between"><strong>${esc(item.counterparty)} · ${money(item.amount_minor)} · tone: ${esc(item.tone)}</strong>${sent ? `<span class="pill ok">sent ${sent.human_present ? "by a person" : "by the agent (standing mandate)"}</span>` : canApprove() ? `<button class="button small ghost" data-action="remind" data-id="${esc(item.action_id)}">${icon("send")}Send in sandbox</button>` : ""}</div>
-          ${isNum(item.late_risk) ? `<span class="small muted">Arrives after the first breach in ${pct(item.late_risk)} of breaching futures.</span>` : ""}<div class="message-preview">${esc(moneyProse(item.message))}</div>${sent?.reply ? `<div class="chat-bubble theirs">${esc(moneyProse(sent.reply.message))}<small>${esc(sent.reply.note || "")}</small></div>` : ""}</div>`; }).join("")}</section>`);
+          ${isNum(item.late_risk) ? `<span class="small muted">Arrives after the first breach in ${pct(item.late_risk)} of breaching futures.</span>` : ""}${messageHtml(item)}${sent?.reply ? `<div class="chat-bubble theirs">${esc(moneyProse(sent.reply.message))}<small>${esc(sent.reply.note || "")}</small></div>` : ""}</div>`; }).join("")}</section>`);
     }
   } else if (!(d.mandates || []).length) {
     const message = !latest ? "No current proposal for this target date. Run the rescue agent to create one."
@@ -1205,6 +1252,55 @@ function copilotHtml(c) {
     <p class="hint">${esc(c.model_identity?.label || c.model_identity?.model || "Local model")} selected the calls. Financial figures and the decision summary come from deterministic tools.</p></div></div>`;
 }
 
+// ---- speak a question (the browser's own speech recognition, in বাংলা or English) -------------------------
+// Chrome and Edge send the audio to their speech service to turn it into text; the note under the box says so.
+// The words land in the question box for the owner to check; nothing is sent to Tideway until they press Ask.
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let voice = null;
+function voiceButtonHtml() {
+  if (!SpeechRec) return "";
+  const label = voice ? "Stop listening" : "Speak your question";
+  return `<button type="button" class="button ghost voice-button ${voice ? "on" : ""}" data-action="voice" aria-pressed="${voice ? "true" : "false"}" aria-label="${label}" title="${label}">${icon("mic")}</button>`;
+}
+function voiceNoteHtml() {
+  if (!SpeechRec) return "";
+  const bn = state.lang === "bn";
+  return voice
+    ? `<p class="hint voice-note on" role="status" lang="${bn ? "bn" : "en"}">${bn ? "শুনছি… বাংলায় বলুন, তারপর লেখাটা মিলিয়ে নিয়ে প্রশ্ন বোতাম চাপুন।" : "Listening… speak in English, then check the words and press Ask."}</p>`
+    : `<p class="hint voice-note" lang="${bn ? "bn" : "en"}">${bn ? "মাইক্রোফোনে চাপ দিয়ে বাংলায় প্রশ্ন বলুন। আপনার ব্রাউজারের ভয়েস সেবা কথাকে লেখায় বদলে দেয়।" : "Tap the microphone to speak your question in English. Your browser's speech service turns it into text."}</p>`;
+}
+function toggleVoice() {
+  if (!SpeechRec) return;
+  if (voice) { voice.stop(); return; }
+  const rec = new SpeechRec();
+  rec.lang = state.lang === "bn" ? "bn-BD" : "en-US";
+  rec.interimResults = true;
+  rec.maxAlternatives = 1;
+  rec.onresult = (event) => {
+    const text = Array.from(event.results).map((result) => result[0].transcript).join("").trim();
+    state.chatDraft = text;
+    const input = $("#chat-input");
+    if (input) input.value = text;
+  };
+  rec.onerror = (event) => {
+    const bn = state.lang === "bn";
+    toast(event.error === "not-allowed" || event.error === "service-not-allowed"
+      ? (bn ? "মাইক্রোফোন ব্যবহারের অনুমতি পাওয়া যায়নি। ব্রাউজারে অনুমতি দিন, অথবা প্রশ্নটি লিখুন।" : "Microphone access was refused. Allow it in the browser, or type your question.")
+      : event.error === "no-speech" ? (bn ? "কোনো কথা শোনা যায়নি। মাইক্রোফোনে চাপ দিয়ে আবার বলুন।" : "No speech heard. Tap the microphone and try again.")
+      : (bn ? "কথাকে লেখায় বদলানো গেল না। প্রশ্নটি লিখে দিন।" : "Could not turn speech into text. Please type your question."));
+  };
+  rec.onend = () => { voice = null; if (state.view === "assistant") { render(); $("#chat-input")?.focus(); } };
+  voice = rec;
+  try { rec.start(); } catch (_) { voice = null; }
+  render();
+}
+
+async function copyText(text) {
+  const bn = state.lang === "bn";
+  try { await navigator.clipboard.writeText(text); toast(bn ? "মেসেজ কপি হয়েছে। এসএমএস বা হোয়াটসঅ্যাপে পেস্ট করুন।" : "Message copied. Paste it into SMS or WhatsApp."); }
+  catch (_) { toast(bn ? "নিজে থেকে কপি করা গেল না। মেসেজের লেখা বেছে নিয়ে কপি করুন।" : "Could not copy automatically. Select the message text and copy it."); }
+}
+
 function renderAssistant() {
   const on = tidelmOn();
   if (!state.chat.length) state.chat.push({role: "agent", text: on
@@ -1220,7 +1316,7 @@ function renderAssistant() {
   return `<section class="grid split"><div class="card chat ${on ? "with-mode" : ""}">${mode}<div class="chat-log" id="chat-log" aria-live="polite">${state.chat.map((item, index) => item.pending
       ? `<div class="msg agent pending" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>${esc(item.role === "user" ? item.text : moneyProse(item.text))}</div>`
       : `<div class="msg ${item.role === "user" ? "user" : "agent"} ${item.unverified?.length || item.rejected ? "warn" : ""}">${esc(item.role === "user" ? item.text : moneyProse(item.text))}${item.trace?.length ? `<div class="trace">${item.trace.map((t) => `<span>${esc(t.tool)} · ${esc(t.permission)}</span>`).join("")}</div>` : ""}${item.copilot ? copilotHtml(item.copilot) : ""}${item.aiNudge && state.config.ai_configured && !state.aiConsent ? `<div class="ai-nudge"><button type="button" class="button small primary" data-action="ai-retry" data-prompt="${esc(item.question)}">${icon("spark")}Turn on AI and ask again</button></div>` : ""}${item.question && !item.rejected ? feedbackHtml(item, index) : ""}${index === state.chat.length - 1 && item.role !== "user" ? suggestionsHtml(item.suggestions || (index === 0 ? prompts.slice(0, 3) : [])) : ""}</div>`).join("")}</div>
-    ${aiSwitch}<p class="hint">Money in questions: include ${esc(displayCurrency())}, e.g. ${esc(displayCurrency())} 100. Dates, days and percentages keep their own units.</p><form id="chat-form" class="chat-form"><label class="sr-only" for="chat-input">Your question</label><input id="chat-input" value="${esc(state.chatDraft)}" maxlength="2000" placeholder="${on ? "Ask in any language…" : "Ask about payroll, risk, a what-if or a plan…"}" autocomplete="off" required><button class="button primary" type="submit">${icon("send")}Ask</button></form></div>
+    ${aiSwitch}<p class="hint">Money in questions: include ${esc(displayCurrency())}, e.g. ${esc(displayCurrency())} 100. Dates, days and percentages keep their own units.</p><form id="chat-form" class="chat-form"><label class="sr-only" for="chat-input">Your question</label><input id="chat-input" value="${esc(state.chatDraft)}" maxlength="2000" placeholder="${on ? "Ask in any language…" : "Ask about payroll, risk, a what-if or a plan…"}" autocomplete="off" required>${voiceButtonHtml()}<button class="button primary" type="submit">${icon("send")}Ask</button></form>${voiceNoteHtml()}</div>
     <div class="card">${on ? "" : `${tidelmStatusCard("Ask Tideway still works with the local tool agent.")}<div class="section-gap"></div>`}<h3>Try asking</h3><div class="chips">${prompts.map((prompt) => `<button class="chip" data-action="prompt" data-prompt="${esc(prompt)}">${esc(prompt)}</button>`).join("")}</div>
     ${consent ? `<div class="section-gap">${consent}</div>` : ""}
     ${feedbackSummaryHtml()}
@@ -1241,6 +1337,7 @@ async function askTideLM(text) {
 async function ask(message) {
   const text = String(message || "").trim();
   if (!text || state.busy) return;
+  if (voice) voice.stop();
   // Earlier turns only: the server appends the current message itself.
   const history = state.chat.slice(-8).map((item) => ({role: item.role === "user" ? "user" : "assistant", content: item.text}));
   const consent = Boolean(state.config.ai_configured && state.aiConsent);
@@ -1800,6 +1897,7 @@ document.addEventListener("click", async (event) => {
     if (data.action.startsWith("lab-")) { await window.TidewayLab.action(data.action.slice(4), data); return; }
     if (data.action.startsWith("treasury-")) { await window.TidewayTreasury.action(data.action.slice(9), data); return; }
     if (data.action.startsWith("portfolio-")) { await window.TidewayPortfolio.action(data.action.slice(10), data); return; }
+    if (data.action.startsWith("learn-")) { window.TidewayLearn.action(data.action.slice(6), data); return; }
     if (data.action.startsWith("home-")) { await window.TidewayHome.action(data.action.slice(5), data); return; }
     if (data.action.startsWith("shield-")) { await window.TidewayShield.action(data.action.slice(7), data); return; }
     switch (data.action) {
@@ -1830,6 +1928,8 @@ document.addEventListener("click", async (event) => {
       }
       case "prompt": await ask(data.prompt); break;
       case "ai-retry": setAi(true); await ask(data.prompt); break;
+      case "voice": toggleVoice(); break;
+      case "copy-message": copyText(data.text || ""); break;
       case "privacy-preview-chat": await window.TidewayLab.previewChat($("#chat-input").value); break;
       case "whatif-reset": state.whatif = freshWhatIf(); render(); break;
       case "demo-stale": {

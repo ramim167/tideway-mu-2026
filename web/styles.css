@@ -1582,6 +1582,7 @@ body[data-page="rescue"]    { --c1: #7c2d12; --c2: #ea580c; --c3: #fbbf24; --acc
 body[data-page="assistant"] { --c1: #3b0764; --c2: #7c3aed; --c3: #f472b6; --accent: #7c3aed; --accent-soft: #f4edfe; --accent-line: #ddccfb; }
 body[data-page="shield"]    { --c1: #4c0519; --c2: #be123c; --c3: #fb923c; --accent: #be123c; --accent-soft: #fdecef; --accent-line: #f8c4cf; }
 body[data-page="inbox"]     { --c1: #083344; --c2: #0e7490; --c3: #a3e635; --accent: #0e7490; --accent-soft: #e4f5f8; --accent-line: #b9e3ec; }
+body[data-page="learn"]     { --c1: #451a03; --c2: #b45309; --c3: #34d399; --accent: #b45309; --accent-soft: #fdf3e4; --accent-line: #f5d9ad; }
 body[data-page="whatif"]    { --c1: #1e1b4b; --c2: #4338ca; --c3: #38bdf8; --accent: #4338ca; --accent-soft: #ecebfd; --accent-line: #cfcdf7; }
 body[data-page="records"]   { --c1: #0f172a; --c2: #334155; --c3: #5eead4; --accent: #334155; --accent-soft: #eef2f6; --accent-line: #d2dae4; }
 body[data-page="team"]      { --c1: #831843; --c2: #e11d48; --c3: #fdba74; --accent: #be185d; --accent-soft: #fdedf3; --accent-line: #f6c6d8; }
@@ -1691,3 +1692,53 @@ th { background: var(--accent-soft); border-bottom-color: var(--accent-line); }
 .ai-switch input:focus-visible + .ai-switch-track { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ai-nudge { margin-top: 10px; }
 @media (prefers-reduced-motion: reduce) { .ai-switch-track, .ai-switch-track::after { transition: none; } }
+
+/* Money lessons */
+.learn-top p { margin: 0 0 10px; }
+.learn-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; font-weight: 700; color: var(--accent-dark); }
+.learn-meter { width: min(260px, 100%); height: 10px; flex: 1 1 160px; }
+.learn-meter-track { fill: var(--accent-soft); stroke: var(--accent-line); stroke-width: .6; }
+.learn-meter-fill { fill: var(--accent); }
+.learn-list { list-style: none; margin: 14px 0; padding: 0; display: grid; gap: 10px; }
+.learn-item { background: var(--surface, #fff); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.learn-item.open { border-color: var(--accent-line); box-shadow: 0 10px 30px -18px color-mix(in srgb, var(--accent) 60%, transparent); }
+.learn-head { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: none; border: 0; cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.learn-head:hover { background: var(--accent-soft); }
+.learn-num { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 800;
+  background: var(--accent-soft); color: var(--accent-dark); border: 1px solid var(--accent-line); }
+.learn-num.done { background: var(--accent); color: #fff; border-color: var(--accent); }
+.learn-num .icon { width: 16px; height: 16px; }
+.learn-title { flex: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.learn-chevron { font-size: 20px; font-weight: 700; color: var(--accent); }
+.learn-body { padding: 0 16px 16px 60px; display: grid; gap: 12px; }
+.learn-body p { margin: 0; }
+.learn-yours { display: flex; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--accent-soft); border: 1px solid var(--accent-line); }
+.learn-yours > .icon { flex: none; color: var(--accent); margin-top: 2px; }
+.learn-yours div { display: grid; gap: 2px; }
+.learn-quiz { display: grid; gap: 8px; }
+.learn-options { display: grid; gap: 8px; }
+.learn-option { text-align: left; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line-2, var(--line)); background: #fff; font: inherit; cursor: pointer; }
+.learn-option:hover:not(:disabled) { border-color: var(--accent); }
+.learn-option.right { border-color: #15803d; background: #e8f7ee; font-weight: 700; }
+.learn-option.wrong { border-color: #b91c1c; background: #fdecec; }
+.learn-option:disabled { cursor: default; color: inherit; }
+.learn-feedback { display: flex; gap: 10px; padding: 10px 12px; border-radius: 12px; }
+.learn-feedback div { display: grid; gap: 2px; }
+.learn-feedback.right { background: #e8f7ee; color: #14532d; }
+.learn-feedback.wrong { background: #fdecec; color: #7f1d1d; }
+.learn-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 640px) { .learn-body { padding-left: 16px; } }
+
+/* Speak your question */
+.chat-form:has(.voice-button) { grid-template-columns: minmax(0, 1fr) auto auto; }
+.voice-button { width: 46px; min-width: 46px; padding: 0; display: grid; place-items: center; border-radius: 999px; }
+.voice-button .icon { width: 20px; height: 20px; }
+.voice-button.on { background: var(--accent); color: #fff; border-color: var(--accent); animation: voice-pulse 1.4s ease-out infinite; }
+.voice-note { margin: 6px 0 0; }
+.voice-note.on { color: var(--accent-dark); font-weight: 700; }
+@keyframes voice-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); } 100% { box-shadow: 0 0 0 12px transparent; } }
+@media (prefers-reduced-motion: reduce) { .voice-button.on { animation: none; } }
+
+/* Copy-ready customer messages */
+.message-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
+.message-tools details summary { cursor: pointer; color: var(--muted); }

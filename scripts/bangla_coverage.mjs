@@ -113,6 +113,9 @@ try {
   await evaluate("document.querySelector('#approve-dialog').close(), true");
   await view("assistant"); await collect("assistant");
   await view("shield"); await click('[data-action="shield-sample"][data-sample="fakeCashIn"]'); await until("!!document.querySelector('.shield-result')", "shield result"); await collect("scam check (result)");
+  await view("learn"); await evaluate("localStorage.removeItem('tideway:lessons'), true");
+  await click('[data-action="learn-answer"][data-id="safety"][data-i="0"]'); await sleep(300); await collect("money lessons (wrong answer)");
+  await click('[data-action="learn-answer"][data-id="safety"][data-i="1"]'); await sleep(300); await collect("money lessons (right answer)");
   await view("inbox"); await click('[data-action="inbox-sample"][data-sample="injection"]'); await evaluate("document.querySelector('#inbox-form').requestSubmit(), true");
   await until("!state.busy && !!document.querySelector('#inbox-results .alert, #inbox-results .draft')", "inbox drafts", 200); await collect("inbox (drafts)");
   await view("whatif"); await evaluate("document.querySelector('#whatif-form').requestSubmit(), true"); await until("!state.busy", "what-if"); await sleep(600); await collect("what-if (result)");
