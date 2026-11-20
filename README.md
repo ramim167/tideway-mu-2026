@@ -179,6 +179,8 @@ docker build -t tideway:local . && docker run --rm -p 127.0.0.1:8787:8787 tidewa
 python run.py --no-demo --db data/empty.sqlite3                                         # empty workspace
 ```
 
+**Optional: free cloud AI through OpenRouter.** Not needed for anything above. Copy `.env.example` to `.env`, put your key from <https://openrouter.ai/keys> after `OPENROUTER_API_KEY=`, and restart. The default model `google/gemma-4-31b-it:free` costs nothing; change `OPENROUTER_MODEL` to any model whose name ends in `:free`. In **Ask Tideway**, tick the consent box to use it. Names are replaced with pseudonyms before anything is sent, the AI can only call read and propose tools, and every number it writes is checked against tool output. `.env` is git-ignored, so the key never reaches GitHub.
+
 ## Proof, not promises
 
 <img src="docs/media/stats.svg" alt="Tideway by the numbers" width="100%">

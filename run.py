@@ -17,7 +17,7 @@ def load_env():
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 key, value = line.split("=", 1)
-                if key.strip() in ("OPENAI_API_KEY", "OPENAI_MODEL", "TIDEWAY_HOST", "TIDEWAY_PORT",
+                if key.strip() in ("OPENAI_API_KEY", "OPENAI_MODEL", "OPENROUTER_API_KEY", "OPENROUTER_MODEL", "TIDEWAY_HOST", "TIDEWAY_PORT",
                                    "TIDEWAY_LOCAL_MODEL_URL", "TIDEWAY_LOCAL_TEXT_MODEL", "TIDEWAY_LOCAL_VISION_MODEL",
                                    "TIDEWAY_LOCAL_STRUCTURED_PLANS", "TIDEWAY_SEMANTIC_SCREENING", "TIDEWAY_DECISION_LAB"):
                     os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
@@ -36,9 +36,15 @@ if __name__ == "__main__":
     parser.add_argument("--db", default=str(ROOT / "data" / "tideway.sqlite3"))
     parser.add_argument("--no-demo", action="store_true", help="Start without the synthetic demo businesses")
     args = parser.parse_args()
+    # Optional cloud AI: OpenRouter (free :free models available) or OpenAI. Neither is needed for the app to work.
+    openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+    if openrouter_key:
+        from tideway.agent import OPENROUTER_DEFAULT_MODEL, request_openrouter
+        key, model, transport = openrouter_key, os.getenv("OPENROUTER_MODEL", "").strip() or OPENROUTER_DEFAULT_MODEL, request_openrouter
+    else:
+        key, model, transport = os.getenv("OPENAI_API_KEY", "").strip(), os.getenv("OPENAI_MODEL", "gpt-5-mini"), None
     try:
-        serve(args.db, args.port, os.getenv("OPENAI_API_KEY", "").strip(), os.getenv("OPENAI_MODEL", "gpt-5-mini"),
-              not args.no_demo, args.host)
+        serve(args.db, args.port, key, model, not args.no_demo, args.host, transport)
     except OSError as exc:
         if exc.errno != errno.EADDRINUSE:
             raise

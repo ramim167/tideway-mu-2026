@@ -724,8 +724,8 @@ def make_handler(app):
     return Handler
 
 
-def serve(db_path, port=8787, key="", model="gpt-5-mini", seed=True, host="127.0.0.1"):
-    app = Application(db_path, key, model, seed)
+def serve(db_path, port=8787, key="", model="gpt-5-mini", seed=True, host="127.0.0.1", transport=None):
+    app = Application(db_path, key, model, seed, transport)
     server = ThreadingHTTPServer((host, port), make_handler(app))
     model_status = app.tidelm.status()
     if model_status["available"] and model_status.get("backend") != "local-compatible":
@@ -743,8 +743,8 @@ def serve(db_path, port=8787, key="", model="gpt-5-mini", seed=True, host="127.0
     display_host = "127.0.0.1" if host in ("0.0.0.0", "::") else host
     print(f"Tideway is ready: http://{display_host}:{server.server_port}", flush=True)
     print("Demo sign-in (synthetic sandbox): owner Nadia PIN 2468 · accountant Imran PIN 1357 · viewer Guest PIN 0000", flush=True)
-    print("AI provider connected (consent required per message)." if key else
-          "Local agent mode (no network). Set OPENAI_API_KEY in .env to try the optional LLM mode.", flush=True)
+    print(f"AI provider connected: {model} (consent required per message)." if key else
+          "Local agent mode (no network). Set OPENROUTER_API_KEY (free models) or OPENAI_API_KEY in .env to try the optional LLM mode.", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

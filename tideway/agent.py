@@ -67,6 +67,75 @@ def request_openai(payload, key):
         raise ProviderError("The AI service could not be reached. The local agent still works.") from None
 
 
+# ---- OpenRouter (OpenAI-compatible chat completions) ---------------------------------------------
+# The agent speaks the Responses format; OpenRouter speaks chat completions. These two pure functions
+# translate in both directions so every guard (pseudonyms, allowed tools, number grounding, budgets)
+# stays exactly the same whichever provider answers.
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_DEFAULT_MODEL = "google/gemma-4-31b-it:free"
+
+
+def responses_to_chat(payload):
+    """A Responses-style payload -> an OpenAI chat-completions payload."""
+    messages = [{"role": "system", "content": payload.get("instructions", "")}]
+    for item in payload.get("input", []):
+        if item.get("type") == "function_call":
+            call = {"id": item.get("call_id"), "type": "function",
+                    "function": {"name": item.get("name"), "arguments": item.get("arguments") or "{}"}}
+            if messages[-1].get("role") == "assistant" and messages[-1].get("tool_calls") is not None:
+                messages[-1]["tool_calls"].append(call)
+            else:
+                messages.append({"role": "assistant", "content": None, "tool_calls": [call]})
+        elif item.get("type") == "function_call_output":
+            messages.append({"role": "tool", "tool_call_id": item.get("call_id"), "content": item.get("output", "")})
+        elif item.get("role") in ("user", "assistant"):
+            messages.append({"role": item["role"], "content": item.get("content", "")})
+    tools = [{"type": "function", "function": {"name": t["name"], "description": t.get("description", ""),
+                                               "parameters": t.get("parameters", {"type": "object", "properties": {}})}}
+             for t in payload.get("tools", [])]
+    chat = {"model": payload.get("model"), "messages": messages, "max_tokens": payload.get("max_output_tokens", 1500)}
+    if tools:
+        chat.update(tools=tools, tool_choice="auto", parallel_tool_calls=bool(payload.get("parallel_tool_calls", False)))
+    return chat
+
+
+def chat_to_responses(response):
+    """An OpenAI chat-completions response -> the Responses-style {"output": [...]} the agent reads."""
+    choices = response.get("choices") if isinstance(response, dict) else None
+    if not choices or not isinstance(choices[0], dict) or not isinstance(choices[0].get("message"), dict):
+        error = response.get("error") if isinstance(response, dict) else None
+        detail = error.get("message") if isinstance(error, dict) else None
+        raise ProviderError(f"The AI service returned no answer{': ' + str(detail)[:160] if detail else '.'}")
+    message = choices[0]["message"]
+    output = []
+    for call in message.get("tool_calls") or []:
+        function = call.get("function") or {}
+        output.append({"type": "function_call", "call_id": call.get("id"), "name": function.get("name"),
+                       "arguments": function.get("arguments") or "{}"})
+    if isinstance(message.get("content"), str) and message["content"].strip():
+        output.append({"type": "message", "content": [{"type": "output_text", "text": message["content"]}]})
+    return {"output": output}
+
+
+def request_openrouter(payload, key):
+    request = urllib.request.Request(OPENROUTER_URL, data=json.dumps(responses_to_chat(payload), ensure_ascii=False).encode(),
+                                     headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json",
+                                              "HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "Tideway"},
+                                     method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            raw = response.read(262145)
+            if len(raw) > 262144:
+                raise ProviderError("The AI response exceeded the 256 KiB limit.")
+            return chat_to_responses(json.loads(raw))
+    except urllib.error.HTTPError as exc:
+        hint = {401: "Check OPENROUTER_API_KEY in .env.", 402: "The OpenRouter account has no credit for this model; use a :free model.",
+                429: "The free model is rate-limited right now; wait a minute or choose another :free model."}.get(exc.code, "Check the key, model name and quota.")
+        raise ProviderError(f"OpenRouter returned HTTP {exc.code}. {hint}") from None
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
+        raise ProviderError("OpenRouter could not be reached. The local agent still works.") from None
+
+
 def _tool(name, description):
     return {"type": "function", "name": name, "description": description, "strict": True,
             "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False}}
