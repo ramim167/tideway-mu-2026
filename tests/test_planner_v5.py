@@ -21,6 +21,28 @@ class PlannerRiskCoverage(unittest.TestCase):
         snapshot = self.app.store.snapshot(business_id)
         return business_id, snapshot, self.app.store.derived(snapshot)
 
+    def test_discloses_records_outside_search_budget(self):
+        business_id, _, _ = self.business("H11")
+        with patch.object(planner, "MAX_GROUPS", 1):
+            plan = self.app.propose(business_id, None, "agent:test")
+        eligible = plan["search"]["eligible_records"]
+        self.assertGreater(eligible, 1)
+        self.assertEqual(plan["search"]["records_considered"], 1)
+        self.assertIn(f"1 of {eligible} eligible records", plan["explanation"])
+
+    def test_overdue_open_payroll_hits_opening_day_once(self):
+        from tideway.projection import project
+        business = {"business_id": "shop", "currency": "BDT", "opening_cash_minor": 100_000,
+                    "opening_date": "2026-10-02"}
+        bill = {"id": "wages", "priority": "payroll", "status": "open", "due_date": "2026-10-01",
+                "amount_minor": 150_000}
+        records = {"bills": [bill, {**bill, "id": "settled", "status": "paid"}], "transactions": [], "invoices": []}
+        result = project(business, {"reserve_floor_minor": 0}, records, "2026-10-03")
+        self.assertTrue(result["payroll_at_risk"])
+        self.assertEqual(result["closing_cash_minor"], -50_000)
+        event, = result["source_references"]
+        self.assertEqual((event["date"], event["overdue_since"]), ("2026-10-02", "2026-10-01"))
+
     def test_risk_diverse_shortlist_includes_plans_beyond_forty_cheapest(self):
         business_id, snapshot, _ = self.business("H11")
         select = planner._robust_candidates

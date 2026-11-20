@@ -23,7 +23,7 @@ Built by **The Last BrainCell** · Bangladesh University of Engineering and Tech
 
 > A profitable shop in Sylhet can still miss payroll. Customers pay late, suppliers want cash on time, and the gap lands on salary day. The owner finds out too late, then borrows from an informal lender at a painful rate. On the same day, a fake bKash "cash-in" SMS or a "sent by mistake, please send it back" call can wipe out a week's profit.
 
-Bangladesh's small businesses run on mobile money and trust, but they have no finance team. **Tideway is an AI financial copilot for them, with hard limits.** It forecasts the cash gap days ahead, predicts which customers will pay late, plans the cheapest safe rescue, checks suspicious bKash, Nagad and Rocket messages for fraud, and explains everything in **বাংলা** or English. Then it stops. **People approve** with a PIN, large amounts need **two people**, and only a **signed, expiring mandate** can execute, once, with proof.
+Bangladesh's small businesses run on mobile money and trust, but they have no finance team. **Tideway is an AI financial copilot for them, with hard limits.** It forecasts the cash gap days ahead, predicts which customers will pay late, compares the costs and risks of candidate rescue plans, checks suspicious bKash, Nagad and Rocket messages for fraud, and explains everything in **বাংলা** or English. Then it stops. **People approve** with a PIN, large amounts need **two people**, and only a **signed, expiring mandate** can execute, once, with proof.
 
 ## How Tideway answers the FinTech track
 
@@ -99,7 +99,7 @@ The assistant detects Bangla script and answers in Bangla, routing the question 
 
 - **Cash weather.** Exact daily cash projection in integer minor units; scheduled, likely and stress scenarios; 1,000 seeded simulations; a 14-day look-ahead so a deferral cannot hide a gap just past the target date.
 - **TidePay predictions.** Every open invoice gets a probability for each lateness band, learned from payment histories.
-- **Rescue plan.** An exact optimiser over supplier deferrals, early-payment discounts (priced as an annual rate) and zero-cash reminders. Simulated counterparties accept, counter-offer or refuse; a counter becomes a new proposal that needs fresh approval.
+- **Rescue plan.** The optimiser compares preset supplier deferrals and early-payment discounts across up to six eligible records, and proposes zero-cash reminders. Plans disclose when the search omits records. Simulated counterparties accept, counter-offer or refuse; a counter becomes a new proposal that needs fresh approval.
 - **Ask Tideway.** Plain-language questions in বাংলা, English, Banglish and five more languages, with the tool plan shown under every answer. Works with or without a language model installed.
 - **Zero-entry inbox.** Paste bank, card and mobile-money alerts (bKash, M-Pesa, UPI, Alipay, WeChat Pay, PayNow, GCash, Pix, Wise, SEPA and more); get draft records. Nothing is saved until a person confirms.
 - **What-if and Decision lab.** Find a plan's breaking point, stress accepted agreements, compare recovery options, replay a private capsule, inspect exactly what an optional cloud model would see, and negotiate terms that protect two businesses at once.

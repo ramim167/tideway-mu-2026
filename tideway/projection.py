@@ -89,6 +89,9 @@ def build_events(business, records, end_date, adjustments=(), invoice_dates=None
     events, excluded = [], []
 
     def add(day, effect, ref):
+        if day < opening and ref["kind"] in ("bill", "bill_deferred"):
+            ref = {**ref, "overdue_since": day}
+            day = opening
         ref = {**ref, "date": day, "effect_minor": effect}
         if opening <= day <= end_date:
             events.append(ref)

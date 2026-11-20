@@ -323,6 +323,7 @@ def plan_recovery(business, policy, records, target_date, *, accepted=(), promis
         if options:
             groups.append(options)
     groups.sort(key=lambda options: -max(option.get("face_minor", option["amount_minor"]) for option in options))
+    eligible_records = len(groups) + len(required)
     groups = groups[:max(0, MAX_GROUPS - len(required))]
     for option in required:
         option["deltas"] = ledger.deltas(option)
@@ -499,14 +500,19 @@ def plan_recovery(business, policy, records, target_date, *, accepted=(), promis
     open_invoices.sort(key=lambda row: (-(late_share.get(row["id"], 0) * row["amount_minor"]), -row["amount_minor"], row["id"]))
     reminders = [reminder_for(row, customer_profiles.get(row["customer"]), business_name, late_share.get(row["id"]))
                  for row in open_invoices[:3]]
+    considered = len(groups) + len(required)
+    explanation = explain(business, basis, basis_projection, bundles, financing, levers, action_needed)
+    if eligible_records > considered:
+        explanation += (f" Search covered {considered} of {eligible_records} eligible records. "
+                        "Other combinations may have different costs or feasibility.")
     return {"business_id": business["business_id"], "target_date": target_date, "currency": business["currency"],
             "basis": basis, "planning_horizon_end": end, "risk_target": RISK_TARGET,
             "baseline": summary(baseline), "basis_projection": summary(basis_projection),
             "gap_minor": gap, "action_needed": action_needed,
             "bundles": bundles, "single_option_checks": singles, "why_not": why_not, "levers": levers,
             "financing": financing, "reminders": reminders, "rejected": rejected,
-            "explanation": explain(business, basis, basis_projection, bundles, financing, levers, action_needed),
-            "search": {"records_considered": len(groups) + len(required), "combinations_evaluated": len(evaluated),
+            "explanation": explanation,
+            "search": {"eligible_records": eligible_records, "records_considered": considered, "combinations_evaluated": len(evaluated),
                        "robustness_checked": len(shortlist), "monte_carlo_runs_each": mc_runs,
                        "candidate_selection": screening,
                        "independent_finalists_checked": len(finalists), "validation_runs_each": validation_runs,
@@ -544,9 +550,9 @@ def explain(business, basis, basis_projection, bundles, financing, levers, actio
                      f"{best['counterparties']} counterpart{'y' if best['counterparties'] == 1 else 'ies'} must agree; "
                      f"{best['futures_short_of_20_after']} of 20 simulated futures still breach.")
         if not any(lever["kind"] == "single_action" for lever in levers):
-            lines.append("No single action is enough on its own, so the plan combines actions.")
+            lines.append("No evaluated single action is enough on its own, so the plan combines actions.")
     else:
-        lines.append(f"No safe combination exists within policy. The strongest leaves "
+        lines.append(f"No evaluated combination met the safety limits. The strongest leaves "
                      f"{money_text(bundles[0]['remaining_shortfall_minor'], currency)} uncovered; escalate to the owner.")
     cheapest = min((item for item in financing if item["feasible"]), key=lambda item: item["fee_minor"], default=None)
     if cheapest:
