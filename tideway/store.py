@@ -550,6 +550,16 @@ class Store(EventStoreMixin):
                               "WHERE m.operator_id=? ORDER BY b.rowid", (operator_id,)).fetchall()
         return [{**self._business_dict(row), "role": row["role"]} for row in rows]
 
+    def initialize_demo_memberships(self, business_id, operators):
+        # A current business always retains an owner. Only a fresh fixture or a
+        # legacy fixture predating the membership table needs initial members.
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            if db.execute("SELECT 1 FROM memberships WHERE business_id=?", (business_id,)).fetchone():
+                return
+            db.executemany("INSERT INTO memberships(business_id,operator_id,role,created_at) VALUES (?,?,?,?)",
+                           [(business_id, item["id"], item["role"], utc_now()) for item in operators])
+
     def ensure_membership(self, business_id, operator_id, role):
         with self.connect() as db:
             db.execute("INSERT OR IGNORE INTO memberships(business_id,operator_id,role,created_at) VALUES (?,?,?,?)",
@@ -679,6 +689,15 @@ class Store(EventStoreMixin):
             if row["role"] == "owner" and owners <= 1:
                 raise ValidationError("A business must keep at least one owner.")
             db.execute("DELETE FROM memberships WHERE business_id=? AND operator_id=?", (business_id, operator_id))
+            db.execute("DELETE FROM approvals WHERE business_id=? AND operator_id=?", (business_id, operator_id))
+            # An issued mandate carries its own copy of the consumed approvals.
+            # Rejoining later does not reactivate a previously revoked mandate.
+            for mandate in db.execute(f"SELECT id,document FROM mandates WHERE business_id=? AND status IN {BUNDLE_LIVE}",
+                                      (business_id,)).fetchall():
+                terms = json.loads(mandate["document"])
+                if terms.get("issued_by") == operator_id or any(
+                        vote["operator_id"] == operator_id for vote in terms.get("approvals", [])):
+                    db.execute("UPDATE mandates SET status='revoked' WHERE id=?", (mandate["id"],))
             return self._audit(db, business_id, "team.remove", f"operator:{owner['id']}", "human_approval",
                                {"operator_id": operator_id, "role": row["role"]})
 
@@ -1381,6 +1400,12 @@ class Store(EventStoreMixin):
                     db.execute("UPDATE mandates SET status='expired' WHERE id=?", (live["id"],))
                 else:
                     raise ValidationError("This plan already has a live mandate. Use it, or cancel it first.")
+            # A pending vote from an earlier database version or a changed role
+            # must not contribute to a mandate or prevent fresh approval.
+            db.execute("DELETE FROM approvals WHERE plan_id=? AND NOT EXISTS "
+                       "(SELECT 1 FROM memberships m WHERE m.business_id=approvals.business_id "
+                       "AND m.operator_id=approvals.operator_id AND m.role=approvals.role "
+                       "AND m.role IN ('owner','accountant') AND m.created_at<=approvals.created_at)", (plan_id,))
             if db.execute("SELECT 1 FROM approvals WHERE plan_id=? AND bundle_id<>?", (plan_id, bundle_id)).fetchone():
                 raise ValidationError("Another bundle of this plan is already being approved.")
             if db.execute("SELECT 1 FROM approvals WHERE plan_id=? AND bundle_id=? AND operator_id=?",
@@ -1589,6 +1614,10 @@ class Store(EventStoreMixin):
                     raise SecurityError("idempotency_conflict", "this key already belongs to a different mandate.")
                 return {**json.loads(prior["receipt_json"]), "replayed": True}
             _row, document = self._load_bundle_mandate(db, business_id, mandate_id)
+            for vote in document["approvals"]:
+                member = self._member_operator(db, business_id, {"id": vote["operator_id"]})
+                if member["role"] != vote["role"] or member["role"] not in APPROVER_ROLES:
+                    raise ValidationError("An approver's role has changed. Obtain fresh approvals.")
             snapshot = self._snapshot(db, business_id)
             derived = self.derived(snapshot)
             if snapshot["policy"]["agent_paused"]:

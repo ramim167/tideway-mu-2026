@@ -116,8 +116,7 @@ class Tideway:
         for fixture in fixtures():
             business_id = fixture["business"]["business_id"]
             if business_id in existing:
-                for item in OPERATORS:
-                    self.store.ensure_membership(business_id, item["id"], item["role"])
+                self.store.initialize_demo_memberships(business_id, OPERATORS)
 
     def signup(self, body):
         """A new workspace with sensible, editable safety defaults derived from the owner's own numbers."""
