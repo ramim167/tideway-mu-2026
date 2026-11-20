@@ -122,7 +122,12 @@ window.TidewayShield = (() => {
     check().catch((error) => toast(error.message));
   });
 
-  return {render, action, bind(renderer) { renderGlobal = renderer; }, resultHtml: (r) => {
+  function reset() {
+    text = ""; sender = ""; lang = "both";
+    invalidate();
+  }
+
+  return {render, action, reset, bind(renderer) { renderGlobal = renderer; }, resultHtml: (r) => {
     const saved = result, savedFailure = failure;
     result = r; failure = "";
     try { return resultHtml(); } finally { result = saved; failure = savedFailure; }

@@ -7,7 +7,7 @@ const freshInbox = () => ({text: "", photo: "", photoName: "", transcript: "", d
 const state = {
   config: null, operator: null, businessId: "", targetDate: "", view: "home", lang: savedLang(),
   dashboard: null, run: null, receipt: null, chat: [], audit: null, auditError: "", selftest: null, drill: null,
-  whatif: freshWhatIf(), demoDelay: null, demoRequest: null, inbox: freshInbox(), recordFilter: "all", recordQuery: "", aiConsent: savedAi(),
+  whatif: freshWhatIf(), demoDelay: null, demoRequest: null, inbox: freshInbox(), recordFilter: "all", recordQuery: "", aiConsent: false,
   busy: false, approving: null, displayCurrency: "", team: null, teamError: "", invite: null, speaking: false, ownerDetailed: false,
   policyDraft: {}, chatDraft: ""
 };
@@ -22,10 +22,8 @@ function setLanguage(next) {
   try { localStorage.setItem("tideway:lang", state.lang); } catch (_) { /* optional preference */ }
   if (state.dashboard) render(); else syncLanguage();
 }
-function savedAi() { try { return localStorage.getItem("tideway:ai") === "1"; } catch (_) { return false; } }
 function setAi(on) {
   state.aiConsent = Boolean(on);
-  try { localStorage.setItem("tideway:ai", state.aiConsent ? "1" : "0"); } catch (_) { /* optional preference */ }
   if (state.view === "assistant") render();
 }
 function savedLang() { try { return localStorage.getItem("tideway:lang") === "bn" ? "bn" : "en"; } catch (_) { return "en"; } }
@@ -286,15 +284,23 @@ function playEntrance(previousView) {
 
 const ROLE_PILL = {owner: "teal", accountant: "info", viewer: ""};
 
+function clearPrivateContext() {
+  window.TidewayShield.reset();
+  state.recordQuery = "";
+  state.recordFilter = "all";
+  state.aiConsent = false;
+}
+
 // Everything one operator saw or did in this tab; never shown to the next operator.
 function resetSessionState() {
+  clearPrivateContext();
   stopSpeaking();
   window.TidewayOwner.reset();
   window.TidewayLab.reset();
   window.TidewayTreasury.reset();
   window.TidewayPortfolio.reset();
   Object.assign(state, {view: "home", dashboard: null, run: null, receipt: null, chat: [], audit: null, auditError: "",
-    selftest: null, drill: null, whatif: freshWhatIf(), demoDelay: null, demoRequest: null, inbox: freshInbox(), aiConsent: savedAi(), approving: null,
+    selftest: null, drill: null, whatif: freshWhatIf(), demoDelay: null, demoRequest: null, inbox: freshInbox(), approving: null,
     team: null, teamError: "", invite: null, ownerDetailed: false, policyDraft: {}, chatDraft: "", displayCurrency: ""});
 }
 
@@ -430,7 +436,13 @@ async function joinTeam(event) {
 }
 
 async function logout() {
-  try { await api("/api/session/logout", {}); } catch (_error) { /* already signed out */ }
+  try {
+    const result = await api("/api/session/logout", {});
+    if (result?.operator !== null) throw new Error("Unexpected sign-out response.");
+  } catch (error) {
+    showError(new Error(`Sign-out was not confirmed. Retry before leaving this device. ${error.message}`));
+    return;
+  }
   state.operator = null;
   state.businessId = "";
   resetSessionState();
@@ -475,6 +487,7 @@ async function loadDashboard({businessId = state.businessId, targetDate = state.
   const dashboard = await api(`/api/dashboard?business_id=${encodeURIComponent(businessId)}&target_date=${encodeURIComponent(requested)}`);
   const target = dashboard.target_date || requested;
   if (businessId !== state.businessId) {
+    clearPrivateContext();
     stopSpeaking();
     Object.assign(state, {run: null, receipt: null, chat: [], selftest: null, drill: null, whatif: freshWhatIf(), inbox: freshInbox(),
       team: null, teamError: "", invite: null, policyDraft: {}, chatDraft: ""});
@@ -1310,7 +1323,7 @@ function renderAssistant() {
       : "Hi, I'm Tideway. Ask me whether payroll is safe, how risky the month looks, who to chase, a what-if such as \"what if Nila Traders pays 10 days late\", or ask me for a rescue plan. I can explain and propose; I can't approve or move money."});
   const prompts = on ? TIDELM_PROMPTS.map(p=>p.replace('on 50,000?',`on ${displayCurrency()} ${displayCurrency()===currency()?'50,000':'500'}?`)) : LOCAL_PROMPTS;
   const aiReady = !on && state.config.ai_configured;
-  const aiSwitch = aiReady ? `<div class="ai-switch-row"><label class="ai-switch"><input id="ai-consent" type="checkbox" role="switch" ${state.aiConsent ? "checked" : ""}><span class="ai-switch-track" aria-hidden="true"></span><span class="ai-switch-label">AI answers</span></label><span class="small muted">${state.aiConsent ? "On: questions go to the cloud AI with names hidden." : "Off: the offline assistant answers. Turn on for free-form questions."}</span><button type="button" class="button small ghost" data-action="privacy-preview-chat">See what is sent</button></div>` : "";
+  const aiSwitch = aiReady ? `<div class="ai-switch-row"><label class="ai-switch"><input id="ai-consent" type="checkbox" role="switch" ${state.aiConsent ? "checked" : ""}><span class="ai-switch-track" aria-hidden="true"></span><span class="ai-switch-label">AI answers</span></label><span class="small muted">${state.aiConsent ? "On for this question and recent chat history. Known counterparty names are hidden." : "Off: the offline assistant answers. Turn on to share this question and recent chat history."}</span><button type="button" class="button small ghost" data-action="privacy-preview-chat">See what is sent</button></div>` : "";
   const consent = on || aiReady ? "" : `<p class="hint">Local agent mode: answers come from deterministic tools, no network. An optional LLM mode is available when a key is configured.</p>`;
   const mode = on ? `<div class="row chat-mode"><span class="pill teal">${icon("spark")}${esc(tidelmLabel())}</span></div>` : "";
   return `<section class="grid split"><div class="card chat ${on ? "with-mode" : ""}">${mode}<div class="chat-log" id="chat-log" aria-live="polite">${state.chat.map((item, index) => item.pending
@@ -1341,6 +1354,8 @@ async function ask(message) {
   // Earlier turns only: the server appends the current message itself.
   const history = state.chat.slice(-8).map((item) => ({role: item.role === "user" ? "user" : "assistant", content: item.text}));
   const consent = Boolean(state.config.ai_configured && state.aiConsent);
+  state.aiConsent = false; // Consent covers this send only.
+  const businessId = state.businessId, actor = state.operator?.id;
   state.chatDraft="";
   state.chat.push({role: "user", text});
   const pending = {role: "agent", pending: true, text: tidelmOn() ? "TideLM is reading your question on this computer…" : "Checking your numbers…"};
@@ -1348,8 +1363,10 @@ async function ask(message) {
   render();
   const result = await act("Asking", async () => {
     const answer = tidelmOn() ? await askTideLM(text) : null;
-    return answer || {chat: await api("/api/chat", {business_id: state.businessId, target_date: state.targetDate, message: text, history, consent, input_currency: displayCurrency(), lang: state.lang === "bn" ? "bn" : "en"})};
+    if (state.businessId !== businessId || state.operator?.id !== actor) return null;
+    return answer || {chat: await api("/api/chat", {business_id: businessId, target_date: state.targetDate, message: text, history, consent, input_currency: displayCurrency(), lang: state.lang === "bn" ? "bn" : "en"})};
   });
+  if (!state.chat.includes(pending)) return;
   state.chat = state.chat.filter((item) => item !== pending);
   if (result?.copilot) {
     state.chat.push({role: "agent", text: result.copilot.text, copilot: result.copilot, suggestions: result.copilot.suggestions, question: text});
