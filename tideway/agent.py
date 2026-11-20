@@ -21,6 +21,7 @@ import time
 import urllib.error
 import urllib.request
 
+from .provider_http import open_provider_request
 from . import conversation, copilot, i18n
 from .domain import SecurityError, ValidationError, canonical_json, human_date, money_text
 from .projection import summary
@@ -56,7 +57,7 @@ def request_openai(payload, key):
                                      headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
                                      method="POST")
     try:
-        with urllib.request.urlopen(request, timeout=40) as response:
+        with open_provider_request(request, timeout=40) as response:
             raw = response.read(262145)
             if len(raw) > 262144:
                 raise ProviderError("The AI response exceeded the 256 KiB limit.")
@@ -132,7 +133,7 @@ def request_openrouter(payload, key):
                                                   "HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "Tideway"},
                                          method="POST")
         try:
-            with urllib.request.urlopen(request, timeout=60) as response:
+            with open_provider_request(request, timeout=60) as response:
                 raw = response.read(262145)
                 if len(raw) > 262144:
                     raise ProviderError("The AI response exceeded the 256 KiB limit.")

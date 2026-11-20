@@ -21,6 +21,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 
+from .provider_http import open_provider_request
 from .agent import OPENROUTER_DEFAULT_MODEL, OPENROUTER_URL, ProviderError, chat_to_responses, responses_to_chat
 
 KNOWN = {
@@ -87,7 +88,7 @@ def _post(provider, chat):
     if provider.name == "openrouter":
         headers.update({"HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "Tideway"})
     request = urllib.request.Request(provider.url, data=json.dumps(chat, ensure_ascii=False).encode(), headers=headers, method="POST")
-    with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
+    with open_provider_request(request, timeout=TIMEOUT_SECONDS) as response:
         raw = response.read(262145)
     if len(raw) > 262144:
         raise ProviderError("The AI response exceeded the 256 KiB limit.")

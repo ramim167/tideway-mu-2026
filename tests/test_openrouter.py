@@ -98,7 +98,7 @@ class Http(unittest.TestCase):
             seen["url"], seen["auth"], seen["body"] = request.full_url, request.get_header("Authorization"), json.loads(request.data)
             return Response(json.dumps({"choices": [{"message": {"content": "hello"}}]}).encode())
 
-        with mock.patch.object(agent_module.urllib.request, "urlopen", fake_urlopen):
+        with mock.patch.object(agent_module, "open_provider_request", fake_urlopen):
             out = request_openrouter(payload, "sk-or-test")
         self.assertEqual(seen["url"], "https://openrouter.ai/api/v1/chat/completions")
         self.assertEqual(seen["auth"], "Bearer sk-or-test")
@@ -108,7 +108,7 @@ class Http(unittest.TestCase):
         def rate_limited(request, timeout):
             raise urllib.error.HTTPError(request.full_url, 429, "Too Many Requests", {}, None)
 
-        with mock.patch.object(agent_module.urllib.request, "urlopen", rate_limited):
+        with mock.patch.object(agent_module, "open_provider_request", rate_limited):
             with self.assertRaises(ProviderError) as caught:
                 request_openrouter(payload, "sk-or-test")
         self.assertIn("rate-limited", str(caught.exception))
@@ -128,7 +128,7 @@ class Http(unittest.TestCase):
             return Response(json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode())
 
         payload = {"model": "busy:free, ready:free", "instructions": "S", "input": [{"role": "user", "content": "hi"}], "tools": []}
-        with mock.patch.object(agent_module.urllib.request, "urlopen", busy_then_ok):
+        with mock.patch.object(agent_module, "open_provider_request", busy_then_ok):
             out = request_openrouter(payload, "k")
         self.assertEqual(tried, ["busy:free", "ready:free"])
         self.assertEqual(out["output"][0]["content"][0]["text"], "ok")

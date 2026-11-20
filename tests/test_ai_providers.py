@@ -54,13 +54,28 @@ class Config(unittest.TestCase):
         self.assertNotIn("secret-groq-key", label([provider]))
 
 
+class RedirectPolicy(unittest.TestCase):
+    def test_only_same_origin_redirects_are_followed(self):
+        from urllib.error import HTTPError
+        from urllib.request import Request
+        from tideway.provider_http import SameOriginRedirect
+
+        handler = SameOriginRedirect()
+        request = Request("https://provider.example/v1", data=b"{}")
+        same = handler.redirect_request(request, None, 302, "", {}, "https://PROVIDER.example:443/v2")
+        self.assertEqual(same.full_url, "https://PROVIDER.example:443/v2")
+        for url in ("https://other.example/v2", "http://provider.example/v2", "https://provider.example:8888/v2"):
+            with self.subTest(url=url), self.assertRaises(HTTPError):
+                handler.redirect_request(request, None, 302, "", {}, url)
+
+
 class Fallback(unittest.TestCase):
     env = {"GEMINI_API_KEY": "gm-k", "GROQ_API_KEY": "gq-k", "OPENROUTER_API_KEY": "or-k", "OPENROUTER_MODEL": "a:free,b:free"}
 
     def run_with(self, outcomes):
         calls = []
         transport = make_transport(providers_from_env(self.env))
-        with mock.patch.object(ai_providers.urllib.request, "urlopen", scripted(outcomes, calls)):
+        with mock.patch.object(ai_providers, "open_provider_request", scripted(outcomes, calls)):
             try:
                 return transport(PAYLOAD), calls
             except ProviderError as exc:
@@ -88,7 +103,7 @@ class Fallback(unittest.TestCase):
                 calls.append(("generativelanguage.googleapis.com", "gemini-2.5-flash", None))
                 return Response(json.dumps({"choices": [{"message": {"content": "  "}}]}).encode())
             return base(request, timeout)
-        with mock.patch.object(ai_providers.urllib.request, "urlopen", urlopen):
+        with mock.patch.object(ai_providers, "open_provider_request", urlopen):
             out = make_transport(providers_from_env(self.env))(PAYLOAD)
         self.assertEqual(out["output"][0]["content"][0]["text"], "answer from api.groq.com llama-3.3-70b-versatile")
 
