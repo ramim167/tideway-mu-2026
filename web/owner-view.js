@@ -61,6 +61,7 @@ window.TidewayOwner = (() => {
       },
       "statuses": {
         "payroll_unfunded": "Payroll needs attention",
+        "buffer_shortfall_unknown_payroll": "Reserve shortfall and no upcoming payroll recorded",
         "buffer_shortfall": "Your cash buffer needs attention",
         "likely_path_holds": "The likely path holds your cash buffer",
         "no_payroll_identified": "Check your payroll records",
@@ -129,6 +130,7 @@ window.TidewayOwner = (() => {
       },
       "statuses": {
         "payroll_unfunded": "বেতনের টাকা জোগাড়ে নজর দিন",
+        "buffer_shortfall_unknown_payroll": "রিজার্ভে ঘাটতি আছে, আসন্ন বেতনের তথ্য নেই",
         "buffer_shortfall": "নগদের রিজার্ভে ঘাটতি আছে",
         "likely_path_holds": "সম্ভাব্য হিসাবে নগদের রিজার্ভ থাকছে",
         "no_payroll_identified": "বেতনের রেকর্ড যাচাই করুন",

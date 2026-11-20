@@ -262,12 +262,15 @@ def _scope(raw, business_id):
 from .screening import INJECTION_PATTERNS, PAYMENT_REVIEW_FLAGS, scan_text
 
 
-PAYROLL_WORDS = ("payroll", "salary", "salaries", "wage", "wages", "staff pay", "staff cost", "bonus")
+PAYROLL_PATTERN = re.compile(
+    r"\b(?:payroll|salar(?:y|ies)|wages?|staff\s+(?:pay|costs?)|bonus(?:es)?)\b"
+    r"|(?<![\u0980-\u09ff])(?:বেতন|মজুরি|মজুরী|বোনাস)(?:ের|র|াদি)?(?![\u0980-\u09ff])"
+)
 
 
 def is_payroll_text(*values) -> bool:
     text = " ".join(str(value or "") for value in values).casefold()
-    return any(word in text for word in PAYROLL_WORDS)
+    return bool(PAYROLL_PATTERN.search(text))
 
 
 # ---------------------------------------------------------------------------

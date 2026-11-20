@@ -13,6 +13,7 @@ window.TidewayHome = (() => {
       youOwe: "You owe suppliers", youOweNote: "Bills not paid yet",
       safety: "Safety money", safetyNote: "Cash you never want to go below",
       payroll_unfunded: ["Salary money will run short", "Salaries of {payroll} are due on {payday}. If nothing changes, your cash falls to {low} by {lowdate}. You need about {gap} more to stay safe."],
+      buffer_shortfall_unknown_payroll: ["Your safety money runs low, and payroll is unknown", "Cash dips below your reserve by {gap}. Add your salary date and amount to check payday."],
       buffer_shortfall: ["Salaries are covered, but your safety money runs low", "Your cash dips to {low} on {lowdate}, below the {safety} you want to keep aside. You need about {gap} more."],
       likely_path_holds: ["You can pay salaries", "Your cash stays above your safety money ({safety}) through {end}. Keep checking as customers pay."],
       no_payroll_identified: ["Cash looks fine, but no salary payment is recorded", "Add your salary date and amount so Tideway can check payday for you."],
@@ -51,6 +52,7 @@ window.TidewayHome = (() => {
       youOwe: "সরবরাহকারীদের দেনা", youOweNote: "এখনো পরিশোধ হয়নি",
       safety: "নিরাপত্তার টাকা", safetyNote: "এর নিচে নগদ নামতে দিতে চান না",
       payroll_unfunded: ["বেতনের টাকা কম পড়বে", "{payday} তারিখে {payroll} বেতন দিতে হবে। কিছু না করলে {lowdate}-এর মধ্যে নগদ নেমে যাবে {low}-এ। নিরাপদ থাকতে আরও প্রায় {gap} লাগবে।"],
+      buffer_shortfall_unknown_payroll: ["নগদ রিজার্ভে ঘাটতি আছে, বেতনের তথ্য নেই", "নগদ রিজার্ভের চেয়ে {gap} কম হবে। বেতন যাচাই করতে তারিখ ও পরিমাণ যোগ করুন।"],
       buffer_shortfall: ["বেতন দেওয়া যাবে, তবে নিরাপত্তার টাকা কমে যাবে", "{lowdate} তারিখে নগদ নেমে যাবে {low}-এ, যা আপনার {safety} নিরাপত্তার টাকার চেয়ে কম। আরও প্রায় {gap} লাগবে।"],
       likely_path_holds: ["বেতন দিতে পারবেন", "{end} পর্যন্ত নগদ টাকা নিরাপত্তার টাকার ({safety}) উপরে থাকবে। ক্রেতারা টাকা দিলে আবার দেখে নিন।"],
       no_payroll_identified: ["নগদ ঠিক আছে, কিন্তু বেতনের কোনো রেকর্ড নেই", "বেতনের তারিখ ও পরিমাণ যোগ করুন, তাহলে টাইডওয়ে বেতনের দিন যাচাই করতে পারবে।"],
@@ -83,7 +85,7 @@ window.TidewayHome = (() => {
     },
   };
   const BN_MONTHS = "জানু ফেব্রু মার্চ এপ্রি মে জুন জুলাই আগ সেপ্টে অক্টো নভে ডিসে".split(" ");
-  const TONE = {payroll_unfunded: "storm", buffer_shortfall: "unsettled", likely_path_holds: "clear", no_payroll_identified: "info", no_records: "info", historical_horizon: "info"};
+  const TONE = {payroll_unfunded: "storm", buffer_shortfall: "unsettled", buffer_shortfall_unknown_payroll: "unsettled", likely_path_holds: "clear", no_payroll_identified: "info", no_records: "info", historical_horizon: "info"};
   const ICON = {storm: "alert", unsettled: "alert", clear: "check", info: "spark"};
   const TASK_ICON = {rescue: "rescue", shield: "shield", assistant: "chat", inbox: "inbox"};
   const CHIP = {en: {storm: "Act now", unsettled: "Watch out", clear: "All good", info: "Next step"},

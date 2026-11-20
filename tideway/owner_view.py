@@ -141,6 +141,8 @@ def build_report(snapshot, facts, expense_minor=0, expense_date=None):
     thin = sorted(name for name in customers if facts["derived"]["profiles"]["customers"].get(name, {}).get("settled_invoices", 0) < 3)
     quarantined = sum(bool(r["risk_flags"]) for rows in records.values() for r in rows)
     status = "historical_horizon" if not base_window["available"] else "payroll_unfunded" if base_window["payroll_unfunded"] else "buffer_shortfall" if base_window["reserve_shortfall_minor"] else "no_payroll_identified" if not payroll else "likely_path_holds"
+    if status == "buffer_shortfall" and not payroll:
+        status = "buffer_shortfall_unknown_payroll"
     if not any(records.values()):
         status = "no_records"
     return {"version": "owner-view-v1", "business_id": business["business_id"], "business_name": business["name"], "currency": business["currency"],

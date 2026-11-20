@@ -2,7 +2,7 @@
 import unittest
 from unittest.mock import patch
 
-from tideway.domain import ValidationError
+from tideway.domain import ValidationError, is_payroll_text
 from tideway.owner_view import build_report, brief_html
 from tideway.projection import project
 from tideway.server import Application
@@ -97,6 +97,22 @@ class CashExplanationTests(unittest.TestCase):
         self.assertEqual(r["dependency_coverage"], dict(customers_total=12,tested=10,complete=False))
         self.assertEqual(len(r["data_checks"]["customers_under_three_settlements"]),12)
         self.assertNotIn("confidence",r)
+
+    def test_payroll_words_in_both_languages(self):
+        for label in ("মাসিক বেতন", "কর্মীদের মজুরি", "বোনাস", "staff pay", "WAGES"):
+            with self.subTest(label=label):
+                self.assertTrue(is_payroll_text(label))
+        for label in ("Sewage treatment", "salaryman", "repayroll"):
+            self.assertFalse(is_payroll_text(label))
+
+    def test_unknown_payroll_and_reserve_shortfall_are_both_reported(self):
+        s = example()
+        s["records"]["bills"] = []
+        s["policy"]["reserve_floor_minor"] = 20000
+        report = build_report(s, facts(s))
+        self.assertEqual(report["status"], "buffer_shortfall_unknown_payroll")
+        self.assertFalse(report["payroll"]["identified"])
+        self.assertGreater(report["likely"]["reserve_shortfall_minor"], 0)
 
     def test_payroll_is_not_claimed_for_missing_records(self):
         s = example()
