@@ -1664,3 +1664,15 @@ th { background: var(--accent-soft); border-bottom-color: var(--accent-line); }
 .home-task:first-child .home-task-icon { color: #7c2d12; background: #fff; }
 .home-task:first-child .home-task-go { color: #fde68a; }
 .home-task:first-child .home-task-text span { color: rgba(255, 247, 237, .9); }
+
+/* ==== One language at a time: English | বাংলা switch ================================ */
+.nav-sub, .tab-sub { display: none !important; }
+.lang-switch { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .28); }
+.lang-option { min-height: 38px; min-width: 76px; padding: 6px 14px; border: 0; border-radius: 999px; color: #fff; background: transparent; font-size: 14px; font-weight: 700; transition: background-color var(--dur-2), color var(--dur-2); }
+.lang-option[lang="bn"] { font-family: "Nirmala UI", "Noto Sans Bengali", "Vrinda", sans-serif; }
+.lang-option:hover { background: rgba(255, 255, 255, .14); }
+.lang-option[aria-pressed="true"] { color: var(--c1, #0b1c16); background: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, .18); }
+.land-top .lang-switch { margin-right: 6px; }
+@media (max-width: 860px) { .topbar .lang-switch { align-self: flex-start; } }
+/* Scam check result follows the app language instead of stacking both */
+.shield-verdict .bn-line { display: none; }

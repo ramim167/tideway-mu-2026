@@ -49,3 +49,16 @@ Older evidence files under `evidence/` describe v15 runs and keep their original
   for Ask Tideway, crimson and orange for Scam check, rust and amber for Fix a cash gap, midnight blue and cyan for
   Cash forecast). It runs through the header band, quick-start panel, active menu item, buttons and accents. White
   text on every button colour is 5.2:1 to 10.4:1.
+
+## Full বাংলা interface
+
+- **Two clear options, one language at a time:** an English | বাংলা switch in the app header and on the landing page.
+  The menu, headers and every page show only the chosen language.
+- **Every page in Bangla:** a translation layer (`web/i18n-bn.js`, dictionary `web/i18n-bn-dict.js`, 1,383 entries)
+  converts all interface text (buttons, labels, headings, tables, dialogs, dropdowns, placeholders, the tour and
+  glossary) and restores English when switched back. Business data (names, amounts, dates, record text) is never
+  translated; numbers, amounts, dates and ledger names inside sentences pass through as placeholders.
+- **Checked automatically:** `node scripts/bangla_coverage.mjs --strict` walks 33 page states in Bangla (landing,
+  Home, forecast, rescue plan, approval dialog, assistant, Scam check, Inbox drafts, What if, Records, Team, every
+  Decision lab and Bank reports tab, Lender radar, Safety self-test, Audit drill, a fraud-blocked business and a
+  viewer) and fails if any interface text is still English. Current result: 0.

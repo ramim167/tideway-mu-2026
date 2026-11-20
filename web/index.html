@@ -16,6 +16,8 @@
   <script src="/portfolio.js" defer></script>
   <script src="/shield.js" defer></script>
   <script src="/home.js" defer></script>
+  <script src="/i18n-bn-dict.js" defer></script>
+  <script src="/i18n-bn.js" defer></script>
   <script src="/decision-review.js" defer></script>
   <script src="/owner-view.js" defer></script>
   <script src="/app.js" defer></script>
@@ -55,6 +57,7 @@
       <a class="land-brand" href="#top" aria-label="Tideway home"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-wave"/></svg></span><span>Tideway</span></a>
       <nav class="land-nav" aria-label="Landing page">
         <a href="#how">How it works</a><a href="#plans">Plans</a><a href="#join">Join your team</a><a href="#signin">Sign in</a>
+        <div class="lang-switch" role="group" aria-label="Language / ভাষা"><button type="button" class="lang-option" data-action="lang" data-lang="en" lang="en" aria-pressed="true">English</button><button type="button" class="lang-option" data-action="lang" data-lang="bn" lang="bn" aria-pressed="false">বাংলা</button></div>
         <a class="button primary small" href="#signup">Start free</a>
       </nav>
     </header>
@@ -206,7 +209,7 @@
         <div class="topbar-controls">
           <label class="control-field"><span id="label-currency">Currency</span><select id="display-currency" aria-label="Display currency"></select></label>
           <label class="control-field"><span id="label-plan">Plan up to</span><input id="target-date" type="date" aria-label="Target date"></label>
-          <button class="button ghost lang-toggle" data-action="lang" id="lang-toggle" lang="bn" title="বাংলায় দেখুন / Switch to Bangla">বাংলা</button>
+          <div class="lang-switch" role="group" aria-label="Language / ভাষা"><button type="button" class="lang-option" data-action="lang" data-lang="en" lang="en" aria-pressed="true">English</button><button type="button" class="lang-option" data-action="lang" data-lang="bn" lang="bn" aria-pressed="false">বাংলা</button></div>
           <button class="button ghost" data-action="refresh" title="Reload"><svg class="icon"><use href="#i-refresh"/></svg></button>
         </div>
       </header>

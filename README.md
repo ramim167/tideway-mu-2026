@@ -57,7 +57,7 @@ The one-page mapping to the hackathon's rules and judging criteria is in [docs/M
 <table>
 <tr>
 <td width="50%" valign="top"><b>Home: one plain answer first</b><br><img src="docs/media/ui-home.webp" alt="Home screen: Salary money will run short, with four key numbers, four task cards and a day-by-day cash chart" width="100%"><br><sub>Can I pay salaries? How low will cash go? Who owes me? What should I do? Answered at a glance, with one button to fix it.</sub></td>
-<td width="50%" valign="top"><b>The whole app in বাংলা</b><br><img src="docs/media/ui-home-bangla.webp" alt="Home screen in Bangla: বেতনের টাকা কম পড়বে" width="100%"><br><sub>One switch turns the pages, help and assistant into Bangla. Every figure comes from the same calculations as English.</sub></td>
+<td width="50%" valign="top"><b>The whole app in বাংলা</b><br><img src="docs/media/ui-home-bangla.webp" alt="Home screen in Bangla: বেতনের টাকা কম পড়বে" width="100%"><br><sub>An English | বাংলা switch turns every page into Bangla, checked automatically across 33 page states (<code>node scripts/bangla_coverage.mjs --strict</code>).</sub></td>
 </tr>
 <tr>
 <td valign="top"><b>Scam check</b><br><img src="docs/media/ui-scam-check.webp" alt="Scam check flags a fake bKash cash-in SMS sent from a personal number" width="100%"><br><sub>A fake cash-in SMS from an 01X number is flagged, with the reason and safe next steps in English and বাংলা.</sub></td>

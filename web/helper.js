@@ -296,18 +296,20 @@ window.TidewayHelp = (() => {
 
   // ---- Guided tour of the navigation --------------------------------------
   const TOUR = [
-    ["overview", "Cash weather", "Start here every morning: will cash last until the day that matters?"],
-    ["rescue", "Rescue plan", "If a gap is coming, Tideway proposes fixes. People approve with a PIN."],
-    ["assistant", "Ask Tideway", "Ask anything in plain words and your own language."],
-    ["inbox", "Inbox", "Paste payment alerts and messages; Tideway drafts the records for you."],
-    ["whatif", "What-if", "Try scenarios safely. Nothing is saved."],
-    ["lab", "Decision lab", "Stress-test a plan before trusting it."],
-    ["treasury", "Treasury", "13-week cash plan, health score, duplicate-payment scan and a signed credit passport."],
-    ["portfolio", "Portfolio radar", "For lenders: early warning across many small-business clients."],
+    ["home", "Home", "Start here: can you pay salaries, how low will cash go, and what should you do next?"],
+    ["overview", "Cash forecast", "Will cash last until the day that matters? Day by day, with the odds of running short."],
+    ["rescue", "Fix a cash gap", "If a gap is coming, Tideway proposes fixes. People approve with a PIN."],
+    ["assistant", "Ask Tideway", "Ask anything in plain words, in বাংলা or English."],
+    ["shield", "Scam check", "Paste a suspicious bKash, Nagad or Rocket SMS before you act on it."],
+    ["inbox", "Add from SMS", "Paste payment alerts and messages; Tideway drafts the records for you."],
+    ["whatif", "What if…?", "Try scenarios safely. Nothing is saved."],
     ["records", "Records", "Every invoice, bill and transaction behind the numbers."],
     ["team", "Team", "Invite colleagues with the right role."],
-    ["security", "Security centre", "Emergency stop, limits, payee checks and an attack self-test."],
-    ["evidence", "Evidence", "Tamper-evident proof of everything that happened."],
+    ["lab", "Decision lab", "Stress-test a plan before trusting it."],
+    ["treasury", "Bank reports", "13-week cash plan, health score, duplicate-payment scan and a signed credit passport."],
+    ["portfolio", "Lender radar", "For lenders: early warning across many small-business clients."],
+    ["security", "Safety settings", "Emergency stop, limits, payee checks and an attack self-test."],
+    ["evidence", "Audit trail", "Tamper-evident proof of everything that happened."],
   ];
   let tourIndex = -1, tourSteps = [];
   function tourShow() {

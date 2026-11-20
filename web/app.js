@@ -11,6 +11,17 @@ const state = {
   busy: false, approving: null, displayCurrency: "", team: null, teamError: "", invite: null, speaking: false, ownerDetailed: false,
   policyDraft: {}, chatDraft: ""
 };
+// One language at a time: English or বাংলা. The Bangla layer translates interface text only, never business data.
+function syncLanguage() {
+  document.querySelectorAll(".lang-option").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === state.lang)));
+  window.TidewayBangla?.setNames([...moneyNames(), ...(state.config?.businesses || []).map((b) => b.name), ...(state.config?.demo_accounts || []).map((a) => a.name), state.operator?.name]);
+  window.TidewayBangla?.setLang(state.lang);
+}
+function setLanguage(next) {
+  state.lang = next === "bn" ? "bn" : "en";
+  try { localStorage.setItem("tideway:lang", state.lang); } catch (_) { /* optional preference */ }
+  if (state.dashboard) render(); else syncLanguage();
+}
 function savedLang() { try { return localStorage.getItem("tideway:lang") === "bn" ? "bn" : "en"; } catch (_) { return "en"; } }
 // Plain page names first; the technical detail stays in the subtitle for accountants and judges.
 const VIEWS = {
@@ -192,6 +203,7 @@ function showLogin() {
   const select = $("#signup-currency");
   if (!select.options.length) select.innerHTML = currencies.map((item) => `<option value="${esc(item.code)}" ${item.code === "BDT" ? "selected" : ""}>${esc(item.code)} · ${esc(item.name)}</option>`).join("");
   $("#login-pin").value = "";
+  syncLanguage();
   revealOnScroll($("#login"));
 }
 
@@ -524,8 +536,7 @@ function render() {
   const currencyLabel = $("#label-currency"), planLabel = $("#label-plan");
   if (currencyLabel) currencyLabel.textContent = bnUi ? "মুদ্রা" : "Currency";
   if (planLabel) planLabel.textContent = bnUi ? "যে তারিখ পর্যন্ত" : "Plan up to";
-  const langButton = $("#lang-toggle");
-  if (langButton) { langButton.textContent = state.lang === "bn" ? "English" : "বাংলা"; langButton.lang = state.lang === "bn" ? "en" : "bn"; langButton.setAttribute("aria-pressed", String(state.lang === "bn")); }
+  syncLanguage();
   $("#operator-role").textContent = role();
   $("#page-title").textContent = title;
   $("#eyebrow").textContent = [state.dashboard?.business?.name, subtitle].filter(Boolean).join(" · ");
@@ -1773,7 +1784,7 @@ document.addEventListener("click", async (event) => {
     if (data.action.startsWith("home-")) { await window.TidewayHome.action(data.action.slice(5), data); return; }
     if (data.action.startsWith("shield-")) { await window.TidewayShield.action(data.action.slice(7), data); return; }
     switch (data.action) {
-      case "lang": state.lang = state.lang === "bn" ? "en" : "bn"; try { localStorage.setItem("tideway:lang", state.lang); } catch (_) { /* optional preference */ } render(); break;
+      case "lang": setLanguage(data.lang || (state.lang === "bn" ? "en" : "bn")); break;
       case "menu": { const open = document.body.classList.toggle("menu-open"); button.setAttribute("aria-expanded", String(open)); if (open) window.scrollTo(0, 0); break; }
       case "logout": await logout(); break;
       case "demo-login": await demoLogin(data.id); break;

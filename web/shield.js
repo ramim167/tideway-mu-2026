@@ -22,7 +22,7 @@ window.TidewayShield = (() => {
     suspicious: {cls: "unsettled", en: "Suspicious: verify first", bn: "সন্দেহজনক: আগে যাচাই করুন", icon: "alert"},
     no_red_flags: {cls: "clear", en: "No known red flags", bn: "পরিচিত কোনো ঝুঁকি পাওয়া যায়নি", icon: "check"},
   };
-  const mode = () => (lang === "both" && state.lang === "bn" ? "bn" : lang);
+  const mode = () => (lang === "both" ? (state.lang === "bn" ? "bn" : "en") : lang);
   const pick = (item) => mode() === "en" ? `<span>${esc(item.en)}</span>` : mode() === "bn" ? `<span lang="bn">${esc(item.bn)}</span>`
     : `<span>${esc(item.en)}</span><span class="bn-line" lang="bn">${esc(item.bn)}</span>`;
 
@@ -51,9 +51,9 @@ window.TidewayShield = (() => {
     const model = result.model || {};
     return `<section class="card section-gap shield-result ${v.cls}" aria-live="polite">
       <div class="card-head"><div><span class="pill ${v.cls}">${icon(v.icon)}${esc(v.en)}</span>
-        <h3 class="shield-verdict">${esc(v.en)} <span lang="bn" class="bn-line">${esc(v.bn)}</span></h3>
+        <h3 class="shield-verdict">${esc(state.lang === "bn" ? v.bn : v.en)}</h3>
         <p>Risk score ${esc(result.risk_score)} of 100 · ${esc((result.signals || []).length)} signal(s)</p></div>
-        <div class="segmented" role="group" aria-label="Language">${["both", "en", "bn"].map((code) => `<button type="button" class="button small ${lang === code ? "primary" : "ghost"}" data-action="shield-lang" data-lang="${code}">${{both: "EN + বাংলা", en: "English", bn: "বাংলা"}[code]}</button>`).join("")}</div></div>
+        <div class="segmented" role="group" aria-label="Language">${["en", "bn"].map((code) => `<button type="button" class="button small ${mode() === code ? "primary" : "ghost"}" data-action="shield-lang" data-lang="${code}">${{en: "English", bn: "বাংলা"}[code]}</button>`).join("")}</div></div>
       ${meter(result.risk_score, v.cls)}
       ${(result.signals || []).length ? `<h4 class="section-gap">Why</h4><ul class="shield-list">${result.signals.map((s) => `<li><span class="tag ${s.weight >= 40 ? "bad" : ""}">+${esc(s.weight)}</span><div>${pick(s)}${s.words?.length ? `<span class="hint">Words that weighed most: ${s.words.map((w) => `<code>${esc(w)}</code>`).join(" ")}</span>` : ""}</div></li>`).join("")}</ul>` : ""}
       <h4 class="section-gap">What to do</h4><ol class="shield-list">${(result.actions || []).map((a) => `<li><div>${pick(a)}</div></li>`).join("")}</ol>
@@ -64,7 +64,7 @@ window.TidewayShield = (() => {
 
   function render() {
     return `<section class="grid split"><form class="card" id="shield-form">
-        <div class="card-head"><div><h3>Is this message a scam? <span lang="bn" class="bn-line">এই মেসেজটি কি প্রতারণা?</span></h3>
+        <div class="card-head"><div><h3>Is this message a scam?</h3>
           <p>Paste a bKash, Nagad or Rocket SMS, a WhatsApp message or what a caller said. English, বাংলা and Banglish all work. Nothing is saved.</p></div>
           <span class="pill teal">${icon("shield")}Scam Shield</span></div>
         <label class="field">Message<textarea id="shield-text" maxlength="2000" spellcheck="false" placeholder="e.g. You have received Tk 5,000.00 from 017… Please send back by mistake…">${esc(text)}</textarea></label>
@@ -74,11 +74,11 @@ window.TidewayShield = (() => {
         <p class="small muted section-gap">Try a sample:</p>
         <div class="row wrap">${Object.entries(SAMPLES).map(([key, s]) => `<button class="button small ghost" type="button" data-action="shield-sample" data-sample="${key}">${esc(s.label)}</button>`).join("")}</div>
       </form>
-      <div class="card"><h3>Golden rules <span lang="bn" class="bn-line">যে নিয়মগুলো কখনো ভাঙবেন না</span></h3><ul class="small shield-rules">
-        <li>Never share your PIN or OTP. <span lang="bn">পিন বা ওটিপি কাউকে দেবেন না।</span></li>
-        <li>Check your balance in the official app before handing over goods. <span lang="bn">মাল দেওয়ার আগে অ্যাপে ব্যালেন্স দেখুন।</span></li>
-        <li>Never “return” money because of an SMS or a call. <span lang="bn">এসএমএস বা ফোন পেয়ে টাকা ফেরত দেবেন না।</span></li>
-        <li>Real prizes never need a fee. <span lang="bn">আসল পুরস্কারে কোনো ফি লাগে না।</span></li>
+      <div class="card"><h3>Golden rules</h3><ul class="small shield-rules">
+        <li>Never share your PIN or OTP.</li>
+        <li>Check your balance in the official app before handing over goods.</li>
+        <li>Never “return” money because of an SMS or a call.</li>
+        <li>Real prizes never need a fee.</li>
         <li>Official helplines: bKash 16247 · Nagad 16167 · Rocket 16216.</li></ul></div></section>
       <div id="shield-result">${resultHtml()}</div>`;
   }

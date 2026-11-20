@@ -213,7 +213,7 @@ try {
   if (await evaluate("!!document.querySelector('#view [data-action=approve], #view [data-action=execute]')")) throw new Error("Home exposes an approval or execution control");
   if (!await evaluate("document.querySelector('.home-hero').classList.contains('storm') && document.querySelector('.home-hero h2').textContent.includes('Salary money will run short')")) throw new Error("Home does not warn that Shapla's salary money runs short");
   await shot("00b-home");
-  await click('[data-action="lang"]');
+  await click('.topbar [data-action="lang"][data-lang="bn"]');
   await until("state.lang === 'bn' && document.querySelector('.home-hero h2').textContent.includes('বেতনের টাকা কম পড়বে') && document.querySelector('#page-title').textContent === 'হোম'", "Home in Bangla");
   await shot("00c-home-bangla");
   await click('[data-view="shield"]');
@@ -221,7 +221,7 @@ try {
   await click('[data-action="shield-sample"][data-sample="fakeCashIn"]');
   await until("!!document.querySelector('.shield-result.storm') && document.querySelector('.shield-verdict').textContent.includes('সম্ভবত প্রতারণা')", "Scam check flags a fake cash-in SMS");
   await shot("00d-scam-check-bangla");
-  await click('[data-action="lang"]');
+  await click('.topbar [data-action="lang"][data-lang="en"]');
   await until("state.lang === 'en' && document.querySelector('#page-title').textContent === 'Scam check'", "back to English");
   await click('[data-action="shield-sample"][data-sample="genuine"]');
   await until("!!document.querySelector('.shield-result.clear')", "Scam check passes a genuine bKash SMS");
