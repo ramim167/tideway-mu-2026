@@ -1,6 +1,5 @@
 """Actual loopback HTTP attacks, including malformed and slowly streamed input."""
 import http.client
-from http.server import ThreadingHTTPServer
 import json
 import socket
 import threading
@@ -8,7 +7,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from tideway.server import Application, make_handler
+from tideway.server import Application, TidewayHTTPServer, make_handler
 
 
 class HttpBoundaries(unittest.TestCase):
@@ -18,7 +17,7 @@ class HttpBoundaries(unittest.TestCase):
         class Quiet(make_handler(cls.app)):
             def log_message(self, *_args):
                 pass
-        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), Quiet)
+        cls.server = TidewayHTTPServer(("127.0.0.1", 0), Quiet)
         cls.port = cls.server.server_port
         threading.Thread(target=cls.server.serve_forever, daemon=True).start()
 
@@ -42,6 +41,20 @@ class HttpBoundaries(unittest.TestCase):
         self.assertEqual(self.request("/api/dashboard?business_id=shapla",
                                      headers={"Cookie": "tideway_session=x; bad@key=y"})[0], 401)
         self.assertEqual(self.request("/api/config")[0], 200)
+
+    def test_photo_route_accepts_the_full_encoded_limit_and_other_routes_keep_their_cap(self):
+        import base64
+        from tideway.vision import MAX_BYTES, MAX_PHOTO_BODY
+
+        image = "data:image/jpeg;base64," + base64.b64encode(bytes(MAX_BYTES)).decode()
+        body = json.dumps({"business_id": "shapla-services", "image": image})
+        self.assertLessEqual(len(body), MAX_PHOTO_BODY)
+        with patch.object(self.app, "post", return_value={"received": True}) as post:
+            self.assertEqual(self.request("/api/inbox/photo", body), (200, {"received": True}))
+            self.assertEqual(post.call_args.args[1]["image"], image)
+            for path, length in [("/api/chat", 2_000_001), ("/api/inbox/photo", MAX_PHOTO_BODY + 1)]:
+                self.assertEqual(self.request(path, "{}", {"Content-Length": str(length)})[0], 413)
+            self.assertEqual(post.call_count, 1)
 
     def test_duplicate_fields_cannot_choose_a_different_identity(self):
         for body in ('{"operator_id":"guest","operator_id":"nadia","pin":"2468"}',

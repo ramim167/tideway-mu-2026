@@ -3,6 +3,7 @@ import http.client
 from http.server import ThreadingHTTPServer
 import json
 from pathlib import Path
+import re
 import threading
 import unittest
 
@@ -10,6 +11,16 @@ from tideway.server import Application, STATIC, make_handler
 from scripts.build_submission_package import allowed_source
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class JudgeTourTests(unittest.TestCase):
+    def test_every_tour_page_uses_the_visible_navigation_label(self):
+        tour = next(line for line in (ROOT / "README.md").read_text().splitlines() if line.startswith("**Judge tour**"))
+        shell = (ROOT / "web/index.html").read_text()
+        labels = re.findall(r'class="nav-item".*?<span class="nav-text"><span>([^<]+)', shell)
+        pages = re.findall(r"\*\*([^*]+)\*\*", tour)[1:]
+        self.assertGreaterEqual(len(pages), 9)
+        self.assertFalse(set(pages) - set(labels))
 
 
 class GuideIsolationTests(unittest.TestCase):

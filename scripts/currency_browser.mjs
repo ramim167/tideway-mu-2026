@@ -79,8 +79,15 @@ export async function checkCurrency({evaluate,click,until,view,viewport,shot,pho
   await click('[data-action=inbox-save]');await idle();
   if(!await evaluate("(()=>{const r=window.__currencyRequests.findLast(x=>x.path==='/api/inbox/confirm').body.records[0];return r.amount==='2440.00'&&r.currency==='BDT';})()"))throw new Error('Selected-currency Inbox edit corrupted the ledger currency');
   await view('records');
-  const exportResult=await evaluate("(async()=>{const a=[...document.querySelectorAll('a[href]')].find(a=>a.href.includes('kind=records'));const r=await fetch(a.href);return {text:await r.text(),url:a.href};})()");
-  if(!exportResult.url.includes('display_currency=USD')||!exportResult.text.includes('view_currency')||!exportResult.text.includes('USD'))throw new Error('Records export ignores selected currency');
+  const exports = await evaluate(`Promise.all([...document.querySelectorAll('a[href*="kind=records"]')].map(async link => {
+    const response = await fetch(link.href);
+    if (!response.ok) throw new Error('Records download failed');
+    return {unit: new URL(link.href).searchParams.get('display_currency'), text: await response.text()};
+  }))`);
+  const native = exports.find(report => report.unit === null);
+  const display = exports.find(report => report.unit === 'USD');
+  if (!native?.text.includes('rescheduled_date') || native.text.includes('view_currency')) throw new Error('Native ledger export is missing import fields');
+  if (!display?.text.includes('view_currency') || !display.text.includes('USD')) throw new Error('Records report ignores selected currency');
   await view('evidence');await until('!!state.audit','audit load');await view('team');await until('!!state.team','team load');
   await input('#invite-form [name=name]','Unsaved teammate');
   await evaluate("document.querySelector('#invite-form [name=role]').value='viewer'");

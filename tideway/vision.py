@@ -22,6 +22,9 @@ from .tidelm import TideLM, _draft, parse_json
 
 MODEL = "mlx-community/Qwen2.5-VL-3B-Instruct-4bit"
 MAX_BYTES = 6 * 1024 * 1024
+MAX_BASE64_CHARS = 4 * ((MAX_BYTES + 2) // 3)
+# Room for the data URL header, business ID and JSON object around a full-size image.
+MAX_PHOTO_BODY = MAX_BASE64_CHARS + 1024
 MAX_SIDE = 1600
 SYSTEM = (
     "You are TideVision, the document reader inside Tideway. Read the photo of an invoice, bill or receipt and output "
@@ -44,13 +47,15 @@ def decode_image(data_url):
     """A data URL or base64 string -> cleaned JPEG bytes.  Rejects anything that is not a real image."""
     if not isinstance(data_url, str) or not data_url:
         raise ValidationError("Attach a photo of an invoice, bill or receipt.")
-    payload = data_url.split(",", 1)[1] if data_url.startswith("data:") else data_url
+    payload = data_url.partition(",")[2] if data_url.startswith("data:") else data_url
+    if len(payload) > MAX_BASE64_CHARS:
+        raise ValidationError("The photo must be at most 6 MiB.")
     try:
         raw = base64.b64decode(payload, validate=True)
     except (binascii.Error, ValueError):
         raise ValidationError("The photo could not be read.") from None
     if not 0 < len(raw) <= MAX_BYTES:
-        raise ValidationError("The photo must be smaller than 6 MB.")
+        raise ValidationError("The photo must be at most 6 MiB.")
     try:
         from PIL import Image, ImageOps
     except ImportError:

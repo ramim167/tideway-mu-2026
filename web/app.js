@@ -1502,7 +1502,15 @@ function shrinkPhoto(file) {
       canvas.height = Math.round(image.height * scale);
       canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL("image/jpeg", 0.88));
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
+      const prefix = "data:image/jpeg;base64,";
+      const encoded = dataUrl.slice(prefix.length);
+      const padding = encoded.endsWith("==") ? 2 : encoded.endsWith("=") ? 1 : 0;
+      const bytes = encoded.length / 4 * 3 - padding;
+      const limit = state.config.vision.max_upload_bytes;
+      if (!dataUrl.startsWith(prefix) || !bytes) return reject(new Error("The photo could not be read."));
+      if (bytes > limit) return reject(new Error(`The resized photo exceeds the ${limit / (1024 * 1024)} MiB limit.`));
+      resolve(dataUrl);
     };
     image.onerror = () => { URL.revokeObjectURL(url); reject(new Error("The photo could not be read.")); };
     image.src = url;

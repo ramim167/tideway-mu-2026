@@ -28,6 +28,16 @@ def photo(fmt="JPEG", size=(2400, 1200), exif_gps=False):
     return "data:image/jpeg;base64," + base64.b64encode(out.getvalue()).decode()
 
 
+class PhotoLimits(unittest.TestCase):
+    def test_oversize_base64_is_rejected_before_decoding(self):
+        from unittest.mock import patch
+        from tideway.vision import MAX_BASE64_CHARS
+        with patch("tideway.vision.base64.b64decode") as decode:
+            with self.assertRaisesRegex(ValidationError, "6 MiB"):
+                decode_image("A" * (MAX_BASE64_CHARS + 4))
+            decode.assert_not_called()
+
+
 @unittest.skipIf(Image is None, "Pillow is not installed (optional photo feature)")
 class Vision(unittest.TestCase):
     def test_hostile_or_invalid_files_never_reach_the_model(self):

@@ -7,17 +7,15 @@
 // placeholders ({0}, {1}...), so one translated template covers every value.
 window.TidewayBangla = (() => {
   const DICT = window.TIDEWAY_BN || {};
-  const SKIP = "script,style,code,pre,textarea,svg,.msg,.lab-json,.message-preview,.no-translate,[data-no-translate],.record-text";
+  const SKIP = "script,style,code,pre,svg,.msg,.lab-json,.message-preview,.no-translate,[data-no-translate],.record-text";
   const ATTRS = ["placeholder", "title", "aria-label", "data-prompt", "alt"];
   const MONTHS = {Jan: "জানু", Feb: "ফেব্রু", Mar: "মার্চ", Apr: "এপ্রি", May: "মে", Jun: "জুন", Jul: "জুলাই", Aug: "আগ", Sep: "সেপ্টে", Oct: "অক্টো", Nov: "নভে", Dec: "ডিসে"};
   // Full or short month names, never a prefix of a longer word ("Nov" must not match inside "November" alone).
   const MONTH_RE = "(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)(?![a-z])";
   let lang = "en", names = [], namesRe = null, scheduled = false, applying = false;
-  const tracked = new Set();          // text nodes we changed: node -> restore on English
   const english = new WeakMap();      // text node -> its English text
   const shown = new WeakMap();        // text node -> the Bangla text we wrote
   const attrEnglish = new WeakMap();  // element -> {attr: English value}
-  const attrTracked = new Set();
 
   const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   function setNames(list) {
@@ -66,7 +64,7 @@ window.TidewayBangla = (() => {
 
   function skipped(node) {
     const parent = node.parentElement;
-    return !parent || !!parent.closest(SKIP);
+    return !parent || !!parent.closest(SKIP + ",textarea");
   }
 
   function apply(root = document.body) {
@@ -82,7 +80,6 @@ window.TidewayBangla = (() => {
       if (out === null) continue;
       english.set(node, current);
       shown.set(node, out);
-      tracked.add(node);
       node.nodeValue = out;
     }
     const scope = root.nodeType === 1 ? root : document.body;
@@ -96,26 +93,33 @@ window.TidewayBangla = (() => {
         const out = translate(value);
         if (out === null) continue;
         saved[attr] = value; saved[`bn:${attr}`] = out;
-        attrEnglish.set(el, saved); attrTracked.add(el);
+        attrEnglish.set(el, saved);
         el.setAttribute(attr, out);
       }
     }
     applying = false;
   }
 
-  function restore() {
-    applying = true;
-    for (const node of tracked) {
-      if (node.isConnected && shown.get(node) === node.nodeValue) node.nodeValue = english.get(node);
+  function restore(root = document.body) {
+    if (!root) return;
+    function restoreText(node) {
+      if (shown.has(node) && shown.get(node) === node.nodeValue) node.nodeValue = english.get(node);
+      shown.delete(node);
+      english.delete(node);
     }
-    tracked.clear();
-    for (const el of attrTracked) {
-      const saved = attrEnglish.get(el) || {};
-      for (const attr of ATTRS) if (saved[attr] !== undefined && el.getAttribute(attr) === saved[`bn:${attr}`]) el.setAttribute(attr, saved[attr]);
+    if (root.nodeType === Node.TEXT_NODE) { restoreText(root); return; }
+    if (root.nodeType !== Node.ELEMENT_NODE) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) restoreText(node);
+    for (const el of [root, ...root.querySelectorAll(ATTRS.map(a => `[${a}]`).join(","))]) {
+      const saved = attrEnglish.get(el);
+      if (!saved) continue;
+      for (const attr of ATTRS) {
+        if (saved[attr] !== undefined && el.getAttribute(attr) === saved[`bn:${attr}`]) el.setAttribute(attr, saved[attr]);
+      }
       attrEnglish.delete(el);
     }
-    attrTracked.clear();
-    applying = false;
   }
 
   function schedule() {
@@ -124,13 +128,24 @@ window.TidewayBangla = (() => {
     requestAnimationFrame(() => { scheduled = false; apply(); });
   }
 
-  const observer = new MutationObserver(() => { if (!applying) schedule(); });
+  const observer = new MutationObserver(mutations => {
+    if (lang === "bn") { if (!applying) schedule(); return; }
+    // A previously translated subtree may have been detached during the switch.
+    for (const mutation of mutations) for (const node of mutation.addedNodes) restore(node);
+  });
 
   function setLang(next) {
+    const previous = lang;
     lang = next === "bn" ? "bn" : "en";
     document.documentElement.lang = lang;
-    if (lang === "bn") { apply(); observer.observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS}); }
-    else { observer.disconnect(); restore(); }
+    if (lang === "bn") {
+      apply();
+      observer.observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS});
+    } else if (previous === "bn") {
+      observer.disconnect();
+      restore();
+      observer.observe(document.body, {subtree: true, childList: true});
+    }
   }
 
   // Coverage check: interface text on screen that has no Bangla yet (used by scripts/bangla_coverage.mjs).

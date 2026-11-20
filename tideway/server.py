@@ -20,7 +20,7 @@ from .domain import SecurityError, ValidationError, canonical_json, parse_strict
 from .security import RateLimiter
 from .service import Tideway
 from .tidelm import TideLM, TideLMUnavailable, confirm as confirm_inbox
-from .vision import TideVision, TideVisionUnavailable
+from .vision import MAX_BYTES as MAX_PHOTO_BYTES, MAX_PHOTO_BODY, TideVision, TideVisionUnavailable
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -110,7 +110,7 @@ class Application:
     def config(self, operator):
         return {**self.tideway.config(operator), "csrf_token": self.csrf, "operator": operator,
                 "ai_configured": bool(self.agent.key), "ai_model": self.agent.model if self.agent.key else None,
-                "tidelm": self.tidelm.status(), "vision": self.vision.status(),
+                "tidelm": self.tidelm.status(), "vision": {**self.vision.status(), "max_upload_bytes": MAX_PHOTO_BYTES},
                 "features": {"decision_lab": self.lab_enabled}}
 
     def bundle_for(self, business_id, plan_id, bundle_id):
@@ -674,8 +674,9 @@ def make_handler(app):
                 if not raw_length.isascii() or not raw_length.isdigit() or len(raw_length) > 7:
                     return self.reply(400, {"error": "Invalid Content-Length.", "code": "validation_error"})
                 length = int(raw_length)
-                if not 0 < length <= 2_000_000:
-                    return self.reply(413, {"error": "Request body must be 1 byte to 2 MB."})
+                limit = MAX_PHOTO_BODY if path == "/api/inbox/photo" else 2_000_000
+                if not 0 < length <= limit:
+                    return self.reply(413, {"error": f"Request body must be between 1 and {limit} bytes."})
                 body = parse_strict_json(self.read_body(length))
                 if not isinstance(body, dict):
                     raise ValidationError("Request must be a JSON object.")
@@ -713,9 +714,14 @@ def make_handler(app):
     return Handler
 
 
+class TidewayHTTPServer(ThreadingHTTPServer):
+    # Chrome requests the app's local scripts, fonts and images in bursts.
+    request_queue_size = 128
+
+
 def serve(db_path, port=8787, key="", model="gpt-5-mini", seed=True, host="127.0.0.1", transport=None):
     app = Application(db_path, key, model, seed, transport)
-    server = ThreadingHTTPServer((host, port), make_handler(app))
+    server = TidewayHTTPServer((host, port), make_handler(app))
     model_status = app.tidelm.status()
     if model_status["available"] and model_status.get("backend") != "local-compatible":
         import threading

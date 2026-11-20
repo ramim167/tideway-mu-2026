@@ -64,3 +64,12 @@ assert.equal(run("state.view"),"shield");
 assert.match(run("window.TidewayShield.render()"),/exact checked message/);
 assert.match(run("window.TidewayShield.render()"),/Likely scam/);
 assert.doesNotMatch(run("window.TidewayShield.render()"),/different draft/);
+
+run(`state.config.vision={max_upload_bytes:3};
+  globalThis.URL={createObjectURL:()=>'blob:test',revokeObjectURL:()=>{}};
+  globalThis.Image=class {width=2;height=2;set src(value){this.onload();}};
+  globalThis.encoded='AAAA';
+  document.createElement=()=>({getContext:()=>({drawImage(){}}),toDataURL:()=>'data:image/jpeg;base64,'+encoded});`);
+assert.match(await run("shrinkPhoto({type:'image/jpeg',size:5})"),/AAAA$/);
+run("encoded='AAAAAA=='");
+await assert.rejects(run("shrinkPhoto({type:'image/jpeg',size:5})"),/exceeds/);

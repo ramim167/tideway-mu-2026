@@ -3,6 +3,9 @@
 // dates and ledger names, which are passed through unchanged. Regenerate the missing list with
 // node scripts/bangla_coverage.mjs --out missing.json
 window.TIDEWAY_BN = {
+ "e.g. Invoice{0} to Nila Traders,{1} due {2}": "যেমন: Nila Traders-এর চালান{0}, পরিমাণ{1} শেষ তারিখ {2}",
+ "e.g. Invoice{0} to {1},{2} due {3}": "যেমন: {1}-এর চালান{0}, পরিমাণ{2} শেষ তারিখ {3}",
+ "e.g. You have received Tk 5,000.00 from 017… Please send back by mistake…": "যেমন: 017… নম্বর থেকে আপনি 5,000.00 টাকা পেয়েছেন। ভুল করে পাঠিয়েছি, দয়া করে ফেরত দিন…",
  "'s expected delay (the dashboard's likely path).": "-এর প্রত্যাশিত দেরি (ড্যাশবোর্ডের সম্ভাব্য পথ)।",
  "(a personal phone number)": "(ব্যক্তিগত ফোন নম্বর)",
  "(about {0} in {1}) versus {2} for the recommendation.": "({1}টির মধ্যে প্রায় {0}টি), আর সুপারিশে {2}।",

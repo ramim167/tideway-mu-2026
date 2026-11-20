@@ -29,10 +29,10 @@ Bangladesh's small businesses run on mobile money and trust, but they have no fi
 
 | Track theme | What Tideway does | Where to see it |
 |---|---|---|
-| **Fraud detection** | **Scam Shield** checks pasted MFS messages (fake cash-in SMS, PIN/OTP requests, wrong-send refund trick, prize fees, phishing links) with explainable rules plus a learned text model. Payment-integrity scan blocks changed bank details, look-alike payees and duplicate bills. | *Scam Shield*, *Inbox*, *Treasury → Payment integrity* |
+| **Fraud detection** | **Scam Shield** checks pasted MFS messages (fake cash-in SMS, PIN/OTP requests, wrong-send refund trick, prize fees, phishing links) with explainable rules plus a learned text model. Payment-integrity scan blocks changed bank details, look-alike payees and duplicate bills. | *Scam check*, *Add from SMS*, *Bank reports → Payment integrity* |
 | **Financial literacy** | **Money lessons (টাকার পাঠ):** six one-minute lessons (safety money, salary day, late payers, relying on one customer, MFS scams, getting a loan), each explained with the owner's own numbers and ending in a one-question check. Ask in **বাংলা**: "এই মাসে কি বেতন দিতে পারব?" Answers are built from the ledger's own numbers, never guessed. 40 finance terms explained on tap. | *Money lessons*, *Ask Tideway*, help layer |
-| **Financial inclusion** | **Speak your question** in বাংলা or English with the microphone button, for owners who find typing hard. A signed **credit passport** turns a micro-business's cash-flow record into evidence a bank or MFI can verify offline, without collateral history. A lender **portfolio radar** spots SMEs heading for trouble weeks early. | *Treasury → Credit passport*, *Portfolio radar* |
-| **Digital finance** | Reads bKash, Nagad, Rocket and bank alerts into draft ledger records (nothing saved until a person confirms), forecasts cash 14 days ahead with 1,000 simulated futures, and plans supplier deferrals and early-payment discounts. Payment reminders and supplier requests are written in **বাংলা** with a **Copy** button for SMS or WhatsApp. | *Inbox*, *Cash weather*, *Rescue plan* |
+| **Financial inclusion** | **Speak your question** in বাংলা or English with the microphone button, for owners who find typing hard. A signed **credit passport** turns a micro-business's cash-flow record into evidence a bank or MFI can verify offline, without collateral history. A lender **portfolio radar** spots SMEs heading for trouble weeks early. | *Bank reports → Credit passport*, *Lender radar* |
+| **Digital finance** | Reads bKash, Nagad, Rocket and bank alerts into draft ledger records (nothing saved until a person confirms), forecasts cash 14 days ahead with 1,000 simulated futures, and plans supplier deferrals and early-payment discounts. Payment reminders and supplier requests are written in **বাংলা** with a **Copy** button for SMS or WhatsApp. | *Add from SMS*, *Cash forecast*, *Fix a cash gap* |
 
 The one-page mapping to the hackathon's rules and judging criteria is in [docs/MU_HACKATHON_2026.md](docs/MU_HACKATHON_2026.md); the 3-page proposal is in [docs/proposal/](docs/proposal/).
 
@@ -172,7 +172,7 @@ python run.py
 
 Open <http://127.0.0.1:8787> and click **Nadia (Owner)**. Demo PINs: Nadia `2468` (owner), Imran `1357` (accountant), Guest `0000` (viewer).
 
-**A two-minute tour:** check **Cash weather** → open **Scam Shield** and try the *Fake cash-in SMS* sample → ask **Ask Tideway** `এই মাসে কি বেতন দিতে পারব?` → run the **Rescue plan** and approve with Nadia, then Imran → paste the injection sample into **Inbox** → run the **Security centre** self-test → open **Treasury** and **Portfolio radar** → run the **Evidence** tamper drill.
+**Judge tour** — Start on **Home** and open **Cash forecast**. In **Scam check**, try *Fake cash-in SMS*. In **Ask Tideway**, ask `এই মাসে কি বেতন দিতে পারব?` Open **Fix a cash gap** to propose a rescue and follow its approval instructions. In **Add from SMS**, select *Sample: injection attempt* and extract the draft. Run the self-test in **Safety settings**, explore **Bank reports** and **Lender radar**, then try the tamper drill in **Audit trail**.
 
 ```bash
 docker build -t tideway:local . && docker run --rm -p 127.0.0.1:8787:8787 tideway:local   # isolated container
