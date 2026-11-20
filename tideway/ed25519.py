@@ -10,6 +10,7 @@ import hashlib
 
 _P = 2 ** 255 - 19
 _Q = 2 ** 252 + 27742317777372353535851937790883648493
+_IDENTITY = (0, 1, 1, 0)
 _D = -121665 * pow(121666, _P - 2, _P) % _P
 _SQRT_M1 = pow(2, (_P - 1) // 4, _P)
 
@@ -26,7 +27,7 @@ def _add(a, b):
 
 
 def _mul(scalar: int, point):
-    result = (0, 1, 1, 0)
+    result = _IDENTITY
     while scalar > 0:
         if scalar & 1:
             result = _add(result, point)
@@ -100,7 +101,8 @@ def verify(public: bytes, message: bytes, signature: bytes) -> bool:
     if not isinstance(public, bytes) or not isinstance(signature, bytes) or len(public) != 32 or len(signature) != 64:
         return False
     a, r = _decompress(public), _decompress(signature[:32])
-    if a is None or r is None:
+    # Both encodings must represent non-identity points in the prime-order subgroup.
+    if any(p is None or _equal(p, _IDENTITY) or not _equal(_mul(_Q, p), _IDENTITY) for p in (a, r)):
         return False
     s = int.from_bytes(signature[32:], "little")
     if s >= _Q:

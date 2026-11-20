@@ -1,9 +1,16 @@
 """Ed25519 public-key signatures on credit passports, verifiable offline by a lender."""
 import copy
+import hashlib
+import io
+import tempfile
+from contextlib import redirect_stdout
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from unittest.mock import patch
 import unittest
 
 from scripts import verify_passport as offline
-from tideway import ed25519, treasury
+from tideway import ed25519, security, treasury
 from tideway.service import Tideway
 from tideway.treasury import Treasury
 
@@ -22,6 +29,17 @@ class Ed25519Vectors(unittest.TestCase):
         self.assertFalse(ed25519.verify(public, b"\x00", signature))
         self.assertFalse(ed25519.verify(public, b"", signature[:-1] + bytes([signature[-1] ^ 1])))
         self.assertFalse(ed25519.verify(public[:31], b"", signature))
+
+
+    def test_identity_and_small_order_points_are_rejected_before_signature_equation(self):
+        normal = ed25519.public_key(bytes(range(32)))
+        identity = (1).to_bytes(32, "little")
+        order_two = (2**255 - 20).to_bytes(32, "little")
+        with patch.object(ed25519, "_sha512_modq", side_effect=AssertionError("weak point reached signature equation")):
+            for point in (identity, order_two):
+                with self.subTest(point=point):
+                    self.assertFalse(ed25519.verify(point, b"test", normal + bytes(32)))
+                    self.assertFalse(ed25519.verify(normal, b"test", point + bytes(32)))
 
 
 class PassportPublicKey(unittest.TestCase):
@@ -58,9 +76,53 @@ class PassportPublicKey(unittest.TestCase):
         attacker = bytes(range(32))
         forged["public_signature"] = {**forged["public_signature"], "public_key": ed25519.public_key(attacker).hex(),
                                       "signature": ed25519.sign(attacker, treasury.public_message(forged)).hex()}
-        self.assertTrue(offline.check(forged)[0])                       # self-consistent, but...
-        self.assertFalse(offline.check(forged, self.public_key)[0])     # ...pinning the issuer key rejects it
+        self.assertFalse(offline.check(forged)[0])
+        self.assertFalse(offline.check(forged, self.public_key)[0])
         self.assertEqual(self.treasury.verify_passport("shapla-services", forged)["reason"], "signature_mismatch")
+
+    def test_cli_fingerprint_comes_from_trusted_key(self):
+        document = copy.deepcopy(self.document)
+        document["public_signature"]["key_id"] = "unsigned display label"
+        ok, message = offline.check(document, self.public_key)
+        self.assertTrue(ok, message)
+        self.assertIn(hashlib.sha256(bytes.fromhex(self.public_key)).hexdigest()[:16], message)
+        self.assertNotIn("unsigned display label", message)
+        self.assertFalse(offline.check(document)[0])
+
+    def test_shared_schema_dates_and_clock_skew(self):
+        now = datetime.now(timezone.utc)
+        store_key = self.tideway.store.key
+        cases = [
+            ({"expires_at": now.replace(tzinfo=None).isoformat()}, "malformed"),
+            ({"issued_at": "broken"}, "malformed"),
+            ({"issued_at": (now + timedelta(minutes=6)).isoformat()}, "not_yet_valid"),
+            ({"issued_at": (now + timedelta(minutes=4)).isoformat()}, "valid"),
+            ({"expires_at": self.document["issued_at"]}, "malformed"),
+            ({"issued_at": (now - timedelta(days=2)).isoformat(), "expires_at": now.isoformat()}, "expired"),
+            ({"type": "Unknown"}, "malformed"), ({"additional": "field"}, "malformed"),
+            ({"business": []}, "malformed"), ({"version": "unsupported"}, "malformed"),
+            ({"limitations": "X" * treasury.PASSPORT_MAX_BYTES}, "malformed"),
+        ]
+        for fields, expected in cases:
+            with self.subTest(fields=list(fields), expected=expected):
+                document = copy.deepcopy(self.document)
+                document.update(fields)
+                document["public_signature"]["signature"] = ed25519.sign(
+                    treasury.passport_signing_secret(store_key), treasury.public_message(document)).hex()
+                document["signature"] = security.sign(treasury.passport_key(store_key), document)
+                result = self.treasury.verify_passport("shapla-services", document, now=now)
+                self.assertEqual(result["reason"], expected)
+                self.assertEqual(offline.check(document, self.public_key, now=now)[0], result["valid"])
+
+    def test_cli_returns_invalid_for_malformed_json(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "input.json"
+            for raw in (b"{", b'{"a":1,"a":2}', b'{"n":NaN}', b'{"n":1e999}', b'"\\ud800"', b"\xff",
+                        b"[" * 1100, b" " * (treasury.PASSPORT_MAX_BYTES + 1)):
+                with self.subTest(raw=raw[:16]), redirect_stdout(io.StringIO()) as output:
+                    path.write_bytes(raw)
+                    self.assertEqual(offline.main([str(path), "--public-key", self.public_key]), 1)
+                    self.assertIn("INVALID: Cannot read passport JSON", output.getvalue())
 
     def test_signing_key_is_purpose_bound(self):
         self.assertNotEqual(treasury.passport_signing_secret(self.tideway.store.key), treasury.passport_key(self.tideway.store.key))

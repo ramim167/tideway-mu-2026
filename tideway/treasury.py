@@ -23,6 +23,8 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 from . import analytics, ed25519, security
+from .credit_document import (PASSPORT_FIELDS, PASSPORT_MAX_BYTES, PASSPORT_VERSION, key_fingerprint, public_message,
+                              schema_error, validity_error, verify_public_signature)
 from .domain import (
     OPEN_INVOICE_STATUSES,
     ValidationError,
@@ -66,12 +68,7 @@ SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
 PAYEE_SUFFIXES = {"ltd", "limited", "co", "company", "inc", "llc", "plc", "pvt", "pte", "corp", "corporation", "the"}
 
 # ---- credit passport -----------------------------------------------------------------
-PASSPORT_VERSION = "tideway-credit-passport-v1"
 PASSPORT_DAYS = 30
-PASSPORT_MAX_BYTES = 200_000
-PASSPORT_FIELDS = ("type", "version", "passport_id", "issuer", "business", "as_of", "issued_at", "expires_at",
-                   "snapshot_hash", "audit", "twcf", "health", "breach_risk", "limitations", "signature_alg", "public_signature",
-                   "signature")
 
 
 def _clamp(value):
@@ -678,27 +675,7 @@ def passport_signing_secret(store_key):
 
 def passport_public_key(store_key):
     public = ed25519.public_key(passport_signing_secret(store_key))
-    return {"alg": "Ed25519", "public_key": public.hex(), "key_id": hashlib.sha256(public).hexdigest()[:16]}
-
-
-def public_message(document):
-    """Bytes covered by the Ed25519 signature: every field except the two signature fields."""
-    body = {key: value for key, value in document.items() if key not in ("signature", "public_signature")}
-    return canonical_json(body).encode("utf-8")
-
-
-def verify_public_signature(document, expected_public_key=None):
-    """Offline check a lender can run with only the issuer's public key (hex)."""
-    block = document.get("public_signature") if isinstance(document, dict) else None
-    if not isinstance(block, dict) or block.get("alg") != "Ed25519":
-        return False
-    try:
-        public, signature = bytes.fromhex(str(block.get("public_key"))), bytes.fromhex(str(block.get("signature")))
-    except ValueError:
-        return False
-    if expected_public_key is not None and public.hex() != str(expected_public_key).lower():
-        return False
-    return ed25519.verify(public, public_message(document), signature)
+    return {"alg": "Ed25519", "public_key": public.hex(), "key_id": key_fingerprint(public)}
 
 
 def _signable(value):
@@ -716,14 +693,6 @@ def _signable(value):
 
 def _iso(moment):
     return moment.astimezone(timezone.utc).isoformat(timespec="seconds")
-
-
-def _parse(value):
-    try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    return parsed if parsed.tzinfo else None
 
 
 def build_passport(store_key, snapshot, plan, score, simulation, audit_evidence, issued_by, now=None, days=PASSPORT_DAYS):
@@ -765,7 +734,7 @@ def build_passport(store_key, snapshot, plan, score, simulation, audit_evidence,
     signer = passport_public_key(store_key)
     document["public_signature"] = {**signer, "signature": ed25519.sign(passport_signing_secret(store_key), public_message(document)).hex(),
                                     "covers": "every field except signature and public_signature",
-                                    "verify_offline": "python scripts/verify_passport.py passport.json"}
+                                    "verify_offline": "python scripts/verify_passport.py passport.json --public-key TRUSTED_HEX"}
     document["signature"] = security.sign(passport_key(store_key), document)
     return document
 
@@ -773,16 +742,10 @@ def build_passport(store_key, snapshot, plan, score, simulation, audit_evidence,
 def verify_passport(store_key, document, business_id, now=None):
     now = now or datetime.now(timezone.utc)
     base = {"valid": False, "checked_at": _iso(now), "signature_alg": "Ed25519 (public) + HMAC-SHA256 (issuer)",
-            "note": "Lenders can also verify offline with the issuer's public key: python scripts/verify_passport.py passport.json"}
-    if not isinstance(document, dict) or set(document) != set(PASSPORT_FIELDS) \
-            or document.get("version") != PASSPORT_VERSION or document.get("type") != "TidewayCreditPassport":
-        return {**base, "reason": "malformed", "message": "Not a Tideway credit passport in the expected format."}
-    try:
-        size = len(canonical_json(document).encode("utf-8"))
-    except (TypeError, ValueError):
-        size = PASSPORT_MAX_BYTES + 1
-    if size > PASSPORT_MAX_BYTES:
-        return {**base, "reason": "malformed", "message": "Passport is too large."}
+            "note": "Lenders can also verify offline with the issuer's public key: python scripts/verify_passport.py passport.json --public-key TRUSTED_HEX"}
+    error = schema_error(document)
+    if error:
+        return {**base, "reason": "malformed", "message": error}
     if not security.verify(passport_key(store_key), document) or not verify_public_signature(
             document, passport_public_key(store_key)["public_key"]):
         return {**base, "reason": "signature_mismatch",
@@ -792,15 +755,9 @@ def verify_passport(store_key, document, business_id, now=None):
     if owner.get("business_id") != business_id:
         return {**base, "reason": "wrong_business", "signature_valid": True,
                 "message": "The signature is genuine but the passport belongs to a different business."}
-    issued, expires = _parse(document.get("issued_at")), _parse(document.get("expires_at"))
-    if issued is None or expires is None:
-        return {**base, "reason": "malformed", "message": "Passport dates are invalid."}
-    if expires <= now:
-        return {**base, "reason": "expired", "signature_valid": True, "expires_at": document["expires_at"],
-                "message": f"The passport expired at {document['expires_at']}. Ask the business for a fresh one."}
-    if issued > now + timedelta(minutes=5):
-        return {**base, "reason": "not_yet_valid", "signature_valid": True,
-                "message": "The passport's issue time is in the future."}
+    error = validity_error(document, now)
+    if error:
+        return {**base, **error}
     return {**base, "valid": True, "reason": "valid", "signature_valid": True, "public_signature_valid": True,
             "public_key": document["public_signature"]["public_key"], "passport_id": document["passport_id"],
             "business_id": business_id, "issued_at": document["issued_at"], "expires_at": document["expires_at"],

@@ -108,7 +108,7 @@ The assistant detects Bangla script and answers in Bangla, routing the question 
 **For lenders and large buyers**
 
 - **Portfolio radar.** Ranks every client by breach probability, days to the gap and main driver; red, amber and green tiers; a shock slider shows who moves into danger. It runs on its own portfolio and never reads tenant workspaces.
-- **Verifiable credit passport.** A lender checks a passport offline with the issuer's public key, without contacting Tideway: `python scripts/verify_passport.py passport.json`.
+- **Verifiable credit passport.** A lender checks a passport offline with a public key obtained directly from the issuer: `python scripts/verify_passport.py passport.json --public-key TRUSTED_HEX`.
 
 **For everyone in the company**
 

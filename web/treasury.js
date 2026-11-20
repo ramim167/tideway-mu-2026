@@ -155,7 +155,7 @@ window.TidewayTreasury = (() => {
     let card = "";
     if (p) {
       const likely = p.twcf.likely;
-      card = `<section class="tw-passport section-gap"><div class="row between"><div><span class="pill teal">${icon("shield")}Signed · Ed25519 public key</span><h3>${esc(p.business.name)} credit passport</h3><p class="tiny muted">Passport ${esc(p.passport_id)} · issuer key ${esc(p.issuer.key_id)}</p></div>
+      card = `<section class="tw-passport section-gap"><div class="row between"><div><span class="pill teal">${icon("shield")}Signed · Ed25519 public key</span><h3>${esc(p.business.name)} credit passport</h3><p class="tiny muted">Passport ${esc(p.passport_id)} · issuer key ${esc(p.public_signature.key_id)}</p></div>
         <div class="row">${button("download", `${icon("download")}Download JSON`, "ghost small")}${button("verify", `${icon("check")}Verify`, "ghost small")}${button("tamper", `${icon("alert")}Tamper drill`, "ghost small")}</div></div>
         <div class="kv section-gap">
           <div><span>As of</span><strong>${esc(day(p.as_of, true))}</strong></div><div><span>Expires</span><strong>${esc(day(p.expires_at, true))}</strong></div>
@@ -173,7 +173,7 @@ window.TidewayTreasury = (() => {
         ${json("Signed passport JSON", p)}</section>`;
     }
     return `<div class="row between"><div><h3>Verifiable credit passport</h3><p>A signed, expiring summary a business can hand a lender: 13-week cash flow, health score and components, breach risk, snapshot hash and audit-chain head.</p></div>${issue}</div>
-      <div class="alert info section-gap">${icon("shield")}<div><strong>Honest limits</strong><p class="small">Each passport carries an Ed25519 public-key signature, so a lender can verify it offline with <code>python scripts/verify_passport.py passport.json</code> without contacting Tideway. The issuer key is demo-grade (derived from the instance key; no HSM or revocation list). Synthetic data; not a credit rating, offer or guarantee. Issuing writes one audit entry and changes no financial record.</p></div></div>
+      <div class="alert info section-gap">${icon("shield")}<div><strong>Honest limits</strong><p class="small">Each passport carries an Ed25519 public-key signature, so a lender can verify it offline with <code>python scripts/verify_passport.py passport.json --public-key TRUSTED_HEX</code> without contacting Tideway. The issuer key is demo-grade (derived from the instance key; no HSM or revocation list). Synthetic data; not a credit rating, offer or guarantee. Issuing writes one audit entry and changes no financial record.</p></div></div>
       ${card}
       <div class="row section-gap"><label class="field">Verify a passport file<input id="treasury-passport-file" type="file" accept="application/json,.json"></label>${button("verify-file", `${icon("upload")}Verify file`, "ghost")}</div>
       ${verdictHtml(fileCheck, "File")}`;

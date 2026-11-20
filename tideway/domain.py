@@ -500,6 +500,25 @@ def parse_combined_csv(text: str, business_id: str, currency: str) -> dict:
         raise ValidationError(f"CSV could not be read: {exc}") from None
 
 
+def unique_json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate JSON field names are not allowed.")
+        result[key] = value
+    return result
+
+
+def parse_strict_json(raw):
+    """Decode JSON once, rejecting duplicate names, nonfinite numbers and invalid Unicode."""
+    value = json.loads(raw, object_pairs_hook=unique_json_object)
+    try:
+        json.dumps(value, ensure_ascii=False, allow_nan=False).encode("utf-8")
+    except ValueError as exc:
+        raise ValidationError("JSON text must be valid Unicode and numbers must be finite.") from exc
+    return value
+
+
 def canonical_json(value) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 

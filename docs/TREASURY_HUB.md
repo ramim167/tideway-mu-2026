@@ -139,8 +139,8 @@ likely and stress summaries), `health` (score, band, weights, components with fo
 
 **Public-key verification.** Every passport also carries an Ed25519 signature (pure-Python
 RFC 8032, checked against the RFC test vector) over all fields except the two signatures.
-A lender verifies it offline with the issuer's public key alone:
-`python scripts/verify_passport.py passport.json --public-key <hex>`. Edits and attacker
+A lender obtains the issuer's public key through a trusted channel independent of the file and verifies it offline:
+`python scripts/verify_passport.py passport.json --public-key TRUSTED_HEX`. Edits and attacker
 re-signing with another key are rejected. The signing key is derived from the instance key
 (no hardware security module or revocation list). A passport is not a credit rating, offer
 or guarantee.

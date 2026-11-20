@@ -16,7 +16,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from . import selftest
 from .agent import Agent
-from .domain import SecurityError, ValidationError, canonical_json, validate_business_id
+from .domain import SecurityError, ValidationError, canonical_json, parse_strict_json, validate_business_id
 from .security import RateLimiter
 from .service import Tideway
 from .tidelm import TideLM, TideLMUnavailable, confirm as confirm_inbox
@@ -42,15 +42,6 @@ CONTENT_TYPES = {"html": "text/html", "css": "text/css", "js": "text/javascript"
 BINARY = {"woff2", "webp"}
 COOKIE = "tideway_session"
 BODY_TIMEOUT_SECONDS = 2.0
-
-
-def unique_json_object(pairs):
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError("Duplicate JSON field names are not allowed.")
-        result[key] = value
-    return result
 
 
 def csv_cell(value):
@@ -682,14 +673,7 @@ def make_handler(app):
                 length = int(raw_length)
                 if not 0 < length <= 2_000_000:
                     return self.reply(413, {"error": "Request body must be 1 byte to 2 MB."})
-                body = json.loads(self.read_body(length), object_pairs_hook=unique_json_object,
-                                  parse_constant=lambda _: (_ for _ in ()).throw(ValueError("Invalid number")))
-                try:
-                    # Escaped lone surrogates and exponent overflow can pass
-                    # json.loads, then crash response encoding or reach storage.
-                    json.dumps(body, ensure_ascii=False, allow_nan=False).encode("utf-8")
-                except ValueError as exc:
-                    raise ValidationError("JSON text must be valid Unicode and numbers must be finite.") from exc
+                body = parse_strict_json(self.read_body(length))
                 if not isinstance(body, dict):
                     raise ValidationError("Request must be a JSON object.")
                 candidate = body.get("business_id")
