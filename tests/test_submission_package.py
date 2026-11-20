@@ -59,7 +59,7 @@ class PackagePrivacy(unittest.TestCase):
         team = {'team_name': 'Example', 'members': [{'name': 'Person', 'role': ''}]}
         gaps = team_gaps(team)
         self.assertIn('Team roles', gaps)
-        self.assertIn('Roster of 2-5 members', gaps)
+        self.assertIn('Roster of 3-4 registered members', gaps)
         self.assertIn('Registration confirmation', gaps)
 
     def test_parent_directory_symlink_cannot_package_external_workstation_file(self):

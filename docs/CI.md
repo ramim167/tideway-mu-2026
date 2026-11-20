@@ -20,6 +20,8 @@ The Home-to-assistant check validates completed answers from both the determinis
 
 The package step requires passing tests and a browser report matching the current source digest. Extraction verification checks the path allowlist, exact manifest membership, byte counts, SHA-256 hashes, tests without Git/site packages, public guide routes and unauthenticated API refusal. CI publishes verification logs and manifests as temporary artifacts; it does not publish a submission ZIP or claim administrative readiness.
 
+The review archive includes the current MU proposal, contest checklist, architecture/security PDFs and model/setup notes. It preserves the public roster as supplied. Missing leader, roles, registration confirmations or a registered roster of three or four members remain explicit in the manifest and extraction report; they are never filled automatically or treated as completed registration. The extracted unit suite has a bounded ten-minute timeout for slower supported machines.
+
 ## Reproduce the checks locally
 
 Run from the repository root using Python 3.11 or later:

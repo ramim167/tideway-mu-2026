@@ -16,12 +16,26 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from scripts.build_submission_package import allowed_source
+from scripts.build_submission_package import DELIVERABLE_SOURCES, allowed_source, team_gaps
 from scripts.verify_submission import source_digest
 
 MANIFEST_PATH = 'Tideway/package-manifest.json'
-DELIVERABLES = {'pitch.pdf', 'architecture.pdf', 'security-assessment.pdf',
-                'submission-notes.pdf', 'MODEL_CARD.md', 'SETUP_WINDOWS_MAC.md'}
+DELIVERABLES = {Path(name).name for name in DELIVERABLE_SOURCES}
+# A complete suite can take several minutes on supported Windows machines.
+EXTRACTION_TEST_TIMEOUT = 600
+
+
+def verify_team_readiness(roster, manifest):
+    """A technical review package may be a draft, but its missing team details must stay explicit."""
+    try:
+        missing = team_gaps(roster)
+    except ValueError as exc:
+        raise RuntimeError(str(exc)) from exc
+    outstanding = manifest.get('outstanding')
+    if (not isinstance(outstanding, list) or any(not isinstance(item, str) for item in outstanding)
+            or not set(missing).issubset(outstanding)):
+        raise RuntimeError('Incomplete team details must be disclosed in package outstanding items')
+    return missing
 
 
 def inspect_archive(z):
@@ -88,11 +102,10 @@ def main():
         if actual_digest != manifest.get('source_tree_sha256'):
             raise RuntimeError('Extracted source differs from the tested/browser-verified source digest')
         roster = json.loads((source / 'submission-team.public.json').read_text(encoding='utf-8'))
-        if len(roster['members']) != 5:
-            raise RuntimeError('The five confirmed public members must be reproducible')
+        missing_team_details = verify_team_readiness(roster, manifest)
         env = isolated_environment()
         result = subprocess.run([sys.executable, '-S', '-m', 'unittest', 'discover', '-s', 'tests', '-q'],
-                                cwd=source, env=env, capture_output=True, text=True, timeout=180)
+                                cwd=source, env=env, capture_output=True, text=True, timeout=EXTRACTION_TEST_TIMEOUT)
         if result.returncode:
             raise RuntimeError(result.stdout + result.stderr)
         # Bind an unused local port; only the disposable extracted database is written.
@@ -148,6 +161,7 @@ def main():
                   'source_tree_sha256': manifest['source_tree_sha256'], 'files_verified': len(manifest['files']),
                   'python': sys.version, 'git_present': False, 'site_packages_enabled': False,
                   'private_workstation_files_required': False, 'http_checks': checks,
+                  'team_readiness_outstanding': missing_team_details,
                   'binary_asset_checks': asset_checks,
                   'test_result': result.stderr.strip().splitlines()[-5:]}
         (ROOT / 'dist').mkdir(exist_ok=True)

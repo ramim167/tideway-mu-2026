@@ -27,6 +27,13 @@ PRIVATE_COMPONENTS = {name.casefold() for name in EXCLUDED_ROOTS} | {
     ".ssh", ".gnupg", "identity-documents", "passports"}
 PRIVATE_SUFFIXES = {".pyc", ".pyo", ".zip", ".sqlite", ".sqlite3", ".db", ".key", ".pem", ".p12", ".pfx", ".jks", ".keystore"}
 PRIVATE_NAMES = re.compile(r"(?:passport|national[-_ ]?id|identity[-_ ]?document|private[-_ ]?(?:team|contact|roster)|credentials|secrets)", re.I)
+# Public implementation/test code, not identity documents. Keep exceptions exact and narrow.
+PUBLIC_PASSPORT_CODE = {"scripts/verify_passport.py", "tests/test_passport_public_key.py"}
+DELIVERABLE_SOURCES = (
+    "docs/proposal/Tideway_MU_AI_Builders_2026_Proposal.pdf",
+    "docs/MU_HACKATHON_2026.md", "docs/architecture.pdf", "docs/security-assessment.pdf",
+    "docs/MODEL_CARD.md", "docs/SETUP_WINDOWS_MAC.md",
+)
 
 
 def allowed_source(name):
@@ -46,7 +53,7 @@ def allowed_source(name):
         return False
     if any(part.casefold() in PRIVATE_COMPONENTS for part in p.parts) or p.suffix.casefold() in PRIVATE_SUFFIXES:
         return False
-    if any(PRIVATE_NAMES.search(part) for part in p.parts):
+    if name not in PUBLIC_PASSPORT_CODE and any(PRIVATE_NAMES.search(part) for part in p.parts):
         return False
     if any(part.casefold().startswith("submission-team") for part in p.parts) and name not in {
         "submission-team.example.json", "submission-team.public.json"}:
@@ -68,14 +75,17 @@ def source_file(root, name):
 
 
 def team_gaps(team):
+    if (not isinstance(team, dict) or not isinstance(team.get("members", []), list)
+            or any(not isinstance(member, dict) for member in team.get("members", []))):
+        raise ValueError("Public team information must be an object with a list of member objects.")
     gaps = []
     if not team.get("team_name"):
         gaps.append("Team name")
     if not team.get("leader"):
         gaps.append("Team leader")
-    if not 2 <= len(team.get("members", [])) <= 5:
-        gaps.append("Roster of 2-5 members")
-    if any(not member.get("role") for member in team.get("members", [])):
+    if len(team.get("members", [])) not in (3, 4) or any(not member.get("name") for member in team.get("members", [])):
+        gaps.append("Roster of 3-4 registered members")
+    if not team.get("members") or any(not member.get("role") for member in team["members"]):
         gaps.append("Team roles")
     for field, label in (("registration_confirmed", "Registration confirmation"),
                          ("submission_route_confirmed", "Submission route"),
@@ -110,14 +120,14 @@ def main():
         path = source_file(ROOT, name)
         if path is not None:
             entries["Tideway/source/" + name] = path.read_bytes()
-    for name in ("slides/pitch.pdf", "docs/architecture.pdf", "docs/security-assessment.pdf",
-                 "docs/submission-notes.pdf", "docs/MODEL_CARD.md", "docs/SETUP_WINDOWS_MAC.md"):
+    for name in DELIVERABLE_SOURCES:
         path = source_file(ROOT, name)
         if path is None:
             sys.exit(f"Deliverable missing or symlinked: {name}")
         entries["Tideway/deliverables/" + Path(name).name] = path.read_bytes()
     intro = ("# Tideway - The Last BrainCell\n\n"
-             "Start with deliverables/submission-notes.pdf. Run `python run.py` inside source/.\n"
+             "Start with deliverables/Tideway_MU_AI_Builders_2026_Proposal.pdf and deliverables/MU_HACKATHON_2026.md. "
+             "Run `python run.py` inside source/.\n"
              "This is a local review package. It has not been pushed or submitted.\n"
              f"Validated source tree SHA-256: {digest}\n\n"
              "## Team-controlled outstanding items\n\n" + "\n".join("- " + gap for gap in gaps) + "\n")
