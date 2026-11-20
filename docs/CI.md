@@ -6,7 +6,7 @@ The tracked workflow is [`.github/workflows/ci.yml`](../.github/workflows/ci.yml
 
 | Job | Checks |
 |---|---|
-| Standard library matrix | Python 3.11 and 3.14 on Ubuntu 24.04, Windows 2022 and macOS 14; compile, complete unit suite, 30-case task/security scorecard |
+| Standard library matrix | Python 3.11 and 3.14 on Ubuntu 24.04, Windows 2022 and macOS 15; compile, complete unit suite, 30-case task/security scorecard |
 | Optional photo lane | Pinned Pillow dependency; image validation tests must import Pillow successfully |
 | Browser and package lane | Workflow lint, Node 22 JavaScript syntax, headless Chrome desktop/mobile workflows, injected local-backend integration, linked payment delay, source package build and fresh extraction verification |
 
@@ -15,6 +15,8 @@ The core matrix uses `python -S`, which disables site packages. Photo tests may 
 `PYTHONUTF8=0` deliberately keeps Windows locale file I/O active, and the Windows job asserts CP1252 coverage. This catches a recurrence of the multilingual JSON fixture decoding failure. `PYTHONIOENCODING=utf-8` makes console logs readable without changing the default file encoding.
 
 The browser job finds the hosted image's installed Google Chrome and passes its absolute path through `CHROME`; the automation does not depend on an npm browser downloader. Node 22 supplies the built-in WebSocket used by the existing DevTools driver. Both browser runs use disposable synthetic databases. The local-backend run uses fixed test outputs and is **integration evidence, not real-model quality evidence**.
+
+The Home-to-assistant check validates completed answers from both the deterministic fallback and the compatible local backend. It checks the payroll warning and tool evidence; model-backed projection amounts and dates must match the dashboard. It does not require the two backends to use identical wording. The macOS matrix uses `macos-15`, because GitHub Actions retired macOS 14 runners on 2 November 2026 ([runner image support](https://github.com/actions/runner-images#available-images)).
 
 The package step requires passing tests and a browser report matching the current source digest. Extraction verification checks the path allowlist, exact manifest membership, byte counts, SHA-256 hashes, tests without Git/site packages, public guide routes and unauthenticated API refusal. CI publishes verification logs and manifests as temporary artifacts; it does not publish a submission ZIP or claim administrative readiness.
 

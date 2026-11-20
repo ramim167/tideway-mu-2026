@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2022, macos-14]
+        os: [ubuntu-24.04, windows-2022, macos-15]
         python: ['3.11', '3.14']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, Node 24
@@ -104,6 +104,8 @@ jobs:
         run: node scripts/test_scam_shield.mjs
       - name: Check recipient messages retain agreed currency
         run: node scripts/test_message_currency.mjs
+      - name: Check assistant browser assertions for both backends
+        run: node scripts/test_browser_assertions.mjs
       - name: Check exact currency conversion and untouched inputs
         run: node scripts/test_currency.mjs
       - name: Test browser integration with a fixed-output local backend

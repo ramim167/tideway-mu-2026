@@ -15,6 +15,7 @@ import {fileURLToPath} from "node:url";
 import {checkDecisionLab} from "./decision_lab_browser.mjs";
 import {checkOwnerView} from "./owner_view_browser.mjs";
 import {checkCurrency} from "./currency_browser.mjs";
+import {assertHomePayrollAnswer} from "./browser_assertions.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 function sourceDigest() {
@@ -239,7 +240,9 @@ try {
   await until("!!document.querySelector('.shield-result.clear')", "Scam check passes a genuine bKash SMS");
   await click('[data-view="home"]');
   await click('[data-action="home-ask"]');
-  await until("state.view === 'assistant' && !state.busy && state.chat.at(-1)?.role === 'agent' && !state.chat.at(-1).pending && state.chat.at(-2)?.text === 'Can I pay salaries this month?' && /[Pp]ayroll is not fully funded/.test(state.chat.at(-1).text)", "Home question answered in the assistant");
+  await until("state.view === 'assistant' && !state.busy && state.chat.at(-1)?.role === 'agent' && !state.chat.at(-1).pending && state.chat.at(-2)?.text === 'Can I pay salaries this month?'", "Home question answered in the assistant");
+  const homeAnswer = await evaluate("({reply:state.chat.at(-1),dashboard:state.dashboard})");
+  assertHomePayrollAnswer(homeAnswer.reply, homeAnswer.dashboard);
   await click('[data-view="overview"]');
   await until("!!document.querySelector('.owner-view')", "simple cash forecast");
   await click('[data-action=owner-detailed]');
