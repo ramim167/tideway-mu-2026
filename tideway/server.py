@@ -399,13 +399,14 @@ class Application:
                                                 body["expected_snapshot"], body["request_id"], operator,
                                                 body["pin"], actor, body.get("target_date"))
         if path == "/api/chat":
-            self.fields(body, ("business_id", "target_date", "message", "history", "consent", "input_currency"), ("business_id", "message"))
+            self.fields(body, ("business_id", "target_date", "message", "history", "consent", "input_currency", "lang"), ("business_id", "message"))
             history = body.get("history", [])
-            if not isinstance(history, list) or len(history) > 20 or not isinstance(body.get("consent", False), bool):
+            if not isinstance(history, list) or len(history) > 20 or not isinstance(body.get("consent", False), bool) \
+                    or body.get("lang", "en") not in ("en", "bn"):
                 raise ValidationError("Invalid chat request.")
             return self.agent.chat(business_id, body.get("target_date"), self.currency_question(business_id,body), history, body.get("consent", False),
                                    "agent:llm" if body.get("consent") and self.agent.key else "agent:local", operator["role"],
-                                   operator["name"])
+                                   operator["name"], body.get("lang"))
         if path == "/api/copilot/ask":
             self.fields(body, ("business_id", "target_date", "message", "input_currency"), ("business_id", "message"))
             return self.tidelm.ask(self.tideway, business_id, body.get("target_date"), self.currency_question(business_id,body), operator["role"],

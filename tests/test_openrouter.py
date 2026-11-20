@@ -109,6 +109,26 @@ class Http(unittest.TestCase):
                 request_openrouter(payload, "sk-or-test")
         self.assertIn("rate-limited", str(caught.exception))
 
+    def test_busy_models_fall_through_to_the_next(self):
+        tried = []
+
+        class Response(io.BytesIO):
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+
+        def busy_then_ok(request, timeout):
+            model = json.loads(request.data)["model"]
+            tried.append(model)
+            if model == "busy:free":
+                raise urllib.error.HTTPError(request.full_url, 429, "Too Many Requests", {}, None)
+            return Response(json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode())
+
+        payload = {"model": "busy:free, ready:free", "instructions": "S", "input": [{"role": "user", "content": "hi"}], "tools": []}
+        with mock.patch.object(agent_module.urllib.request, "urlopen", busy_then_ok):
+            out = request_openrouter(payload, "k")
+        self.assertEqual(tried, ["busy:free", "ready:free"])
+        self.assertEqual(out["output"][0]["content"][0]["text"], "ok")
+
 
 if __name__ == "__main__":
     unittest.main()

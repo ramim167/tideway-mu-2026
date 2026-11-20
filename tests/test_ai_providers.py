@@ -1,0 +1,91 @@
+"""Several AI providers in order: a busy, broken or out-of-quota one never blocks the answer."""
+import io
+import json
+import unittest
+import urllib.error
+from unittest import mock
+
+from tideway import ai_providers
+from tideway.agent import ProviderError
+from tideway.ai_providers import label, make_transport, providers_from_env
+
+PAYLOAD = {"model": "ignored", "instructions": "S", "input": [{"role": "user", "content": "hi"}], "tools": []}
+
+
+class Response(io.BytesIO):
+    def __enter__(self): return self
+    def __exit__(self, *a): return False
+
+
+def scripted(outcomes, calls):
+    """outcomes: {(host, model): status or "ok"}; anything unlisted answers ok."""
+    def urlopen(request, timeout):
+        host, model = request.full_url.split("/")[2], json.loads(request.data)["model"]
+        calls.append((host, model, request.get_header("Authorization")))
+        outcome = outcomes.get((host, model), "ok")
+        if outcome != "ok":
+            raise urllib.error.HTTPError(request.full_url, outcome, "x", {}, None)
+        return Response(json.dumps({"choices": [{"message": {"content": f"answer from {host} {model}"}}]}).encode())
+    return urlopen
+
+
+class Config(unittest.TestCase):
+    def test_only_configured_providers_in_the_chosen_order(self):
+        env = {"OPENROUTER_API_KEY": "or-k", "GROQ_API_KEY": "gq-k", "GEMINI_API_KEY": "gm-k", "TIDEWAY_AI_ORDER": "openrouter,gemini"}
+        names = [p.name for p in providers_from_env(env)]
+        self.assertEqual(names, ["openrouter", "gemini", "groq"])
+        self.assertEqual(providers_from_env({}), [])
+        self.assertIn("gemini (gemini-2.5-flash)", label(providers_from_env({"GEMINI_API_KEY": "k"})))
+
+    def test_custom_provider_needs_https_and_a_model(self):
+        ok = providers_from_env({"CUSTOM_AI_BASE_URL": "https://ai.example.com/v1", "CUSTOM_AI_API_KEY": "k", "CUSTOM_AI_MODEL": "m1,m2"})
+        self.assertEqual(ok[0].url, "https://ai.example.com/v1/chat/completions")
+        self.assertEqual(ok[0].models, ["m1", "m2"])
+        local = providers_from_env({"CUSTOM_AI_BASE_URL": "http://127.0.0.1:9000/v1", "CUSTOM_AI_API_KEY": "k", "CUSTOM_AI_MODEL": "m"})
+        self.assertEqual(local[0].url, "http://127.0.0.1:9000/v1/chat/completions")
+        with self.assertRaises(ValueError):
+            providers_from_env({"CUSTOM_AI_BASE_URL": "http://ai.example.com/v1", "CUSTOM_AI_API_KEY": "k", "CUSTOM_AI_MODEL": "m"})
+        with self.assertRaises(ValueError):
+            providers_from_env({"CUSTOM_AI_BASE_URL": "https://ai.example.com/v1", "CUSTOM_AI_API_KEY": "k"})
+
+    def test_keys_are_not_printed(self):
+        provider = providers_from_env({"GROQ_API_KEY": "secret-groq-key"})[0]
+        self.assertNotIn("secret-groq-key", repr(provider))
+        self.assertNotIn("secret-groq-key", label([provider]))
+
+
+class Fallback(unittest.TestCase):
+    env = {"GEMINI_API_KEY": "gm-k", "GROQ_API_KEY": "gq-k", "OPENROUTER_API_KEY": "or-k", "OPENROUTER_MODEL": "a:free,b:free"}
+
+    def run_with(self, outcomes):
+        calls = []
+        transport = make_transport(providers_from_env(self.env))
+        with mock.patch.object(ai_providers.urllib.request, "urlopen", scripted(outcomes, calls)):
+            try:
+                return transport(PAYLOAD), calls
+            except ProviderError as exc:
+                return exc, calls
+
+    def test_busy_first_provider_falls_through_to_the_next(self):
+        out, calls = self.run_with({("generativelanguage.googleapis.com", "gemini-2.5-flash"): 429})
+        self.assertEqual(out["output"][0]["content"][0]["text"], "answer from api.groq.com llama-3.3-70b-versatile")
+        self.assertEqual([c[0] for c in calls], ["generativelanguage.googleapis.com", "api.groq.com"])
+        self.assertEqual(calls[1][2], "Bearer gq-k")  # each provider gets only its own key
+
+    def test_bad_key_skips_provider_and_busy_model_tries_next_model(self):
+        out, calls = self.run_with({("generativelanguage.googleapis.com", "gemini-2.5-flash"): 401,
+                                    ("api.groq.com", "llama-3.3-70b-versatile"): 503,
+                                    ("openrouter.ai", "a:free"): 429})
+        self.assertEqual(out["output"][0]["content"][0]["text"], "answer from openrouter.ai b:free")
+        self.assertEqual([c[1] for c in calls], ["gemini-2.5-flash", "llama-3.3-70b-versatile", "a:free", "b:free"])
+
+    def test_everyone_busy_gives_a_clear_message(self):
+        out, _ = self.run_with({("generativelanguage.googleapis.com", "gemini-2.5-flash"): 429, ("api.groq.com", "llama-3.3-70b-versatile"): 429,
+                                ("openrouter.ai", "a:free"): 429, ("openrouter.ai", "b:free"): 429})
+        self.assertIsInstance(out, ProviderError)
+        self.assertIn("Every AI provider is busy", str(out))
+        self.assertIn("local agent still works", str(out))
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -72,7 +72,10 @@ def request_openai(payload, key):
 # translate in both directions so every guard (pseudonyms, allowed tools, number grounding, budgets)
 # stays exactly the same whichever provider answers.
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_DEFAULT_MODEL = "google/gemma-4-31b-it:free"
+# Free models are often busy (HTTP 429), so the default is an ordered list: the next one is tried when one is busy.
+OPENROUTER_DEFAULT_MODEL = ("google/gemma-4-31b-it:free,google/gemma-4-26b-a4b-it:free,"
+                            "nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3.5-super-vl:free")
+OPENROUTER_RETRY_STATUSES = (404, 408, 429, 500, 502, 503, 504)
 
 
 def responses_to_chat(payload):
@@ -118,22 +121,34 @@ def chat_to_responses(response):
 
 
 def request_openrouter(payload, key):
-    request = urllib.request.Request(OPENROUTER_URL, data=json.dumps(responses_to_chat(payload), ensure_ascii=False).encode(),
-                                     headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json",
-                                              "HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "Tideway"},
-                                     method="POST")
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            raw = response.read(262145)
-            if len(raw) > 262144:
-                raise ProviderError("The AI response exceeded the 256 KiB limit.")
-            return chat_to_responses(json.loads(raw))
-    except urllib.error.HTTPError as exc:
-        hint = {401: "Check OPENROUTER_API_KEY in .env.", 402: "The OpenRouter account has no credit for this model; use a :free model.",
-                429: "The free model is rate-limited right now; wait a minute or choose another :free model."}.get(exc.code, "Check the key, model name and quota.")
-        raise ProviderError(f"OpenRouter returned HTTP {exc.code}. {hint}") from None
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
-        raise ProviderError("OpenRouter could not be reached. The local agent still works.") from None
+    """Send to OpenRouter. The model may be a comma-separated list: busy or unavailable models fall through to the next."""
+    models = [m.strip() for m in str(payload.get("model") or "").split(",") if m.strip()] or [OPENROUTER_DEFAULT_MODEL.split(",")[0]]
+    chat = responses_to_chat(payload)
+    last = None
+    for model in models:
+        chat["model"] = model
+        request = urllib.request.Request(OPENROUTER_URL, data=json.dumps(chat, ensure_ascii=False).encode(),
+                                         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json",
+                                                  "HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "Tideway"},
+                                         method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                raw = response.read(262145)
+                if len(raw) > 262144:
+                    raise ProviderError("The AI response exceeded the 256 KiB limit.")
+                return chat_to_responses(json.loads(raw))
+        except urllib.error.HTTPError as exc:
+            last = exc.code
+            if exc.code in OPENROUTER_RETRY_STATUSES:
+                continue
+            hint = {401: "Check OPENROUTER_API_KEY in .env.", 402: "The OpenRouter account has no credit for this model; use a :free model."}.get(
+                exc.code, "Check the key, model name and quota.")
+            raise ProviderError(f"OpenRouter returned HTTP {exc.code}. {hint}") from None
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
+            raise ProviderError("OpenRouter could not be reached. The local agent still works.") from None
+    if last == 429:
+        raise ProviderError("OpenRouter returned HTTP 429. Every free model in the list is rate-limited right now; wait a minute or add another :free model to OPENROUTER_MODEL.")
+    raise ProviderError(f"OpenRouter returned HTTP {last}. Check the model names in OPENROUTER_MODEL.")
 
 
 def _tool(name, description):
@@ -204,6 +219,7 @@ class Pseudonyms:
 
 
 NUMBER_RE = re.compile(r"(?<![\w.])-?\d[\d,]*(?:\.\d+)?%?")
+_OTHER_DIGITS = str.maketrans("০১২৩৪৫৬৭৮৯०१२३४५६७८९", "01234567890123456789")
 _MONTHS = r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
 _DATE_RE = re.compile(
     rf"(?ix)\b(?:"
@@ -245,6 +261,20 @@ def _grounding_exempt_number(text, match, number, date_spans):
                 _YEAR_PREPOSITION_RE.search(before))
 
 
+# Devanagari minus the dandas (U+0964/U+0965), which Bangla uses as its full stop.
+_FOREIGN_SCRIPTS = re.compile("[ऀ-ॣ०-ॿ਀-੿઀-૿଀-୿ᄀ-ᇿ぀-ヿ㐀-䶿一-鿿가-힯]+")
+
+
+def clean_answer(text, ui_lang=None):
+    """Plain text for the chat: no Markdown symbols; in Bangla mode, no stray Hindi, Punjabi, CJK or Korean characters
+    (smaller free models sometimes mix scripts). Numbers are untouched and still go through grounding_check."""
+    text = re.sub(r"\*\*|__|`+", "", text)
+    text = re.sub(r"^\s{0,3}#{1,6}\s*", "", text, flags=re.M)
+    if ui_lang == "bn":
+        text = _FOREIGN_SCRIPTS.sub("", text)
+    return re.sub(r"[ \t]{2,}", " ", text).strip()
+
+
 def grounding_check(text, tool_outputs):
     """Every number in the model's answer must appear in tool output (in some unit)."""
     allowed = set()
@@ -273,6 +303,8 @@ def grounding_check(text, tool_outputs):
             for item in value:
                 walk(item)
     walk(tool_outputs)
+    # Bangla (and Devanagari) digits are checked like Western digits, so a number cannot slip past in another script.
+    text = text.translate(_OTHER_DIGITS)
     unverified = []
     date_spans = [match.span() for match in _DATE_RE.finditer(text)]
     for match in NUMBER_RE.finditer(text):
@@ -296,9 +328,16 @@ class Agent:
     def store(self):
         return self.app.store
 
-    def provider_payload(self, target, inputs, role):
+    def provider_payload(self, target, inputs, role, ui_lang=None):
         allowed = TOOL_NAMES if role in PLANNER_ROLES else tuple(n for n in TOOL_NAMES if n != "compare_plans")
-        return {"model": self.model, "instructions": SYSTEM + f"\nScope: one business, target date {target}.",
+        style = ("\nWrite plain text only: no Markdown, no asterisks, no backticks, no headings, no field or tool names. "
+                 "Write every number with Western digits 0-9 and copy amounts exactly as the tools give them (for example BDT 80,000).")
+        language = ("\nAlways reply in standard Bangla (Bengali script) only, as spoken in Bangladesh, in 2 to 5 short sentences a shop owner "
+                    "understands. Never use Hindi, Punjabi, Korean, Chinese or any other script; English words only for "
+                    "brand names and BDT.") if ui_lang == "bn" else \
+            "\nReply in the language the user writes in (Bangla, Banglish or English), in 2 to 5 short sentences."
+        language += style
+        return {"model": self.model, "instructions": SYSTEM + language + f"\nScope: one business, target date {target}.",
                 "input": inputs, "tools": [item for item in TOOLS if item["name"] in allowed],
                 "parallel_tool_calls": False, "store": False, "max_output_tokens": 1500}
 
@@ -474,17 +513,18 @@ class Agent:
 
     # ---- chat -----------------------------------------------------------------
 
-    def chat(self, business_id, target_date, message, history=None, consent=False, actor="agent", role="owner", name=None):
+    def chat(self, business_id, target_date, message, history=None, consent=False, actor="agent", role="owner", name=None, ui_lang=None):
+        """ui_lang "bn" means the app is in Bangla: Latin-script (Banglish or English) questions are answered in Bangla too."""
         if not isinstance(message, str) or not message.strip() or len(message) > 2000:
             raise ValidationError("Message must contain 1-2,000 characters.")
         try:
             if self.key and consent:
-                return self._llm(business_id, target_date, message, history or [], actor, role)
-            return self._local(business_id, target_date, message, actor, role, name)
+                return self._llm(business_id, target_date, message, history or [], actor, role, ui_lang)
+            return self._local(business_id, target_date, message, actor, role, name, ui_lang)
         except ValidationError as exc:  # answer like a colleague, not with an HTTP error
             return {"text": f"I couldn't do that: {exc}", "mode": "local", "trace": [], "unverified_numbers": []}
 
-    def _local(self, business_id, target_date, message, actor, role="owner", name=None):
+    def _local(self, business_id, target_date, message, actor, role="owner", name=None, ui_lang=None):
         trace = []
         text = message.casefold()
         snapshot = self.store.snapshot(business_id)
@@ -495,6 +535,8 @@ class Agent:
         named = next((c for c in sorted(customers, key=len, reverse=True) if c.casefold() in text), None)
         small = conversation.classify(message)
         lang = i18n.detect(message)
+        if ui_lang == "bn" and lang == "en":
+            lang = "bn"  # the app is in Bangla: Banglish greetings and questions get Bangla answers
         # Questions in Chinese, Spanish, French, Portuguese, Indonesian, Hinglish or Banglish: the same tools as
         # the English rules below, answered in the question's language.  Names come only from the ledger.
         kind, details = (None, {}) if small else conversation.intent(message, sorted(customers), lang)
@@ -681,7 +723,7 @@ class Agent:
             return text, "plan", None
         return conversation.not_understood(conversation.situation(self.app, business_id, target_date), lang), None, None
 
-    def _llm(self, business_id, target_date, message, history, actor, role="owner"):
+    def _llm(self, business_id, target_date, message, history, actor, role="owner", ui_lang=None):
         allowed = TOOL_NAMES if role in PLANNER_ROLES else tuple(name for name in TOOL_NAMES if name != "compare_plans")
         snapshot = self.store.snapshot(business_id)
         target = target_date or snapshot["business"]["default_target_date"]
@@ -693,7 +735,7 @@ class Agent:
             for _turn in range(5):
                 if time.monotonic() - started >= 120:
                     raise ProviderError("The 120-second answer budget was reached. Ask a narrower question.")
-                payload = self.provider_payload(target, inputs, role)
+                payload = self.provider_payload(target, inputs, role, ui_lang)
                 response = self.transport(payload, self.key)
                 if time.monotonic() - started >= 120:
                     raise ProviderError("The 120-second answer budget was reached; no further tools were run.")
@@ -718,6 +760,7 @@ class Agent:
                         raise ProviderError("The AI service returned no answer.")
                     if len(text.encode()) > 16384:
                         raise ProviderError("The AI answer exceeded the 16 KiB display limit.")
+                    text = clean_answer(text, ui_lang)
                     unverified = grounding_check(text, outputs)
                     restored = aliases.restore(text)
                     self.store.audit(business_id, "agent.answer", actor, "agent_read",

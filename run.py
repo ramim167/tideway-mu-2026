@@ -17,7 +17,8 @@ def load_env():
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 key, value = line.split("=", 1)
-                if key.strip() in ("OPENAI_API_KEY", "OPENAI_MODEL", "OPENROUTER_API_KEY", "OPENROUTER_MODEL", "TIDEWAY_HOST", "TIDEWAY_PORT",
+                if key.strip() in ("OPENAI_API_KEY", "OPENAI_MODEL", "OPENROUTER_API_KEY", "OPENROUTER_MODEL", "GEMINI_API_KEY", "GEMINI_MODEL", "GROQ_API_KEY", "GROQ_MODEL",
+                                   "CUSTOM_AI_BASE_URL", "CUSTOM_AI_API_KEY", "CUSTOM_AI_MODEL", "CUSTOM_AI_NAME", "TIDEWAY_AI_ORDER", "TIDEWAY_HOST", "TIDEWAY_PORT",
                                    "TIDEWAY_LOCAL_MODEL_URL", "TIDEWAY_LOCAL_TEXT_MODEL", "TIDEWAY_LOCAL_VISION_MODEL",
                                    "TIDEWAY_LOCAL_STRUCTURED_PLANS", "TIDEWAY_SEMANTIC_SCREENING", "TIDEWAY_DECISION_LAB"):
                     os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
@@ -36,11 +37,15 @@ if __name__ == "__main__":
     parser.add_argument("--db", default=str(ROOT / "data" / "tideway.sqlite3"))
     parser.add_argument("--no-demo", action="store_true", help="Start without the synthetic demo businesses")
     args = parser.parse_args()
-    # Optional cloud AI: OpenRouter (free :free models available) or OpenAI. Neither is needed for the app to work.
-    openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
-    if openrouter_key:
-        from tideway.agent import OPENROUTER_DEFAULT_MODEL, request_openrouter
-        key, model, transport = openrouter_key, os.getenv("OPENROUTER_MODEL", "").strip() or OPENROUTER_DEFAULT_MODEL, request_openrouter
+    # Optional cloud AI. Several providers (Gemini, Groq, OpenRouter, a custom OpenAI-compatible one) are tried in
+    # order, so a busy one never blocks an answer. None is needed for the app to work. See tideway/ai_providers.py.
+    from tideway.ai_providers import label, make_transport, providers_from_env
+    try:
+        providers = providers_from_env(os.environ)
+    except ValueError as exc:
+        sys.exit(f"AI provider settings in .env: {exc}")
+    if providers:
+        key, model, transport = "configured", label(providers), make_transport(providers)
     else:
         key, model, transport = os.getenv("OPENAI_API_KEY", "").strip(), os.getenv("OPENAI_MODEL", "gpt-5-mini"), None
     try:

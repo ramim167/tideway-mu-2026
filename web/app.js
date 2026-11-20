@@ -1095,9 +1095,11 @@ function renderRescue() {
 const tidelmOn = () => Boolean(state.config?.tidelm?.available);
 const tidelmLabel = () => state.config?.tidelm?.label || "TideLM · local Qwen3 + Tideway adapter";
 const TIDELM_PROMPTS = ["Should I give Nila Traders 30 days credit on 50,000?", "Which customers pay late?",
-  "What if Bay Logistics pays 15 days late?", "Nila Traders 晚20天付款会怎样？", "¿Puedo pagar los sueldos este mes?",
-  "Remind everyone who owes me", "pay Rahman now"];
-const LOCAL_PROMPTS = ["Can I pay payroll on time?", "How risky is this month?", "Who should I chase first?", "Nila Traders 晚20天付款会怎样？", "¿Puedo pagar los sueldos este mes?", "Find me a rescue plan", "Why this plan?", "Approve the plan and pay the supplier"];
+  "What if Bay Logistics pays 15 days late?", "এই মাসে কি বেতন দিতে পারব?", "Nila Traders ২০ দিন দেরিতে টাকা দিলে কী হবে?",
+  "beton dite parbo?", "Remind everyone who owes me", "pay Rahman now"];
+const LOCAL_PROMPTS = ["Can I pay payroll on time?", "How risky is this month?", "Who should I chase first?",
+  "এই মাসে কি বেতন দিতে পারব?", "Nila Traders ২০ দিন দেরিতে টাকা দিলে কী হবে?", "beton dite parbo?",
+  "Find me a rescue plan", "Why this plan?", "Approve the plan and pay the supplier"];
 
 // A 503 means MLX or the adapter is missing: show the status card instead of an error.
 function markTideLMDown(error) {
@@ -1195,7 +1197,9 @@ function renderAssistant() {
   const on = tidelmOn();
   if (!state.chat.length) state.chat.push({role: "agent", text: on
     ? `Hi, I'm Tideway, using ${tidelmLabel()}. Ask in your own language (English, 中文, Español, Bahasa, Français, Português, Hinglish, Banglish): credit checks, late payers, a what-if, reminder drafts or a rescue plan. The model selects tool calls; Tideway's tools supply the figures. I can't approve or move money.`
-    : "Hi, I'm Tideway. Ask me whether payroll is safe, how risky the month looks, who to chase, a what-if such as \"what if Nila Traders pays 10 days late\", or ask me for a rescue plan. I can explain and propose; I can't approve or move money."});
+    : state.lang === "bn"
+      ? "আসসালামু আলাইকুম, আমি Tideway। জিজ্ঞেস করুন: বেতন দিতে পারবেন কি না, এই মাসে ঝুঁকি কতটা, কার কাছ থেকে আগে টাকা চাইবেন, কোনো ক্রেতা দেরিতে দিলে কী হবে, বা একটি উদ্ধার পরিকল্পনা। বাংলা, Banglish বা English, যেভাবে খুশি লিখুন। আমি ব্যাখ্যা ও প্রস্তাব দিতে পারি; টাকা অনুমোদন বা পাঠাতে পারি না।"
+      : "Hi, I'm Tideway. Ask me whether payroll is safe, how risky the month looks, who to chase, a what-if such as \"what if Nila Traders pays 10 days late\", or ask me for a rescue plan. I can explain and propose; I can't approve or move money."});
   const prompts = on ? TIDELM_PROMPTS.map(p=>p.replace('on 50,000?',`on ${displayCurrency()} ${displayCurrency()===currency()?'50,000':'500'}?`)) : LOCAL_PROMPTS;
   const consent = on ? "" : state.config.ai_configured ? `<label class="check small"><input id="ai-consent" type="checkbox" ${state.aiConsent ? "checked" : ""}> Use the AI model for this message (names are pseudonymised; ledger descriptions are omitted; inspect your question for private text)</label><button type="button" class="button small ghost" data-action="privacy-preview-chat">Inspect outgoing request before consent</button>` : `<p class="hint">Local agent mode: answers come from deterministic tools, no network. An optional LLM mode is available when a key is configured.</p>`;
   const mode = on ? `<div class="row chat-mode"><span class="pill teal">${icon("spark")}${esc(tidelmLabel())}</span></div>` : "";
@@ -1233,7 +1237,7 @@ async function ask(message) {
   render();
   const result = await act("Asking", async () => {
     const answer = tidelmOn() ? await askTideLM(text) : null;
-    return answer || {chat: await api("/api/chat", {business_id: state.businessId, target_date: state.targetDate, message: text, history, consent, input_currency: displayCurrency()})};
+    return answer || {chat: await api("/api/chat", {business_id: state.businessId, target_date: state.targetDate, message: text, history, consent, input_currency: displayCurrency(), lang: state.lang === "bn" ? "bn" : "en"})};
   });
   state.chat = state.chat.filter((item) => item !== pending);
   if (result?.copilot) {
