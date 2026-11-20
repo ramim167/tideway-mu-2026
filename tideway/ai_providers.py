@@ -94,6 +94,17 @@ def _post(provider, chat):
     return chat_to_responses(json.loads(raw))
 
 
+def _has_content(result):
+    """True when a reply has a tool call or some non-blank text."""
+    for item in result.get("output") or []:
+        if item.get("type") == "function_call":
+            return True
+        for part in item.get("content") or []:
+            if isinstance(part, dict) and str(part.get("text") or "").strip():
+                return True
+    return False
+
+
 def make_transport(providers):
     """A transport for Agent: same payload in, same {"output": [...]} out, with provider and model fallback."""
     if not providers:
@@ -106,7 +117,11 @@ def make_transport(providers):
             for model in provider.models:
                 chat["model"] = model
                 try:
-                    return _post(provider, chat)
+                    result = _post(provider, chat)
+                    if _has_content(result):
+                        return result
+                    tried.append(f"{provider.name}: empty reply")  # some free models answer with nothing: try the next
+                    continue
                 except urllib.error.HTTPError as exc:
                     tried.append(f"{provider.name} {exc.code}")
                     if exc.code in NEXT_PROVIDER:

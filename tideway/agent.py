@@ -212,10 +212,17 @@ class Pseudonyms:
             return value
         return value
 
+    # Models answering in Bangla sometimes translate the label ("Customer 1" -> "গ্রাহক ১"); map those back too.
+    _BANGLA_LABELS = {"Customer": "গ্রাহক|ক্রেতা|কাস্টমার", "Supplier": "সরবরাহকারী|সাপ্লায়ার|বিক্রেতা"}
+
     def restore(self, text):
         for alias, name in sorted(self.backward.items(), key=lambda pair: -len(pair[0])):
-            text = re.sub(rf"\b{re.escape(alias)}\b", name, text)
-        return text
+            text = re.sub(rf"\b{re.escape(alias)}\b", name, text, flags=re.IGNORECASE)
+        def bangla(match):
+            label = next(key for key, words in self._BANGLA_LABELS.items() if re.fullmatch(words, match.group(1)))
+            return self.backward.get(f"{label} {match.group(2).translate(_OTHER_DIGITS)}", match.group(0))
+        words = "|".join(self._BANGLA_LABELS.values())
+        return re.sub(rf"({words})\s*[-–]?\s*([০-৯0-9]{{1,3}})(?![০-৯0-9])", bangla, text)
 
 
 NUMBER_RE = re.compile(r"(?<![\w.])-?\d[\d,]*(?:\.\d+)?%?")
@@ -265,6 +272,32 @@ def _grounding_exempt_number(text, match, number, date_spans):
 _FOREIGN_SCRIPTS = re.compile("[ऀ-ॣ०-ॿ਀-੿઀-૿଀-୿ᄀ-ᇿ぀-ヿ㐀-䶿一-鿿가-힯]+")
 
 
+_CODE_WORD = re.compile(r"\b[a-z][a-z0-9]*_[a-z0-9_]+\b|\b(?:true|false|null|None)\b")
+_MIXED_WORD = re.compile("[ঀ-৿][A-Za-z]|[A-Za-z][ঀ-৿]")
+# Five or more English words in a row inside a Bangla answer is an English sentence, not a name or BDT.
+_ENGLISH_RUN = re.compile(r"(?:\b[A-Za-z][A-Za-z'’-]*\b[\s,()]*){5,}")
+_LABELS = re.compile(r"\b(?:Customer|Supplier)\s+\d+\b")
+_ODD_SCRIPT = re.compile("[؀-ۿݐ-ݿऀ-ॣ०-ॿ]")
+
+
+def answer_issues(text, ui_lang=None):
+    """Signs that a (free, small) model garbled its reply: field names, true/false, and in Bangla mode English letters
+    glued inside Bangla words or Arabic/Hindi letters. Such a reply is replaced or rewritten, never shown as is."""
+    issues = []
+    if _CODE_WORD.search(text):
+        issues.append("code_words")
+    if ui_lang == "bn":
+        if _MIXED_WORD.search(text):
+            issues.append("mixed_script_word")
+        if _ODD_SCRIPT.search(text):
+            issues.append("foreign_script")
+        if not re.search("[ঀ-৿]", text):
+            issues.append("not_bangla")
+        elif _ENGLISH_RUN.search(_LABELS.sub("", text)):
+            issues.append("english_sentence")
+    return issues
+
+
 def clean_answer(text, ui_lang=None):
     """Plain text for the chat: no Markdown symbols; in Bangla mode, no stray Hindi, Punjabi, CJK or Korean characters
     (smaller free models sometimes mix scripts). Numbers are untouched and still go through grounding_check."""
@@ -272,6 +305,7 @@ def clean_answer(text, ui_lang=None):
     text = re.sub(r"^\s{0,3}#{1,6}\s*", "", text, flags=re.M)
     if ui_lang == "bn":
         text = _FOREIGN_SCRIPTS.sub("", text)
+    text = re.sub(r"([।?!])(?=[ঀ-৿A-Za-z])", r"\1 ", text)  # a space after a full stop
     return re.sub(r"[ \t]{2,}", " ", text).strip()
 
 
@@ -320,6 +354,20 @@ def grounding_check(text, tool_outputs):
     return unverified
 
 
+REWRITE_REQUEST = {
+    "bn": ("Your last reply had problems: English letters inside Bangla words, an English sentence, field names, or "
+           "numbers not taken from the tools. Rewrite the same answer in clean, everyday Bangla (Bengali script only), "
+           "2 to 4 short sentences. Copy every amount exactly from the tool output. Do not call any tool."),
+    "en": ("Your last reply had problems: field names, code words, or numbers not taken from the tools. Rewrite the "
+           "same answer in plain everyday English, 2 to 4 short sentences. Copy every amount exactly from the tool "
+           "output. Do not call any tool."),
+}
+FALLBACK_NOTE = {
+    "bn": "(AI-র উত্তর পরিষ্কার ছিল না, তাই Tideway-এর নিজের যাচাই করা উত্তর দেখানো হলো।)",
+    "en": "(The AI reply was unclear, so this is Tideway's own checked answer.)",
+}
+
+
 class Agent:
     def __init__(self, app, key="", model="gpt-5-mini", transport=request_openai):
         self.app, self.key, self.model, self.transport = app, key, model, transport
@@ -333,8 +381,11 @@ class Agent:
         style = ("\nWrite plain text only: no Markdown, no asterisks, no backticks, no headings, no field or tool names. "
                  "Write every number with Western digits 0-9 and copy amounts exactly as the tools give them (for example BDT 80,000).")
         language = ("\nAlways reply in standard Bangla (Bengali script) only, as spoken in Bangladesh, in 2 to 5 short sentences a shop owner "
-                    "understands. Never use Hindi, Punjabi, Korean, Chinese or any other script; English words only for "
-                    "brand names and BDT.") if ui_lang == "bn" else \
+                    "understands. Never use Hindi, Punjabi, Arabic, Korean, Chinese or any other script, and never put English "
+                    "letters inside a Bangla word. Use everyday words: বেতন (salary), নগদ টাকা (cash), খরচ (costs), "
+                    "ঝুঁকি (risk), পাওনা (money owed to you), উদ্ধার পরিকল্পনা (rescue plan), সহকারী (assistant). "
+                    "English only for business and brand names and BDT. Keep labels such as Customer 1 or Supplier 2 "
+                    "exactly as written, in English. Never add an English sentence.") if ui_lang == "bn" else \
             "\nReply in the language the user writes in (Bangla, Banglish or English), in 2 to 5 short sentences."
         language += style
         return {"model": self.model, "instructions": SYSTEM + language + f"\nScope: one business, target date {target}.",
@@ -519,7 +570,14 @@ class Agent:
             raise ValidationError("Message must contain 1-2,000 characters.")
         try:
             if self.key and consent:
-                return self._llm(business_id, target_date, message, history or [], actor, role, ui_lang)
+                answer = self._llm(business_id, target_date, message, history or [], actor, role, ui_lang)
+                if answer.get("quality_issues"):
+                    # The AI reply is still garbled after a rewrite: show the checked answer when the local agent knows it.
+                    local = self._local(business_id, target_date, message, actor, role, name, ui_lang)
+                    if local.get("understood", True) and local.get("trace"):
+                        note = FALLBACK_NOTE.get(ui_lang, FALLBACK_NOTE["en"])
+                        return {**local, "text": local["text"] + "\n\n" + note, "ai_fallback": True}
+                return answer
             return self._local(business_id, target_date, message, actor, role, name, ui_lang)
         except ValidationError as exc:  # answer like a colleague, not with an HTTP error
             return {"text": f"I couldn't do that: {exc}", "mode": "local", "trace": [], "unverified_numbers": []}
@@ -731,9 +789,10 @@ class Agent:
         aliases = Pseudonyms(snapshot["records"])
         inputs = self.cloud_inputs(aliases, message, history)
         trace, outputs, calls = [], [], 0
+        rewrite_asked, first = False, None
         started = time.monotonic()
         try:
-            for _turn in range(5):
+            for _turn in range(6):
                 if time.monotonic() - started >= 120:
                     raise ProviderError("The 120-second answer budget was reached. Ask a narrower question.")
                 payload = self.provider_payload(target, inputs, role, ui_lang)
@@ -761,8 +820,22 @@ class Agent:
                         raise ProviderError("The AI service returned no answer.")
                     if len(text.encode()) > 16384:
                         raise ProviderError("The AI answer exceeded the 16 KiB display limit.")
+                    issues = answer_issues(text, ui_lang)
                     text = clean_answer(text, ui_lang)
                     unverified = grounding_check(text, outputs)
+                    problems = issues + (["unverified_numbers"] if unverified else [])
+                    if problems and not rewrite_asked and time.monotonic() - started < 90:
+                        # One chance to fix a garbled reply or wrong figures; the tools already ran, so this is one short call.
+                        rewrite_asked, first = True, (text, problems)
+                        request = REWRITE_REQUEST.get(ui_lang, REWRITE_REQUEST["en"])
+                        if unverified:
+                            request += (" These numbers do not match the tool output: " + ", ".join(unverified[:6]) +
+                                        ". Fields ending in _minor are in poisha or cents: divide them by 100.")
+                        inputs += [{"role": "assistant", "content": text[:2000]}, {"role": "user", "content": request}]
+                        continue
+                    if rewrite_asked and problems and len(first[1]) < len(problems):
+                        text, problems = first
+                        unverified = grounding_check(text, outputs)
                     restored = aliases.restore(text)
                     self.store.audit(business_id, "agent.answer", actor, "agent_read",
                                      {"mode": "llm", "model": self.model, "tools": [item["tool"] for item in trace],
@@ -772,7 +845,8 @@ class Agent:
                     if unverified:
                         restored += ("\n\nNumber check: " + ", ".join(unverified[:6]) +
                                      " could not be matched to tool output. Treat them as unverified.")
-                    return {"text": restored, "mode": "llm", "trace": trace, "unverified_numbers": unverified}
+                    return {"text": restored, "mode": "llm", "trace": trace, "unverified_numbers": unverified,
+                            "quality_issues": answer_issues(text, ui_lang) + (["unverified_numbers"] if unverified else [])}
                 for item in pending:
                     inputs.append(item)
                     name = item.get("name")

@@ -79,6 +79,19 @@ class Fallback(unittest.TestCase):
         self.assertEqual(out["output"][0]["content"][0]["text"], "answer from openrouter.ai b:free")
         self.assertEqual([c[1] for c in calls], ["gemini-2.5-flash", "llama-3.3-70b-versatile", "a:free", "b:free"])
 
+    def test_an_empty_reply_tries_the_next_model(self):
+        calls = []
+        base = scripted({}, calls)
+
+        def urlopen(request, timeout):
+            if json.loads(request.data)["model"] == "gemini-2.5-flash":
+                calls.append(("generativelanguage.googleapis.com", "gemini-2.5-flash", None))
+                return Response(json.dumps({"choices": [{"message": {"content": "  "}}]}).encode())
+            return base(request, timeout)
+        with mock.patch.object(ai_providers.urllib.request, "urlopen", urlopen):
+            out = make_transport(providers_from_env(self.env))(PAYLOAD)
+        self.assertEqual(out["output"][0]["content"][0]["text"], "answer from api.groq.com llama-3.3-70b-versatile")
+
     def test_everyone_busy_gives_a_clear_message(self):
         out, _ = self.run_with({("generativelanguage.googleapis.com", "gemini-2.5-flash"): 429, ("api.groq.com", "llama-3.3-70b-versatile"): 429,
                                 ("openrouter.ai", "a:free"): 429, ("openrouter.ai", "b:free"): 429})

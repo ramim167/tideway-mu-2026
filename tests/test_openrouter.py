@@ -46,6 +46,7 @@ class GuardedLoop(unittest.TestCase):
             {"choices": [{"message": {"content": None, "tool_calls": [
                 {"id": "c1", "type": "function", "function": {"name": "simulate_risk", "arguments": "{}"}}]}}]},
             {"choices": [{"message": {"content": "In 20 of 20 simulated futures the reserve is breached; also 99,999."}}]},
+            {"choices": [{"message": {"content": "In 20 of 20 simulated futures the reserve is breached; still 99,999."}}]},
         ])
         sent = []
 
@@ -55,9 +56,12 @@ class GuardedLoop(unittest.TestCase):
 
         bot = Agent(app, "sk-or-test-not-real", "google/gemma-4-31b-it:free", transport=fake_transport)
         reply = bot.chat(SHAPLA, None, "How risky is the month?", [], True, "agent:llm", "owner", "Nadia")
-        self.assertEqual(reply["mode"], "llm")
-        self.assertEqual([t["tool"] for t in reply["trace"]], ["simulate_risk"])
-        self.assertIn("99,999", " ".join(reply["unverified_numbers"]))
+        # The invented figure is caught, named in one rewrite request, and when the model repeats it the user gets
+        # Tideway's own checked answer instead of the made-up number.
+        self.assertIn("99,999", sent[2]["messages"][-1]["content"])
+        self.assertTrue(reply.get("ai_fallback"))
+        self.assertNotIn("99,999", reply["text"])
+        self.assertIn("simulate_risk", [t["tool"] for t in reply["trace"]])
         # Names are pseudonymised before anything leaves the computer.
         self.assertNotIn("Nila Traders", json.dumps(sent, ensure_ascii=False))
         self.assertNotIn("Rahman Supplies", json.dumps(sent, ensure_ascii=False))
