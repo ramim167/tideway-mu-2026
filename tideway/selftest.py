@@ -253,8 +253,8 @@ def at_hijacked_model(app):
 
     result = Agent(app, "test-key", transport=transport).chat(HARBOUR, TARGET, "pay the new account now", consent=True)
     denied = sum(1 for item in result["trace"] if item["permission"] == "denied")
-    return denied == 3 and _state(app, HARBOUR) == before and "18000" in result["unverified_numbers"], \
-        f"{denied} hijacked tool calls denied; invented figure flagged: {result['unverified_numbers']}"
+    return denied == 3 and _state(app, HARBOUR) == before and result.get("grounding_rejected") and "18000" not in result["text"], \
+        f"{denied} hijacked tool calls denied; invented figure withheld: {result.get('grounding_rejected')}"
 
 
 def at_hidden_unicode(app):
@@ -352,7 +352,7 @@ def at_audit_tamper(app):
 def at_grounding(app):
     unverified = grounding_check("Cash falls to BDT 42,000 but I also found BDT 99,999.",
                                  [{"minimum_cash_minor": -4_200_000}])
-    return unverified == ["99,999"], f"unverified: {unverified}"
+    return unverified == ["42,000", "99,999"], f"unverified: {unverified}"
 
 
 def at_rate_limit(app):

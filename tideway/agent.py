@@ -33,7 +33,7 @@ TOOL_NAMES = ("read_ledger", "profile_customers", "project_cash", "simulate_risk
 MAX_TOOL_CALLS = 8
 
 SYSTEM = """You are Tideway, an approval-gated cash-flow copilot for one small business in a synthetic sandbox.
-Use only the provided tools for any number. Amounts ending in _minor are integer minor units (divide by 100).
+For numeric answers, copy complete lines from checked_statements in tool results. Use one line per fact and no extra prose. Never invent a figure. Amounts ending in _minor are integer minor units (divide by 100).
 Counterparties appear as pseudonyms such as "Customer 1"; never guess real names.
 You can read, project, simulate, analyse and create a proposal for humans to review. You cannot approve,
 execute, send money, contact anyone or change records. If asked to, say that a human must use the approval flow.
@@ -226,47 +226,8 @@ class Pseudonyms:
         return re.sub(rf"({words})\s*[-–]?\s*([০-৯0-9]{{1,3}})(?![০-৯0-9])", bangla, text)
 
 
-NUMBER_RE = re.compile(r"(?<![\w.])-?\d[\d,]*(?:\.\d+)?%?")
-_OTHER_DIGITS = str.maketrans("০১২৩৪৫৬৭৮৯०१२३४५६७८९", "01234567890123456789")
-_MONTHS = r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
-_DATE_RE = re.compile(
-    rf"(?ix)\b(?:"
-    rf"\d{{4}}[-/.]\d{{1,2}}[-/.]\d{{1,2}}|"
-    rf"\d{{1,2}}[-/.]\d{{1,2}}[-/.]\d{{4}}|"
-    rf"{_MONTHS}\s+\d{{1,2}}(?:st|nd|rd|th)?(?:,\s*|\s+)\d{{4}}|"
-    rf"\d{{1,2}}(?:st|nd|rd|th)?\s+{_MONTHS}(?:\s+\d{{4}})?|"
-    rf"{_MONTHS}\s+\d{{1,2}}(?:st|nd|rd|th)?"
-    rf")\b"
-)
-_DAY_AFTER_RE = re.compile(r"(?ix)^\s*[-–—]?\s*(?:(?:calendar|business|working)\s+)?days?\b")
-_DAY_BEFORE_RE = re.compile(r"(?ix)(?:\bdays?\b)\s*(?:of|:)?\s*$")
-_YEAR_BEFORE_RE = re.compile(r"(?ix)(?:\b(?:calendar|fiscal|tax)\s+year|\byear|\bfy)\s*$")
-_YEAR_AFTER_RE = re.compile(r"(?ix)^\s*(?:(?:calendar|fiscal|tax)\s+)?year\b")
-_YEAR_PREPOSITION_RE = re.compile(r"(?ix)\b(?:in|during|for|from|since|until|by|on|as\s+of)\s*$")
-_MONEY_CONTEXT_RE = re.compile(
-    r"(?ix)(?:[$€£¥]|\b(?:bdt|usd|eur|gbp|cny|sgd|dollars?|bucks?|pounds?|euros?|yuan)\b)"
-)
-
-
-def _grounding_exempt_number(text, match, number, date_spans):
-    """Allow only clearly labelled day counts and calendar dates/years."""
-    start, end = match.span()
-    if any(left <= start and end <= right for left, right in date_spans):
-        return True
-
-    before = text[max(0, start - 32):start]
-    after = text[end:min(len(text), end + 32)]
-    if _DAY_AFTER_RE.match(after) or _DAY_BEFORE_RE.search(before):
-        return True
-
-    token = match.group(0)
-    if not (re.fullmatch(r"\d{4}", token) and 2000 <= number <= 2100):
-        return False
-    nearby = before + after
-    if _MONEY_CONTEXT_RE.search(nearby):
-        return False
-    return bool(_YEAR_BEFORE_RE.search(before) or _YEAR_AFTER_RE.match(after) or
-                _YEAR_PREPOSITION_RE.search(before))
+NUMBER_RE = re.compile(r"\d+(?:,\d+)*(?:\.\d+)?")
+_OTHER_DIGITS = str.maketrans("০১২৩৪৫৬৭৮৯०१२३४५६७८९−", "01234567890123456789-")
 
 
 # Devanagari minus the dandas (U+0964/U+0965), which Bangla uses as its full stop.
@@ -310,49 +271,71 @@ def clean_answer(text, ui_lang=None):
     return re.sub(r"[ \t]{2,}", " ", text).strip()
 
 
-def grounding_check(text, tool_outputs):
-    """Every number in the model's answer must appear in tool output (in some unit)."""
-    allowed = set()
+# A number alone cannot identify a financial claim. Render supported facts from
+# typed fields; numeric cloud replies may select complete statements, never
+# transplant their values into a different field, unit, scenario or date.
+_MONEY_FACTS = {
+    "minimum_cash_minor": ("Minimum cash", "সর্বনিম্ন নগদ", "minimum_cash_date"),
+    "opening_cash_minor": ("Opening cash", "শুরুর নগদ", "opening_date"),
+    "closing_cash_minor": ("Closing cash", "শেষের নগদ", "end_date"),
+    "payroll_outflow_minor": ("Payroll outflow", "বেতন ব্যয়", None),
+    "reserve_shortfall_minor": ("Reserve shortfall", "সঞ্চয়ে ঘাটতি", None),
+    "open_receivables_minor": ("Open receivables", "মোট পাওনা", None),
+    "open_payables_minor": ("Open payables", "মোট দেনা", None),
+}
+_SCENARIO_NAMES = {"base": ("scheduled", "নির্ধারিত"), "likely": ("likely", "সম্ভাব্য"),
+                   "stress": ("stress", "চাপের পরিস্থিতি")}
 
-    def add(number):
-        for value in (number, abs(number)):
-            allowed.add(round(float(value), 2))
-            allowed.add(float(round(value)))
 
-    def walk(value):
-        if isinstance(value, bool):
-            return
-        if isinstance(value, (int, float)):
-            for candidate in (value, value / 100, value * 100):
-                add(candidate)
-        elif isinstance(value, str):
-            for match in NUMBER_RE.findall(value):
-                try:
-                    add(float(match.replace(",", "").rstrip("%")))
-                except ValueError:
-                    pass
-        elif isinstance(value, dict):
-            for item in value.values():
-                walk(item)
-        elif isinstance(value, list):
-            for item in value:
-                walk(item)
-    walk(tool_outputs)
-    # Bangla (and Devanagari) digits are checked like Western digits, so a number cannot slip past in another script.
-    text = text.translate(_OTHER_DIGITS)
-    unverified = []
-    date_spans = [match.span() for match in _DATE_RE.finditer(text)]
-    for match in NUMBER_RE.finditer(text):
-        token = match.group(0)
-        try:
-            number = float(token.replace(",", "").rstrip("%"))
-        except ValueError:
+def financial_statements(output, currency, lang=None):
+    """Build complete, displayable statements from supported tool result shapes."""
+    rows = [(None, output)]
+    rows.extend((name, output[name]) for name in _SCENARIO_NAMES if isinstance(output.get(name), dict))
+    bn = lang == "bn"
+    facts = []
+    for scenario, row in rows:
+        if row.get("currency", currency) != currency:
             continue
-        if _grounding_exempt_number(text, match, number, date_spans):
-            continue
-        if round(number, 2) not in allowed and float(round(number)) not in allowed:
-            unverified.append(token)
-    return unverified
+        prefix = ""
+        if scenario:
+            en_name, bn_name = _SCENARIO_NAMES[scenario]
+            prefix = (bn_name if bn else en_name) + " · "
+        for field, (en_label, bn_label, date_field) in _MONEY_FACTS.items():
+            if type(row.get(field)) is not int:
+                continue
+            when = row.get(date_field) if date_field else None
+            label = bn_label if bn else en_label
+            context = ""
+            if when:
+                context = f" ({when})"
+            elif row.get("end_date"):
+                end = row["end_date"]
+                context = f" ({end} পর্যন্ত)" if bn else f" (through {end})"
+            facts.append(f"{prefix}{label}{context}: {money_text(row[field], currency)}")
+    if type(output.get("runs")) is int and type(output.get("futures_short_of_20")) is int:
+        n = output["futures_short_of_20"]
+        facts.append(f"প্রতি 20টি সম্ভাব্য পরিস্থিতিতে সঞ্চয়ে ঘাটতি: {n}টি" if bn else
+                     f"Simulated futures below the reserve: {n} out of 20")
+    return facts
+
+
+def grounding_check(text, tool_outputs, currency=None, lang=None):
+    """Return numbers in statements that do not match a field-bound tool fact."""
+    rows = tool_outputs if isinstance(tool_outputs, list) else [tool_outputs]
+    allowed = {fact for row in rows if isinstance(row, dict) for fact in
+               financial_statements(row, currency or row.get("currency", ""), lang)}
+    normalized = text.translate(_OTHER_DIGITS)
+    if not re.search(r"\d", normalized):
+        # Spelled-out amounts also need a typed monetary field.
+        if re.search(r"[$€£৳₹]|\b(?:BDT|USD|EUR|GBP|INR|taka|dollars?|pounds?|euros?|rupees?|cents?|poisha)\b|টাকা|পয়সা", normalized, re.I):
+            return ["unsupported monetary statement"]
+        return []
+    lines = [line.strip().rstrip(".।") for line in normalized.splitlines() if line.strip()]
+    # A separate untrusted qualifier can invert the meaning of a copied fact.
+    if lines and all(line in allowed for line in lines):
+        return []
+    return NUMBER_RE.findall(normalized)
+
 
 
 REWRITE_REQUEST = {
@@ -825,20 +808,20 @@ class Agent:
                         raise ProviderError("The AI answer exceeded the 16 KiB display limit.")
                     issues = answer_issues(text, ui_lang)
                     text = clean_answer(text, ui_lang)
-                    unverified = grounding_check(text, outputs)
+                    unverified = grounding_check(text, outputs, snapshot["business"]["currency"], ui_lang)
                     problems = issues + (["unverified_numbers"] if unverified else [])
                     if problems and not rewrite_asked and time.monotonic() - started < 90:
                         # One chance to fix a garbled reply or wrong figures; the tools already ran, so this is one short call.
                         rewrite_asked, first = True, (text, problems)
                         request = REWRITE_REQUEST.get(ui_lang, REWRITE_REQUEST["en"])
                         if unverified:
-                            request += (" These numbers do not match the tool output: " + ", ".join(unverified[:6]) +
-                                        ". Fields ending in _minor are in poisha or cents: divide them by 100.")
+                            request += (" These claims do not match checked tool statements: " + ", ".join(unverified[:6]) +
+                                        ". Return complete checked_statements from the tool response, one per line.")
                         inputs += [{"role": "assistant", "content": text[:2000]}, {"role": "user", "content": request}]
                         continue
                     if rewrite_asked and problems and len(first[1]) < len(problems):
                         text, problems = first
-                        unverified = grounding_check(text, outputs)
+                        unverified = grounding_check(text, outputs, snapshot["business"]["currency"], ui_lang)
                     restored = aliases.restore(text)
                     self.store.audit(business_id, "agent.answer", actor, "agent_read",
                                      {"mode": "llm", "model": self.model, "tools": [item["tool"] for item in trace],
@@ -846,8 +829,12 @@ class Agent:
                                       "output_sha256": hashlib.sha256(text.encode()).hexdigest(),
                                       "unverified_numbers": unverified, "elapsed_ms": int((time.monotonic() - started) * 1000)})
                     if unverified:
-                        restored += ("\n\nNumber check: " + ", ".join(unverified[:6]) +
-                                     " could not be matched to tool output. Treat them as unverified.")
+                        facts = [fact for row in outputs for fact in
+                                 financial_statements(row, snapshot["business"]["currency"], ui_lang)]
+                        fallback = ("এই দাবিটি হিসাব থেকে যাচাই করা যায়নি।" if ui_lang == "bn" else
+                                    "I could not verify that claim from the ledger.")
+                        return {"text": "\n".join(facts[:4]) or fallback, "mode": "local", "ai_fallback": True,
+                                "trace": trace, "unverified_numbers": [], "grounding_rejected": True}
                     return {"text": restored, "mode": "llm", "trace": trace, "unverified_numbers": unverified,
                             "quality_issues": answer_issues(text, ui_lang) + (["unverified_numbers"] if unverified else [])}
                 for item in pending:
@@ -866,6 +853,9 @@ class Agent:
                         self.store.reject(business_id, "agent.tool_rejected", actor, exc, {"tool": str(name)[:60]},
                                           security_relevant=isinstance(exc, SecurityError))
                         trace.append({"tool": str(name)[:60], "permission": "denied"})
+                    statements = financial_statements(result, snapshot["business"]["currency"], ui_lang)
+                    if statements:
+                        result = {**result, "checked_statements": statements}
                     outputs.append(result)
                     inputs.append({"type": "function_call_output", "call_id": item.get("call_id"),
                                    "output": json.dumps(result, ensure_ascii=False)})

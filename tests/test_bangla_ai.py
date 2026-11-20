@@ -31,7 +31,7 @@ class BanglaMode(unittest.TestCase):
 class AiAnswerSafety(unittest.TestCase):
     def test_bangla_digits_cannot_slip_past_the_number_check(self):
         outputs = [{"minimum_cash_minor": -1000000, "payroll_outflow_minor": 8000000}]
-        self.assertEqual(grounding_check("বেতন BDT ৮০,০০০, সর্বনিম্ন -BDT ১০,০০০।", outputs), [])
+        self.assertEqual(grounding_check("বেতন ব্যয়: BDT ৮০,০০০।\nসর্বনিম্ন নগদ: -BDT ১০,০০০।", outputs, "BDT", "bn"), [])
         self.assertEqual(grounding_check("ঘাটতি BDT ৯৯,৯৯৯।", outputs), ["99,999"])
 
     def test_answers_are_plain_text_and_single_script_in_bangla(self):
