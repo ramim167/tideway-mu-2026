@@ -22,6 +22,14 @@ class InboxSemantics(unittest.TestCase):
                 row = self.read(f"You received Tk {value} from Bay Logistics on 2026-10-02.")[0]
                 self.assertEqual(row["amount"], expected)
 
+    def test_audit_payment_and_supplier_document_examples(self):
+        for token, expected in (("1,00,000", 100000), ("1,23,456.78", 123456.78)):
+            row, = self.read(f"Received Tk {token} this Thursday", "2026-10-01")
+            self.assertEqual((row["amount"], row["date"]), (expected, "2026-10-01"))
+        bill, = self.read("Factura de proveedor EUR 200 due 29 Feb 2028", "2026-10-01")
+        self.assertEqual((bill["record_type"], bill["direction"], bill["due_date"]),
+                         ("bill", "out", "2028-02-29"))
+
     def test_malformed_grouping_never_becomes_a_smaller_payment(self):
         for value in ("1,000,00", "12,34,56", "1,00,0000"):
             with self.subTest(value=value):

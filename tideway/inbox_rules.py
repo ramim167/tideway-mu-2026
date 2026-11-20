@@ -143,6 +143,10 @@ def _dates(text, today):
         add(match, f"{year:04d}-{_MONTHS[match[2][:3].lower()]:02d}-{int(match[1]):02d}")
     for match in re.finditer(rf"\b({_MONTH_RE})\s+(\d{{1,2}}),?\s+(\d{{4}})(?!\d)", text, re.I):
         add(match, f"{int(match[3]):04d}-{_MONTHS[match[1][:3].lower()]:02d}-{int(match[2]):02d}")
+    # Yearless patterns must not reconstruct part of an already complete date.
+    # Masking retains offsets used below to identify issue and due dates.
+    for start, end in taken:
+        text = text[:start] + " " * (end - start) + text[end:]
     for match in re.finditer(r"(?<!\d)(\d{1,2})月(\d{1,2})日", text):
         add(match, _year_for(int(match[1]), int(match[2]), today).isoformat(), "year assumed")
     for match in re.finditer(rf"(?<!\d)(\d{{1,2}})\s+({_MONTH_RE})(?![a-z])", text, re.I):
