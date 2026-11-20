@@ -157,7 +157,7 @@ const role = () => currentBusiness()?.role || "";
 const canApprove = () => ["owner", "accountant"].includes(role());
 const isOwner = () => role() === "owner";
 
-async function api(path, body) {
+async function api(path, body, retried = false) {
   const options = {headers: {Accept: "application/json"}, credentials: "same-origin"};
   if (body !== undefined) {
     options.method = "POST";
@@ -170,6 +170,12 @@ async function api(path, body) {
   let data;
   try { data = JSON.parse(text); } catch (_error) { data = {error: "The server returned an unreadable response."}; }
   if (response.status === 401) { showLogin(); throw new Error(data.error || "Please sign in."); }
+  // A restarted server issues a new write token: fetch it once (same-origin read) and retry, instead of asking for a refresh.
+  if (response.status === 403 && !retried && body !== undefined && /CSRF/.test(data.error || "")) {
+    const fresh = await api("/api/config");
+    state.config = {...state.config, csrf_token: fresh.csrf_token};
+    return api(path, body, true);
+  }
   if (!response.ok) { const error = new Error(data.error || `Request failed (${response.status}).`); error.status = response.status; throw error; }
   return data;
 }
