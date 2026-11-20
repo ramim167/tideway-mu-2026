@@ -102,6 +102,7 @@ PLAN_MC_RUNS = 400
 
 class Tideway:
     def __init__(self, db_path, seed=True, key_path=None, witness_path=None):
+        self.demo_enabled = seed
         self.store = Store(db_path, key_path, witness_path)
         if seed and not self.store.seeded():
             self.seed()
@@ -167,7 +168,8 @@ class Tideway:
                                 "synthetic": item["synthetic"], "story": stories.get(item["id"], ""), "role": item["role"]}
                                for item in businesses],
                 "demo_accounts": [{"id": item["id"], "name": item["name"], "role": item["role"], "pin": item["pin"]}
-                                  for item in OPERATORS],
+                                  for item in OPERATORS if self.demo_enabled and any(
+                                      b["synthetic"] and b["id"] in stories for b in self.store.businesses_for(item["id"]))],
                 "plans": [{"id": key, **value} for key, value in PLANS.items() if key != "demo"],
                 "permission_tiers": [
                     {"tier": "agent_read", "who": "Agent", "can": "Read records, project cash, simulate, analyse"},

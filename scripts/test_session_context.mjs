@@ -51,3 +51,16 @@ await run("logout()");
 assert.equal(run('state.operator.id'),'accountant');
 assert.match(problems.at(-1),/Retry/);
 console.log('Account switch, workspace switch, single-send consent and failed logout passed.');
+
+run(`state.inbox=freshInbox(); state.inbox.text='  exact checked message  ';
+  api=async()=>({drafts:[],scam_shield:{verdict:'likely_scam',signals:[],actions:[],claims:{},model:{}}});`);
+await run("extractInbox()");
+assert.match(run("inboxResultsHtml()"),/data-action="inbox-shield"/);
+run("state.inbox.text='different draft'");
+const button = run(`globalThis.Element=class {closest(s){return s==="[data-action]"?this:null;}};
+  Object.assign(new Element(),{dataset:{action:'inbox-shield'}})`);
+await events.click.at(-1)({target:button});
+assert.equal(run("state.view"),"shield");
+assert.match(run("window.TidewayShield.render()"),/exact checked message/);
+assert.match(run("window.TidewayShield.render()"),/Likely scam/);
+assert.doesNotMatch(run("window.TidewayShield.render()"),/different draft/);

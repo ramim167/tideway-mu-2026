@@ -34,7 +34,7 @@ window.TidewayHome = (() => {
       expected: "Expected {date}", afterPayday: "Arrives after salary day",
       latePattern: "Usually pays late ({late} of {n} times)", onTime: "Usually pays on time", newCustomer: "New customer: little history",
       askAbout: "Ask about {name}", askAboutPrompt: "How does {name} usually pay?",
-      billsTitle: "Bills coming up", billsEmpty: "No unpaid bills.", due: "Due {date}",
+      billsTitle: "Bills coming up", billsEmpty: "No unpaid bills.", due: "Due {date}", overdue: "Overdue since {date}",
       blockedBill: "Do not pay yet: {reason}", checkSafety: "Check safety",
       watchTitle: "Watch out", allClear: "No fraud warnings for this business.",
       warn: {
@@ -73,7 +73,7 @@ window.TidewayHome = (() => {
       expected: "আশা করা যায় {date}", afterPayday: "বেতনের দিনের পরে আসবে",
       latePattern: "সাধারণত দেরিতে দেন ({n} বারের {late} বার)", onTime: "সাধারণত সময়মতো দেন", newCustomer: "নতুন ক্রেতা: ইতিহাস কম",
       askAbout: "{name} সম্পর্কে জানুন", askAboutPrompt: "{name} সাধারণত কীভাবে টাকা দেয়?",
-      billsTitle: "সামনের বিল", billsEmpty: "কোনো বকেয়া বিল নেই।", due: "শেষ তারিখ {date}",
+      billsTitle: "সামনের বিল", billsEmpty: "কোনো বকেয়া বিল নেই।", due: "শেষ তারিখ {date}", overdue: "{date} থেকে বকেয়া",
       blockedBill: "এখন পরিশোধ করবেন না: {reason}", checkSafety: "নিরাপত্তা দেখুন",
       watchTitle: "সাবধান", allClear: "এই ব্যবসার জন্য কোনো প্রতারণার সতর্কতা নেই।",
       warn: {
@@ -210,10 +210,25 @@ window.TidewayHome = (() => {
   function bills(d, w) {
     const now = d.state?.current_date || "";
     const blocked = d.blocked || {};
-    const open = (d.records?.bills || []).filter((bill) => !["paid", "cancelled"].includes(bill.status) && (!now || bill.due_date >= now))
-      .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date))).slice(0, 4);
-    const list = open.map((bill) => `<li class="home-row"><div class="home-row-main"><strong>${esc(bill.payee)}</strong>
-        <span class="muted">${esc(fill(w.due, {date: date(bill.due_date)}))}</span>
+    const deferrals = new Map();
+    for (const item of d.state?.adjustments || []) {
+      if (item.kind !== "bill_deferral") continue;
+      if (!deferrals.has(item.bill_id)) deferrals.set(item.bill_id, []);
+      deferrals.get(item.bill_id).push(item);
+    }
+    const open = [];
+    for (const bill of d.records?.bills || []) {
+      if (!["open", "scheduled", "rescheduled"].includes(bill.status)) continue;
+      let remaining = bill.amount_minor;
+      for (const item of deferrals.get(bill.id) || []) {
+        remaining -= item.amount_minor;
+        open.push({...bill, due_date: item.to_date, amount_minor: item.amount_minor});
+      }
+      if (remaining > 0) open.push({...bill, due_date: bill.rescheduled_date || bill.due_date, amount_minor: remaining});
+    }
+    open.sort((a, b) => a.due_date.localeCompare(b.due_date));
+    const list = open.slice(0, 4).map((bill) => `<li class="home-row"><div class="home-row-main"><strong>${esc(bill.payee)}</strong>
+        <span class="muted">${esc(fill(bill.due_date < now ? w.overdue : w.due, {date: date(bill.due_date)}))}</span>
         ${blocked[bill.id] ? `<span class="home-row-tags"><span class="pill storm">${icon("lock")}${esc(fill(w.blockedBill, {reason: lang() === "bn" ? "ব্যাংক তথ্য বা নাম সন্দেহজনক" : blocked[bill.id]}))}</span></span>` : ""}</div>
       <div class="home-row-side"><span class="home-amount">${esc(cash(bill.amount_minor))}</span>
         ${blocked[bill.id] ? `<button class="button small ghost" type="button" data-view="security">${esc(w.checkSafety)}</button>` : ""}</div></li>`).join("");

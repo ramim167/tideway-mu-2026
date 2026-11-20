@@ -9,6 +9,17 @@ from tideway.service import Tideway
 
 
 class MembershipRevocationTests(unittest.TestCase):
+    def test_no_demo_does_not_advertise_fixture_logins(self):
+        from tideway.service import Tideway
+        for seed in (True, False):
+            with self.subTest(seed=seed):
+                app = Tideway(":memory:", seed=seed)
+                try:
+                    accounts = app.config()["demo_accounts"]
+                    self.assertEqual({a["id"] for a in accounts}, {"nadia", "imran", "guest"} if seed else set())
+                finally:
+                    app.store.close()
+
     def test_removal_survives_restart_and_clears_pending_vote(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "demo.sqlite3"

@@ -731,7 +731,10 @@ def serve(db_path, port=8787, key="", model="gpt-5-mini", seed=True, host="127.0
         print("Local compatible model configured; its results are not the TideLM v2 benchmark.", flush=True)
     display_host = "127.0.0.1" if host in ("0.0.0.0", "::") else host
     print(f"Tideway is ready: http://{display_host}:{server.server_port}", flush=True)
-    print("Demo sign-in (synthetic sandbox): owner Nadia PIN 2468 · accountant Imran PIN 1357 · viewer Guest PIN 0000", flush=True)
+    accounts = app.tideway.config()["demo_accounts"]
+    if accounts:
+        print("Demo sign-in (synthetic sandbox): " + " · ".join(
+            f"{a['role']} {a['name']} PIN {a['pin']}" for a in accounts), flush=True)
     print(f"AI provider connected: {model} (consent required per message)." if key else
           "Local agent mode (no network). Set OPENROUTER_API_KEY (free models) or OPENAI_API_KEY in .env to try the optional LLM mode.", flush=True)
     try:

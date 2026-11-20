@@ -202,9 +202,10 @@ function showLogin() {
   $("#shell").hidden = true;
   $("#login").hidden = false;
   const config = state.config || {};
-  $("#demo-accounts").innerHTML = (config.demo_accounts || []).map((account) =>
-    `<button type="button" class="demo-account" data-action="demo-login" data-id="${esc(account.id)}" aria-label="Sign in to the demo as ${esc(account.name)}, ${esc(account.role)}">${icon("user")}<span><strong>${esc(account.name)}</strong><span class="pill ${ROLE_PILL[account.role] || ""}">${esc(account.role)}</span></span></button>`).join("")
-    || `<p class="small muted">The demo accounts are not available on this server.</p>`;
+  const demoAccounts = config.demo_accounts || [];
+  document.querySelectorAll("[data-demo-only]").forEach(node => { node.hidden = !demoAccounts.length; });
+  $("#demo-accounts").innerHTML = demoAccounts.map((account) =>
+    `<button type="button" class="demo-account" data-action="demo-login" data-id="${esc(account.id)}" aria-label="Sign in to the demo as ${esc(account.name)}, ${esc(account.role)}">${icon("user")}<span><strong>${esc(account.name)}</strong><span class="pill ${ROLE_PILL[account.role] || ""}">${esc(account.role)}</span></span></button>`).join("");
   const plans = config.plans || [];
   $("#plan-cards").innerHTML = plans.map((plan) => `<article class="plan-card"><h3>${esc(plan.label)}</h3>
     <p class="plan-price"><strong>${plan.price_bdt_month ? `৳${esc(plan.price_bdt_month.toLocaleString("en-US"))}` : "Free"}</strong>${plan.price_bdt_month ? "<span> / month, illustrative</span>" : ""}</p>
@@ -1455,9 +1456,9 @@ function inboxResultsHtml() {
   let warning = ib.suspicious ? `<div class="alert ${attackWarning ? "critical" : "info"} inbox-warning section-gap" role="alert">${icon("alert")}<div><strong>${attackWarning ? "Possible instruction attack: review the source" : "Review required before saving"}</strong>
     ${ib.flags.length ? `<ul class="small">${ib.flags.map((flag) => `<li>${esc(FLAG_TEXT[flag] || String(flag).replaceAll("_", " "))}</li>`).join("")}</ul>` : `<span>TideLM judged this text suspicious.</span>`}
     ${screeningNote}<span>Drafts below are data only. Check every field against your own records, and never pay a new account without calling the number already on file.</span></div></div>` : screeningNote;
-  const scam = ib.scam ? `<div class="alert ${ib.scam.verdict === "likely_scam" ? "critical" : "info"} section-gap" role="alert">${icon("shield")}<div><strong>Scam Shield: ${ib.scam.verdict === "likely_scam" ? "this message looks like mobile-money fraud" : "this message has scam warning signs"}</strong>
-    <span>${esc((ib.scam.signals || [])[0]?.en || "")}</span><span lang="bn" class="bn-line">${esc((ib.scam.signals || [])[0]?.bn || "")}</span>
-    <button class="button small ghost" type="button" data-view="shield">${icon("shield")}See the full check</button></div></div>` : "";
+  const scam = ib.scam ? `<div class="alert ${ib.scam.assessment.verdict === "likely_scam" ? "critical" : "info"} section-gap" role="alert">${icon("shield")}<div><strong>Scam Shield: ${ib.scam.assessment.verdict === "likely_scam" ? "this message looks like mobile-money fraud" : "this message has scam warning signs"}</strong>
+    <span>${esc((ib.scam.assessment.signals || [])[0]?.en || "")}</span><span lang="bn" class="bn-line">${esc((ib.scam.assessment.signals || [])[0]?.bn || "")}</span>
+    <button class="button small ghost" type="button" data-action="inbox-shield">${icon("shield")}See the full check</button></div></div>` : "";
   warning = scam + warning;
   if (!ib.drafts.length) return `${warning}<div class="alert info section-gap">${icon("spark")}<div><strong>No records found</strong><span>TideLM found no invoice, bill or payment in that text.</span></div></div>`;
   const chosen = ib.drafts.filter((d) => d.selected).length;
@@ -1510,19 +1511,21 @@ function shrinkPhoto(file) {
 
 async function readPhoto() {
   if (!state.inbox.photo) return toast("Choose a photo first.");
+  const inbox = state.inbox;
   const result = await act("Photo", () => api("/api/inbox/photo", {business_id: state.businessId, image: state.inbox.photo}));
-  if (result) Object.assign(state.inbox, {drafts: (result.drafts || []).map(editableDraft), suspicious: Boolean(result.suspicious),
+  if (result && state.inbox === inbox) Object.assign(inbox, {scam: null, drafts: (result.drafts || []).map(editableDraft), suspicious: Boolean(result.suspicious),
     flags: result.risk_flags || [], screening: result.semantic_screening || null, note: result.note || "", transcript: result.transcript || "", saved: null});
   render();
 }
 
 async function extractInbox() {
-  const text = state.inbox.text.trim();
+  const inbox = state.inbox;
+  const text = inbox.text.trim();
   if (!text) return toast("Paste a message first.");
   const result = await act("Extract", async () => {
     try { return await api("/api/inbox/extract", {business_id: state.businessId, text}); } catch (error) { if (markTideLMDown(error)) return null; throw error; }
   });
-  if (result) Object.assign(state.inbox, {drafts: (result.drafts || []).map(editableDraft), suspicious: Boolean(result.suspicious), flags: result.risk_flags || [], screening: result.semantic_screening || null, scam: result.scam_shield || null, note: result.note || "", saved: null});
+  if (result && state.inbox === inbox && inbox.text.trim() === text) Object.assign(inbox, {drafts: (result.drafts || []).map(editableDraft), suspicious: Boolean(result.suspicious), flags: result.risk_flags || [], screening: result.semantic_screening || null, scam: result.scam_shield ? {text, assessment: result.scam_shield} : null, note: result.note || "", saved: null});
   render();
 }
 
@@ -1965,6 +1968,14 @@ document.addEventListener("click", async (event) => {
         entry.currency=currency();entry.money=null;entry.edited=true;render();break;
       }
       case "inbox-sample": state.inbox = {...freshInbox(), text: INBOX_SAMPLES[data.sample]?.(displayCurrency()) || ""}; render(); $("#inbox-text")?.focus(); break;
+      case "inbox-shield":
+        if (state.inbox.scam) {
+          window.TidewayShield.showAssessment(state.inbox.scam.text, "", state.inbox.scam.assessment);
+          state.view = "shield";
+          render();
+          window.scrollTo(0, 0);
+        }
+        break;
       case "inbox-save": await saveInbox(); break;
       case "inbox-photo": await readPhoto(); break;
       case "feedback": await sendFeedback(Number(data.index), data.helpful === "true"); break;
