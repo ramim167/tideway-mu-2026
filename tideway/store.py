@@ -226,6 +226,36 @@ class Store(EventStoreMixin):
             # is never treated as consent when issuing or executing a risky mandate.
             if "risk_acknowledgement" not in {row["name"] for row in db.execute("PRAGMA table_info(approvals)")}:
                 db.execute("ALTER TABLE approvals ADD COLUMN risk_acknowledgement TEXT")
+            self._migrate_approval_rounds(db)
+
+    def _migrate_approval_rounds(self, db):
+        # Legacy versions left consumed votes in approvals and called a single
+        # pending vote approved. Audit order distinguishes a new round even
+        # when two approvals happened within the same timestamp second.
+        if db.execute("SELECT 1 FROM metadata WHERE key='approval-rounds-v1'").fetchone():
+            return
+        plans = db.execute("SELECT DISTINCT p.id,p.business_id FROM plans p JOIN approvals a ON a.plan_id=p.id "
+                           "WHERE p.status='approved'").fetchall()
+        for plan in plans:
+            for event in db.execute("SELECT action,details FROM audit WHERE business_id=? AND action IN "
+                                    "('plan.approve','mandate.issue') ORDER BY id DESC", (plan["business_id"],)):
+                details = json.loads(event["details"])
+                if details.get("plan_id") != plan["id"]:
+                    continue
+                if event["action"] == "mandate.issue":
+                    issued = db.execute("SELECT document FROM mandates WHERE id=? AND plan_id=?",
+                                        (details["mandate_id"], plan["id"])).fetchone()
+                    if issued:
+                        document = json.loads(issued["document"])
+                        if security.verify(self.key, document):
+                            for vote in document["approvals"]:
+                                db.execute("DELETE FROM approvals WHERE plan_id=? AND bundle_id=? AND operator_id=? "
+                                           "AND role=? AND created_at=?", (plan["id"], document["bundle_id"],
+                                           vote["operator_id"], vote["role"], vote["created_at"]))
+                break
+        for business_id in {plan["business_id"] for plan in plans}:
+            self._refresh_approval_states(db, business_id)
+        db.execute("INSERT INTO metadata(key,value) VALUES ('approval-rounds-v1','1')")
 
     def close(self):
         """Release the keeper connection used by shared in-memory databases."""
@@ -762,6 +792,7 @@ class Store(EventStoreMixin):
                 if terms.get("issued_by") == operator_id or any(
                         vote["operator_id"] == operator_id for vote in terms.get("approvals", [])):
                     db.execute("UPDATE mandates SET status='revoked' WHERE id=?", (mandate["id"],))
+            self._refresh_approval_states(db, business_id)
             return self._audit(db, business_id, "team.remove", f"operator:{owner['id']}", "human_approval",
                                {"operator_id": operator_id, "role": row["role"]})
 
@@ -1044,7 +1075,7 @@ class Store(EventStoreMixin):
                 raise ValidationError("The collection date must be within the supported one-year horizon.")
             updated = validate_invoice({**invoice, "expected_collection_date": collection_date}, business_id,
                                        before["business"]["currency"])
-            old_plans = [row[0] for row in db.execute("SELECT id FROM plans WHERE business_id=? AND status IN ('pending','approved')", (business_id,))]
+            old_plans = [row[0] for row in db.execute("SELECT id FROM plans WHERE business_id=? AND status IN ('pending','partially_approved','approved')", (business_id,))]
             old_mandates = [row[0] for row in db.execute(f"SELECT id FROM mandates WHERE business_id=? AND kind='bundle' AND status IN {BUNDLE_LIVE}", (business_id,))]
             flags = sorted(set(invoice["risk_flags"]) | set(updated["risk_flags"]))
             db.execute("UPDATE invoices SET expected_collection_date=?,risk_flags=? WHERE business_id=? AND id=?",
@@ -1075,7 +1106,7 @@ class Store(EventStoreMixin):
         row = db.execute("SELECT version FROM sandbox_state WHERE business_id=?", (business_id,)).fetchone()
         version = row["version"] + 1
         db.execute("UPDATE sandbox_state SET version=?,updated_at=? WHERE business_id=?", (version, utc_now(), business_id))
-        db.execute("UPDATE plans SET status='invalidated' WHERE business_id=? AND status IN ('pending','approved')", (business_id,))
+        db.execute("UPDATE plans SET status='invalidated' WHERE business_id=? AND status IN ('pending','partially_approved','approved')", (business_id,))
         db.execute(f"UPDATE mandates SET status='invalidated' WHERE business_id=? AND kind='bundle' AND status IN {BUNDLE_LIVE}",
                    (business_id,))
         return version
@@ -1201,11 +1232,27 @@ class Store(EventStoreMixin):
 
     # ---- plans, approvals and mandates -------------------------------------
 
+    @staticmethod
+    def _refresh_approval_states(db, business_id):
+        # Persist time-driven expiry before returning plan controls or starting
+        # the next round. Signed votes stay in the expired mandate and audit.
+        for live in db.execute(f"SELECT id,document FROM mandates WHERE business_id=? AND kind='bundle' "
+                               f"AND status IN {BUNDLE_LIVE} AND expires_at<=?", (business_id, utc_now())).fetchall():
+            if _expired(json.loads(live["document"])["expires_at"]):
+                db.execute("UPDATE mandates SET status='expired' WHERE id=?", (live["id"],))
+        db.execute("UPDATE plans SET status=CASE WHEN EXISTS (SELECT 1 FROM approvals WHERE plan_id=plans.id) "
+                   "THEN 'partially_approved' ELSE 'pending' END WHERE business_id=? "
+                   "AND status IN ('approved','partially_approved') "
+                   f"AND NOT EXISTS (SELECT 1 FROM mandates m WHERE m.plan_id=plans.id AND m.status IN {BUNDLE_LIVE}) "
+                   "AND (status='approved' OR NOT EXISTS (SELECT 1 FROM approvals WHERE plan_id=plans.id))",
+                   (business_id,))
+
     def create_plan(self, business_id, payload, snapshot_hash, proposed_by, actor, replaces_mandate=None, event_request_id=None, owner_request=None):
         """Store a proposal.  With replaces_mandate, that mandate is cancelled in the same transaction,
         only after every check has passed, so a refused proposal never leaves it cancelled."""
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            self._refresh_approval_states(db, business_id)
             request_key = None
             if owner_request is not None:
                 if (not isinstance(owner_request, dict) or set(owner_request) != {"request_id", "signature"}
@@ -1251,7 +1298,7 @@ class Store(EventStoreMixin):
             from .bilateral import carry_terms
             if payload.get("owner_coach"):
                 origin = payload["owner_coach"]
-                current = db.execute("SELECT id,snapshot_hash FROM plans WHERE business_id=? AND target_date=? AND status IN ('pending','approved') ORDER BY rowid DESC LIMIT 1", (business_id, payload["target_date"])).fetchone()
+                current = db.execute("SELECT id,snapshot_hash FROM plans WHERE business_id=? AND target_date=? AND status IN ('pending','partially_approved','approved') ORDER BY rowid DESC LIMIT 1", (business_id, payload["target_date"])).fetchone()
                 if current and current["snapshot_hash"] != snapshot_hash:
                     current = None
                 if (current["id"] if current else None) != origin["source_plan_id"]:
@@ -1291,7 +1338,7 @@ class Store(EventStoreMixin):
                 supersedes = {"plan_id": old["plan_id"], "plan_hash": parent_row["plan_hash"],
                               "mandate_id": replaces_mandate}
                 db.execute("UPDATE mandates SET status='cancelled' WHERE id=?", (replaces_mandate,))
-                db.execute("UPDATE plans SET status='cancelled' WHERE id=? AND status IN ('pending','approved')", (old["plan_id"],))
+                db.execute("UPDATE plans SET status='cancelled' WHERE id=? AND status IN ('pending','partially_approved','approved')", (old["plan_id"],))
                 self._audit(db, business_id, "mandate.cancel", actor, "agent_propose",
                             {"mandate_id": replaces_mandate, "reason": "replaced by a new proposal"})
             identifier = uuid.uuid4().hex
@@ -1324,6 +1371,8 @@ class Store(EventStoreMixin):
         if not isinstance(plan_id, str) or not re.fullmatch(r"[0-9a-f]{32}", plan_id):
             raise ValidationError("A valid plan_id is required.")
         with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            self._refresh_approval_states(db, business_id)
             row = db.execute("SELECT * FROM plans WHERE business_id=? AND id=?", (business_id, plan_id)).fetchone()
             if not row:
                 raise ValidationError("Plan was not found for this business.")
@@ -1335,7 +1384,7 @@ class Store(EventStoreMixin):
 
     def latest_plan(self, business_id, target_date):
         with self.connect() as db:
-            row = db.execute("SELECT id FROM plans WHERE business_id=? AND target_date=? AND status IN ('pending','approved') "
+            row = db.execute("SELECT id FROM plans WHERE business_id=? AND target_date=? AND status IN ('pending','partially_approved','approved') "
                              "ORDER BY rowid DESC LIMIT 1", (business_id, target_date)).fetchone()
         return self.plan(business_id, row["id"]) if row else None
 
@@ -1343,7 +1392,7 @@ class Store(EventStoreMixin):
         row = db.execute("SELECT * FROM plans WHERE business_id=? AND id=?", (business_id, plan_id)).fetchone()
         if not row:
             raise ValidationError("Plan was not found for this business.")
-        if row["status"] not in ("pending", "approved", "executed"):
+        if row["status"] not in ("pending", "partially_approved", "approved", "executed"):
             raise ValidationError(f"This plan is {row['status']}; compare again.")
         payload = json.loads(row["payload"])
         if json_hash(payload) != row["plan_hash"]:
@@ -1464,6 +1513,17 @@ class Store(EventStoreMixin):
                     db.execute("UPDATE mandates SET status='expired' WHERE id=?", (live["id"],))
                 else:
                     raise ValidationError("This plan already has a live mandate. Use it, or cancel it first.")
+            if risk_terms is not None:
+                # An approval from an older version cannot silently supply the second
+                # person's consent to residual risk. Both people must review again.
+                for prior in db.execute("SELECT a.risk_acknowledgement FROM approvals a JOIN memberships m "
+                                        "ON m.business_id=a.business_id AND m.operator_id=a.operator_id AND m.role=a.role "
+                                        "WHERE a.plan_id=? AND a.bundle_id=? AND m.role IN ('owner','accountant')",
+                                        (plan_id, bundle_id)):
+                    if not prior[0]:
+                        raise ValidationError("An existing approval predates risk acknowledgement. Create a fresh plan "
+                                              "so every approver can review its remaining risk.")
+                    self._validate_risk_acknowledgement(risk_terms, json.loads(prior[0]) if prior[0] else None)
             # A pending vote from an earlier database version or a changed role
             # must not contribute to a mandate or prevent fresh approval.
             db.execute("DELETE FROM approvals WHERE plan_id=? AND NOT EXISTS "
@@ -1475,15 +1535,6 @@ class Store(EventStoreMixin):
             if db.execute("SELECT 1 FROM approvals WHERE plan_id=? AND bundle_id=? AND operator_id=?",
                           (plan_id, bundle_id, operator["id"])).fetchone():
                 raise ValidationError("You already approved this bundle. A second approval must come from a different person.")
-            if risk_terms is not None:
-                # An approval from an older version cannot silently supply the second
-                # person's consent to residual risk. Both people must review again.
-                for prior in db.execute("SELECT risk_acknowledgement FROM approvals WHERE plan_id=? AND bundle_id=?",
-                                        (plan_id, bundle_id)):
-                    if not prior[0]:
-                        raise ValidationError("An existing approval predates risk acknowledgement. Create a fresh plan "
-                                              "so every approver can review its remaining risk.")
-                    self._validate_risk_acknowledgement(risk_terms, json.loads(prior[0]) if prior[0] else None)
             review = review_ms if isinstance(review_ms, int) and not isinstance(review_ms, bool) and 0 <= review_ms < 86_400_000 else None
             db.execute("INSERT INTO approvals(id,business_id,plan_id,bundle_id,operator_id,role,review_ms,created_at,risk_acknowledgement) "
                        "VALUES (?,?,?,?,?,?,?,?,?)", (uuid.uuid4().hex, business_id, plan_id, bundle_id, operator["id"],
@@ -1504,7 +1555,7 @@ class Store(EventStoreMixin):
             sod = bool(verifiers & people) and not (people - verifiers)
             satisfied = satisfied and not sod
             fast = review is not None and review < FAST_APPROVAL_MS
-            db.execute("UPDATE plans SET status='approved' WHERE id=?", (plan_id,))
+            db.execute("UPDATE plans SET status=? WHERE id=?", ("approved" if satisfied else "partially_approved", plan_id))
             details = {"plan_id": plan_id, "bundle_id": bundle_id, "exposure_minor": exposure,
                        "owner_constraints": payload["owner_constraints"],
                        "dual_approval_required": dual, "approvals": approvals, "step_up": "PIN re-entered",
@@ -1651,7 +1702,7 @@ class Store(EventStoreMixin):
                 raise ValidationError(f"This mandate is already {row['status']}.")
             db.execute("UPDATE mandates SET status='cancelled' WHERE id=?", (mandate_id,))
             if row["plan_id"]:
-                db.execute("UPDATE plans SET status='cancelled' WHERE id=? AND status IN ('pending','approved')", (row["plan_id"],))
+                db.execute("UPDATE plans SET status='cancelled' WHERE id=? AND status IN ('pending','partially_approved','approved')", (row["plan_id"],))
             return {"mandate_id": mandate_id, "status": "cancelled",
                     **self._audit(db, business_id, "mandate.cancel", actor, "human_approval", {"mandate_id": mandate_id})}
 
@@ -1742,7 +1793,7 @@ class Store(EventStoreMixin):
                 raise ValidationError("Read-back did not match the intended state; the transaction was rolled back.")
             db.execute("UPDATE mandates SET status='used',used_at=? WHERE id=?", (utc_now(), mandate_id))
             db.execute("UPDATE plans SET status='executed' WHERE id=?", (document["plan_id"],))
-            db.execute("UPDATE plans SET status='invalidated' WHERE business_id=? AND status IN ('pending','approved') AND id<>?",
+            db.execute("UPDATE plans SET status='invalidated' WHERE business_id=? AND status IN ('pending','partially_approved','approved') AND id<>?",
                        (business_id, document["plan_id"]))
             db.execute(f"UPDATE mandates SET status='invalidated' WHERE business_id=? AND kind='bundle' AND id<>? "
                        f"AND status IN {BUNDLE_LIVE}", (business_id, mandate_id))

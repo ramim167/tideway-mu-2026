@@ -151,6 +151,16 @@ class RiskAcknowledgement(unittest.TestCase):
             self.approve(self.consent(), self.owner)
         self.assertEqual(self.counts(), before)
 
+    def test_downgraded_legacy_voter_cannot_prevent_a_fresh_risk_review(self):
+        with self.app.store.connect() as db:
+            db.execute("INSERT INTO approvals(id,business_id,plan_id,bundle_id,operator_id,role,created_at) "
+                       "VALUES (?,?,?,?,?,?,?)", ("legacy", BUSINESS, self.plan["plan_id"], self.bundle["bundle_id"],
+                                                 "imran", "accountant", "2026-10-15T00:00:00+00:00"))
+            db.execute("UPDATE memberships SET role='viewer' WHERE business_id=? AND operator_id='imran'", (BUSINESS,))
+        first = self.approve(self.consent(), self.owner)
+        self.assertEqual(first["status"], "awaiting_second_approval")
+        self.assertEqual([row["operator_id"] for row in first["approvals"]], [self.owner["id"]])
+
     def test_authentic_legacy_mandate_without_risk_consent_cannot_execute(self):
         acknowledgement = self.consent()
         self.approve(acknowledgement)

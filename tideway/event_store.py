@@ -84,7 +84,7 @@ class EventStoreMixin:
             end = horizon_end(business, target, snapshot["policy"]["lookahead_days"])
             if "date" in event and not state["current_date"] <= event["date"] <= end:
                 raise ValidationError("Event date must lie between the simulation date and the planning horizon.")
-            previous = db.execute("SELECT id,payload,plan_hash FROM plans WHERE business_id=? AND target_date=? AND snapshot_hash=? AND status IN ('pending','approved') ORDER BY created_at DESC,rowid DESC LIMIT 1",
+            previous = db.execute("SELECT id,payload,plan_hash FROM plans WHERE business_id=? AND target_date=? AND snapshot_hash=? AND status IN ('pending','partially_approved','approved') ORDER BY created_at DESC,rowid DESC LIMIT 1",
                                   (business_id, target, expected_snapshot)).fetchone()
             payload = json.loads(previous["payload"]) if previous else None
             inherited = None

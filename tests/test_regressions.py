@@ -1,9 +1,12 @@
 """Regression tests for the QA bug report (one test per fixed defect). Run: python3 -m unittest discover -s tests"""
 import http.client
 import json
+import tempfile
 import threading
 import time
 import unittest
+from datetime import datetime, timedelta
+from pathlib import Path
 from http.server import ThreadingHTTPServer
 from unittest import mock
 
@@ -90,6 +93,54 @@ class StoreRegressions(unittest.TestCase):
         second = self.app.store.approve(SHAPLA, plan["plan_id"], "recommended", self.owner, "2468", "y", 9000)
         self.assertEqual(first["status"], "awaiting_second_approval")
         self.assertEqual(second["status"], "mandate_issued")
+
+    def test_partial_state_is_persisted_visible_and_invalidated(self):
+        plan = self.app.propose(SHAPLA, TARGET, "agent:test")
+        self.app.store.approve(SHAPLA, plan["plan_id"], "recommended", self.accountant, "1357", "x")
+        self.assertEqual(self.app.store.latest_plan(SHAPLA, TARGET)["status"], "partially_approved")
+        with self.app.store.connect() as db:
+            self.assertEqual(db.execute("SELECT status FROM plans WHERE id=?", (plan["plan_id"],)).fetchone()[0],
+                             "partially_approved")
+        self.app.store.set_policy(SHAPLA, {"agent_paused": True}, self.owner, "x")
+        self.assertEqual(self.app.store.plan(SHAPLA, plan["plan_id"])["status"], "invalidated")
+
+    def test_legacy_issued_votes_allow_original_approvers_to_restart_after_time_expires(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "legacy.sqlite3"
+            app = Tideway(path)
+            plan, mandate = _mandate(app)
+            pid = plan["plan_id"]
+            self.assertEqual(app.store.plan(SHAPLA, pid)["status"], "approved")
+            with app.store.connect() as db:
+                db.execute("DELETE FROM metadata WHERE key='approval-rounds-v1'")
+                for vote in mandate["approvals"]:
+                    db.execute("INSERT INTO approvals(id,business_id,plan_id,bundle_id,operator_id,role,review_ms,created_at) "
+                               "VALUES (?,?,?,?,?,?,?,?)", ("old-" + vote["operator_id"], SHAPLA, pid, "recommended",
+                               vote["operator_id"], vote["role"], vote["review_ms"], vote["created_at"]))
+            app.store.close()
+            app = Tideway(path)
+            owner, accountant, _ = _ops(app)
+            future = datetime.fromisoformat(mandate["expires_at"]) + timedelta(seconds=1)
+            with mock.patch("tideway.store.datetime", wraps=datetime) as clock:
+                clock.now.return_value = future
+                fresh = app.store.latest_plan(SHAPLA, TARGET)
+                self.assertEqual(fresh["plan_id"], pid)
+                self.assertEqual(fresh["status"], "pending")
+                self.assertEqual(fresh["approvals"], [])
+                self.assertFalse(app.store.live_mandates(SHAPLA))
+                first = app.store.approve(SHAPLA, pid, "recommended", accountant, "1357", "x")
+                self.assertEqual(first["status"], "awaiting_second_approval")
+                self.assertEqual(app.store.plan(SHAPLA, pid)["status"], "partially_approved")
+                with self.assertRaisesRegex(ValidationError, "already approved"):
+                    app.store.approve(SHAPLA, pid, "recommended", accountant, "1357", "x")
+                second = app.store.approve(SHAPLA, pid, "recommended", owner, "2468", "y")
+                self.assertEqual(second["status"], "mandate_issued")
+                self.assertEqual(app.store.plan(SHAPLA, pid)["status"], "approved")
+                self.assertNotEqual(second["mandate"]["mandate_id"], mandate["mandate_id"])
+                self.assertEqual(app.store.mandate(SHAPLA, mandate["mandate_id"])["status"], "expired")
+                with self.assertRaisesRegex(ValidationError, "expired"):
+                    app.store.execute(SHAPLA, mandate["mandate_id"], "old-key", owner, "y")
+            app.store.close()
 
     def test_non_text_identifiers_are_rejected(self):  # bug 13
         for bad in ({"a": 1}, ["x"], 7):

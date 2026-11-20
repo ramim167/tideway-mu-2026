@@ -1107,7 +1107,9 @@ function rescueSummaryHtml(d) {
     return `${esc(String(a.type).replaceAll("_", " "))}: <strong>${esc(a.counterparty || "")}</strong>`;
   };
   const after = best.after || {};
-  const pending = plan.status === "pending";
+  const votes = plan.approvals || [];
+  const pending = ["pending", "partially_approved"].includes(plan.status)
+    && votes.every((vote) => vote.bundle_id === best.bundle_id && vote.operator_id !== state.operator.id);
   return `<section class="card rescue-summary" aria-labelledby="rescue-summary-title"><span class="eyebrow">${L("Tideway's suggestion", "টাইডওয়ের পরামর্শ")}</span>
     <h2 id="rescue-summary-title">${L(`${best.actions.length} step${best.actions.length === 1 ? "" : "s"} to cover the gap of ${money(plan.gap_minor)}`, `${money(plan.gap_minor)} ঘাটতি মেটাতে ${best.actions.length}টি ধাপ`)}</h2>
     <ol class="rescue-steps">${best.actions.map((a) => `<li><span>${step(a)}</span></li>`).join("")}</ol>
@@ -1137,7 +1139,7 @@ function renderRescue() {
   if (plan) {
     const owner = plan.owner_constraints;
     parts.push(`<div class="card owner-constraints section-gap"><strong>Owner instructions</strong><p>${owner && isNum(owner.max_discount_bps) ? `Maximum discount ${esc(owner.max_discount_bps / 100)}%; ranking ${esc(String(owner.prefer).replaceAll("_", " "))}.` : "Instructions are unavailable for this legacy proposal. Create a fresh owner-reviewed proposal."} Existing instructions remain binding when counter-offers or refusals require a new plan.</p></div>`);
-    parts.push(`<section class="card section-gap"><div class="card-head"><div><span class="eyebrow">Proposal ${esc(plan.plan_id.slice(0, 8))} · ${esc(plan.status)}</span><h3>${plan.action_needed ? `Gap of ${money(plan.gap_minor)} on the likely path` : "No action needed"}</h3><p>${esc(moneyProse(plan.explanation))}</p></div><div class="row">${plan.action_needed && !plan.bundles.some((bundle) => bundle.feasible) ? `<span class="pill storm">No safe option found</span>` : ""}${isNum(plan.futures_short_of_20_before) ? `<span class="pill ${plan.futures_short_of_20_before > 2 ? "storm" : "ok"}">Before: ${esc(plan.futures_short_of_20_before)} of 20 futures short</span>` : ""}</div></div>
+    parts.push(`<section class="card section-gap"><div class="card-head"><div><span class="eyebrow">Proposal ${esc(plan.plan_id.slice(0, 8))} · ${esc(plan.status.replaceAll("_", " "))}</span><h3>${plan.action_needed ? `Gap of ${money(plan.gap_minor)} on the likely path` : "No action needed"}</h3><p>${esc(moneyProse(plan.explanation))}</p></div><div class="row">${plan.action_needed && !plan.bundles.some((bundle) => bundle.feasible) ? `<span class="pill storm">No safe option found</span>` : ""}${isNum(plan.futures_short_of_20_before) ? `<span class="pill ${plan.futures_short_of_20_before > 2 ? "storm" : "ok"}">Before: ${esc(plan.futures_short_of_20_before)} of 20 futures short</span>` : ""}</div></div>
       ${searchSummary(plan.search) ? `<p class="small muted">${esc(searchSummary(plan.search))}</p>` : ""}</section>`);
     parts.push(`<section class="stack section-gap">${plan.bundles.map((bundle, index) => bundleCard(plan, bundle, index)).join("")}</section>`);
     const levers = plan.levers || [];
