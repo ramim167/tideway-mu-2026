@@ -98,10 +98,11 @@ _RULES = (
      "মেসেজে সফটওয়্যার বা এআই-কে দেওয়া নির্দেশ আছে। টাইডওয়ে মেসেজের নির্দেশ মানে না।"),
 )
 _RULES = tuple((code, weight, re.compile(pattern, re.I), en, bn) for code, weight, pattern, en, bn in _RULES)
-_ADVICE = re.compile(r"never (?:ask|read|share|give)|do not share|don't share|never share|কখনো .{0,30}(?:চায় না|দেবেন না)|"
-                     r"কাউকে (?:দেবেন|বলবেন) না|শেয়ার করবেন না|kauke deben na", re.I)
-# Advice followed by a request ("bKash never asks... but please tell us the code") is still a request.
-_ADVICE_THEN_ASK = re.compile(r"(?:but|however|kintu|কিন্তু|তবে).{0,60}(?:\bpin\b|\botp\b|code|পিন|ওটিপি|কোড)", re.I)
+_ADVICE = re.compile(r"\b(?:never|do not|don['’]t)\s+(?:ask|read|share|give|tell|send|enter|reply|confirm)\b|"
+                     r"\bnever asks\b|কখনো .{0,30}(?:চায় না|দেবেন না)|"
+                     r"(?:দেবেন|বলবেন|পাঠাবেন|শেয়ার করবেন) না|\b(?:deben|bolben|pathaben) na\b", re.I)
+_CLAUSE_BREAK = re.compile(r"[.!?;:,।\n]+|\b(?:but|however|kintu)\b|কিন্তু|তবে|"
+                           r"\band\s+(?=(?:please\s+)?(?:send|tell|give|enter|reply|confirm)\b)", re.I)
 _RECEIVED = re.compile(r"received|cash\s?in|joma|জমা|পেয়েছেন|credited|deposited", re.I)
 _TXN_NOTICE = re.compile(r"(?:received|cash\s?in|payment|send money|cash out).{0,80}(?:balance|trx\s?id|txn\s?id)", re.I)
 
@@ -234,11 +235,14 @@ def check(text, sender="", _model=None):
     def add(code, weight, en, bn, **extra):
         signals.append({"code": code, "weight": weight, "en": en, "bn": bn, **extra})
 
-    safety_advice = bool(_ADVICE.search(normal))
     for code, weight, pattern, en, bn in _RULES:
-        if code == "asks_secret" and safety_advice and not _ADVICE_THEN_ASK.search(normal):
-            continue  # "bKash never asks for your PIN" is advice, not a request
-        if pattern.search(normal):
+        if code == "asks_secret":
+            # A safety reminder only negates a request in its own clause.
+            matched = any(pattern.search(clause) and not _ADVICE.search(clause)
+                          for clause in _CLAUSE_BREAK.split(normal))
+        else:
+            matched = pattern.search(normal)
+        if matched:
             add(code, weight, en, bn)
 
     provider = _provider(normal)

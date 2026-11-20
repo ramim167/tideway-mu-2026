@@ -34,6 +34,20 @@ class ScamShieldRules(unittest.TestCase):
         trap = scam_shield.check("bKash never asks for your PIN, but please tell us the OTP now to stop the block.")
         self.assertIn("asks_secret", codes(trap))
 
+    def test_disclaimer_only_applies_within_its_clause(self):
+        for text in ("Never share your PIN. Send us your OTP.",
+                     "Never give away your PIN; reply with the verification code.",
+                     "Never share your PIN and please enter your OTP.",
+                     "পিন কাউকে দেবেন না। এখন ওটিপি বলুন।",
+                     "PIN kauke deben na\nOTP ta bolen"):
+            with self.subTest(text=text):
+                self.assertIn("asks_secret", codes(scam_shield.check(text)))
+        for text in ("Never share your PIN, but do not send your OTP either.",
+                     "Don't send the code to anyone. Never give anyone your PIN.",
+                     "কাউকে আপনার পিন বলবেন না। ওটিপি শেয়ার করবেন না।"):
+            with self.subTest(text=text):
+                self.assertNotIn("asks_secret", codes(scam_shield.check(text)))
+
     def test_wrong_send_refund_trick_in_three_scripts(self):
         for text in ("Sorry I sent Tk 3,000 to you by mistake, please send it back",
                      "Bhai bhul kore 3000 taka pathiye felechi, ferot pathan please",
@@ -52,8 +66,14 @@ class ScamShieldRules(unittest.TestCase):
         self.assertEqual(spoofed["verdict"], "likely_scam")
         self.assertIn("notice_from_phone_number", codes(spoofed))
         self.assertTrue(spoofed["sender_is_phone_number"])
-        # Bangla digits in the sender are normalised too.
-        self.assertTrue(scam_shield.check(GENUINE, sender="+8801712345678")["sender_is_phone_number"])
+        # Preserve the printed sender while assessing equivalent local/international numerals identically.
+        for sender in ("০১৭১২৩৪৫৬৭৮", "+৮৮০১৭১২৩৪৫৬৭৮", "+৮৮০ ১৭১২-৩৪৫৬৭৮", "+8801712345678"):
+            with self.subTest(sender=sender):
+                result = scam_shield.check(GENUINE, sender=sender)
+                self.assertEqual(result["sender"], sender)
+                self.assertTrue(result["sender_is_phone_number"])
+                self.assertEqual(result["verdict"], spoofed["verdict"])
+                self.assertEqual(codes(result), codes(spoofed))
 
     def test_prize_fee_link_and_changed_number(self):
         prize = scam_shield.check("Congratulations! You won Tk 50,000 in a lucky draw. Send Tk 500 registration fee to 01811223344.")

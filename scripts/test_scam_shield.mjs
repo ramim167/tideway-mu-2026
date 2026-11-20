@@ -7,16 +7,17 @@ const source = readFileSync(new URL('../web/shield.js', import.meta.url), 'utf8'
 const safe = {verdict:'no_red_flags',risk_score:0,signals:[],actions:[],claims:{},model:{}};
 const dangerous = {...safe,verdict:'likely_scam',risk_score:70};
 function setup() {
-  const listeners = {}, host = {innerHTML:''}, pending = [];
+  const listeners = {}, host = {innerHTML:''}, fields = {}, pending = [];
   const context = {window:{},state:{lang:'en'},esc:value=>String(value??''),icon:()=>'',isNum:Number.isFinite,
-    document:{addEventListener:(name,fn)=>{listeners[name]=fn;},getElementById:id=>id==='shield-result'?host:null},
-    toast:()=>{},api:()=>new Promise((resolve,reject)=>pending.push({resolve,reject})),
+    document:{addEventListener:(name,fn)=>{listeners[name]=fn;},getElementById:id=>id==='shield-result'?host:fields[id]},
+    toast:()=>{},api:(_url,payload)=>new Promise((resolve,reject)=>pending.push({payload,resolve,reject})),
     act:async(_label,work)=>{try{return await work();}catch{return null;}}};
   vm.runInNewContext(source, context);
   const ui = context.window.TidewayShield;
   ui.bind(()=>{host.innerHTML=ui.render();});
   const input = (id,value)=>listeners.input({target:{id,value}});
-  return {ui,input,host,pending};
+  const submit = ()=>listeners.submit({target:{id:'shield-form'},preventDefault(){}});
+  return {ui,input,host,pending,submit,fields};
 }
 const settle = async()=>{for(let i=0;i<8;i++) await Promise.resolve();};
 
@@ -65,5 +66,24 @@ const settle = async()=>{for(let i=0;i<8;i++) await Promise.resolve();};
   pending[1].resolve(dangerous); await retry; await settle();
   assert.match(ui.render(),/Likely scam/);
   assert.doesNotMatch(ui.render(),/Could not check/);
+}
+{
+  const {ui,fields,pending,submit}=setup();
+  // Browser autofill can update the visible form without dispatching input.
+  fields['shield-text']={value:'First visible text'};
+  fields['shield-sender']={value:'Sender one'};
+  submit();
+  assert.equal(pending[0].payload.text,'First visible text');
+  assert.equal(pending[0].payload.sender,'Sender one');
+  fields['shield-sender'].value='Sender two';
+  pending[0].resolve(safe); await settle();
+  assert.doesNotMatch(ui.render(),/No known red flags/);
+  submit();
+  assert.equal(pending[1].payload.sender,'Sender two');
+  pending[1].resolve(dangerous); await settle();
+  assert.match(ui.render(),/Likely scam/);
+  fields['shield-text'].value='';
+  submit();
+  assert.doesNotMatch(ui.render(),/Likely scam/);
 }
 console.log('Scam Shield checks passed: edits, failed checks, retry, clearing and out-of-order responses.');

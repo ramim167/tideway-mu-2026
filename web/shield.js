@@ -93,13 +93,24 @@ window.TidewayShield = (() => {
     return revision;
   }
 
+  function syncVisibleFields() {
+    const messageField = document.getElementById("shield-text");
+    const senderField = document.getElementById("shield-sender");
+    if (!messageField || !senderField || (text === messageField.value && sender === senderField.value)) return;
+    text = messageField.value;
+    sender = senderField.value;
+    invalidate();
+  }
+
   async function check() {
-    if (!text.trim()) { toast("Paste a message first."); return; }
+    syncVisibleFields();
     const requestRevision = invalidate();
+    if (!text.trim()) { toast("Paste a message first."); return; }
     const payload = {text, sender};
     let response;
     try { response = await act("Scam Shield", () => api("/api/shield/check", payload)); }
     catch (_) { response = null; }
+    syncVisibleFields();
     if (requestRevision !== revision) return; // Input changed or a newer check superseded this one.
     if (response) result = response;
     else failure = "The check did not complete. Try again.";
