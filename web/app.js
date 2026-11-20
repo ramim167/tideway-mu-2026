@@ -915,7 +915,7 @@ function bnDate(value) {
 }
 function bnAmount(minor, code) {
   if (!isNum(minor)) return "";
-  if ((code || currency()) !== "BDT") return money(minor, code);
+  if ((code || currency()) !== "BDT") return money(minor, code, {native: true});
   return `${bnDigits((minor / 100).toLocaleString("en-IN", {maximumFractionDigits: 2}))} টাকা`;
 }
 function bnMessage(item) {
@@ -937,13 +937,13 @@ function bnMessage(item) {
 }
 // The message to show and copy: Bangla when the app is in বাংলা (English kept under a fold), English otherwise.
 function messageHtml(item) {
-  const english = moneyProse(item.message || "");
+  const english = String(item.message || "");
   const bn = state.lang === "bn" ? bnMessage(item) : "";
   const text = bn || english;
   if (!text) return "";
-  return `<div class="message-preview" ${bn ? 'lang="bn"' : ""}>${esc(text)}</div>
+  return `<div class="message-preview" data-currency-original ${bn ? 'lang="bn"' : ""}>${esc(text)}</div>
     <div class="message-tools"><button type="button" class="button small ghost" data-action="copy-message" data-text="${esc(text)}">${icon("records")}Copy message</button>
-    ${bn && english ? `<details class="small"><summary>English version</summary><div class="message-preview" lang="en">${esc(english)}</div></details>` : ""}</div>`;
+    ${bn && english ? `<details class="small"><summary>English version</summary><div class="message-preview" data-currency-original lang="en">${esc(english)}</div></details>` : ""}</div>`;
 }
 
 function actionCard(action) {

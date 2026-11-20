@@ -102,6 +102,8 @@ jobs:
         run: node scripts/test_decision_review.mjs
       - name: Check Scam Shield verdict state and request ordering
         run: node scripts/test_scam_shield.mjs
+      - name: Check recipient messages retain agreed currency
+        run: node scripts/test_message_currency.mjs
       - name: Check exact currency conversion and untouched inputs
         run: node scripts/test_currency.mjs
       - name: Test browser integration with a fixed-output local backend

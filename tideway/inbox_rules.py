@@ -34,14 +34,16 @@ _SYMBOLS = (
 )
 _CODES = "|".join(sorted(CURRENCIES, key=len, reverse=True))
 _CURRENCY = "|".join([rf"(?<![A-Za-z])(?:{_CODES})(?![A-Za-z])"] + [pattern for pattern, _ in _SYMBOLS])
-_NUMBER = r"\d{1,3}(?:[,.  ]\d{3})+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?"
-_AMOUNT = re.compile(rf"(?P<pre>{_CURRENCY})\s?(?P<num>{_NUMBER})(?!\d)|(?<![\d.,])(?P<num2>{_NUMBER})\s?(?P<post>{_CURRENCY})")
+_NUMBER = (r"(?:\d{1,2}(?:,\d{2})+,\d{3}|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?|"
+           r"\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d{1,3}(?:[  ]\d{3})+(?:[.,]\d{1,2})?|"
+           r"\d+(?:[.,]\d{1,2})?")
+_AMOUNT = re.compile(rf"(?P<pre>{_CURRENCY})\s?(?P<num>{_NUMBER})(?!\d|[.,]\d)|(?<![\d.,])(?P<num2>{_NUMBER})\s?(?P<post>{_CURRENCY})")
 _BARE_AMOUNT = re.compile(rf"\b(?:pay|pays|paying|paid|send|sending|transfer|owes?|owed|for|amount(?: due)?|total|of)\s+"
-                          rf"(?:me\s+|you\s+|us\s+|the\s+)?(?P<num>{_NUMBER})\s?(?P<k>k\b)?(?![\d/.-])", re.I)
+                          rf"(?:me\s+|you\s+|us\s+|the\s+)?(?P<num>{_NUMBER})\s?(?P<k>k\b)?(?![\d/.-]|,\d)", re.I)
 
-_IN = re.compile(r"\breceived\b|\bcredited\b|\bcredit\b|recebid[oa]|收款|\bdeposit(?:ed)?\b|\bditerima\b|\brecibid[oa]\b|"
+_IN = re.compile(r"\breceived\b|\bcredited\b|\bcredit\b|\bcash\s+in\b|recebid[oa]|收款|\bdeposit(?:ed)?\b|\bditerima\b|\brecibid[oa]\b|"
                  r"\breçu\b", re.I)
-_OUT = re.compile(r"\bdebited\b|\bsent\b|\bspent\b|\bpaid to\b|向.{1,40}?付款|\bwithdrawn?\b|\bpurchase\b|\bdebit\b|"
+_OUT = re.compile(r"\bdebited\b|\bsent\b|\bspent\b|\bpaid to\b|\bcash\s+out\b|向.{1,40}?付款|\bwithdrawn?\b|\bpurchase\b|\bdebit\b|"
                   r"\benviad[oa]\b|\bdibayar\b", re.I)
 # Balances and fees describe an account or the cost of a transfer, not the amount transferred.
 _ANCILLARY_BEFORE = re.compile(
@@ -158,7 +160,9 @@ def _dates(text, today):
         for match in re.finditer(r"(?<![\w])(?:" + "|".join(words) + r")(?![\w])", lowered):
             add(match, (today + timedelta(days=offset)).isoformat(), "relative date")
     for match in re.finditer(r"\b(?:(next|this|on|by|coming)\s+)?(" + "|".join(_WEEKDAYS) + r")\b", lowered):
-        ahead = (_WEEKDAYS.index(match[2]) - today.weekday()) % 7 or 7
+        ahead = (_WEEKDAYS.index(match[2]) - today.weekday()) % 7
+        if ahead == 0 and match[1] in ("next", "coming"):
+            ahead = 7
         add(match, (today + timedelta(days=ahead)).isoformat(), "relative date")
     for match in re.finditer(r"\bin\s+(\d{1,3})\s+days?\b", lowered):
         add(match, (today + timedelta(days=int(match[1]))).isoformat(), "relative date")
@@ -213,17 +217,15 @@ def _record(segment, business_currency, today, known):
     masked = segment
     for start, end in [m.span() for m in amounts] + spans:
         masked = masked[:start] + " " * (end - start) + masked[end:]
-    if _INVOICE.search(segment) or _PROMISE.search(segment):
-        kind, direction = "invoice", "in"
-    elif _BILL.search(segment):
-        kind, direction = "bill", "out"
-    elif _IN.search(segment):
-        kind, direction = "transaction", "in"
-    elif _OUT.search(segment):
-        kind, direction = "transaction", "out"
-    else:
-        kind, direction = "transaction", None
-        checks.append("could not tell whether money came in or went out: check the type")
+    # Interpret the leading action/document, rather than a later reference to a paid invoice or bill.
+    signals = [(match.start(), priority, kind, direction)
+               for priority, (pattern, kind, direction) in enumerate((
+                   (_BILL, "bill", "out"), (_INVOICE, "invoice", "in"), (_PROMISE, "invoice", "in"),
+                   (_IN, "transaction", "in"), (_OUT, "transaction", "out")))
+               if (match := pattern.search(segment))]
+    if not signals:
+        return None  # An amount alone does not establish that cash came in or went out.
+    _, _, kind, direction = min(signals)
     if kind == "transaction" and _UNSETTLED.search(segment):
         return None  # A denied, failed or pending transfer is not settled cash.
     issue = due = when = None
