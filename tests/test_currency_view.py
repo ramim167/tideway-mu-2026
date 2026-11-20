@@ -4,7 +4,7 @@ import io
 import unittest
 from unittest.mock import patch
 from tideway.currency_view import convert, display, question
-from tideway.domain import ValidationError
+from tideway.domain import ValidationError, parse_combined_csv
 from tideway.owner_view import brief_html
 from tideway.server import Application
 
@@ -56,6 +56,23 @@ class CurrencyReports(unittest.TestCase):
         bank,kind,_=self.http.export(dict(kind=['bank-pack'],business_id=['shapla-services'],display_currency=['USD']),self.owner)
         self.assertEqual(kind,'text/html');self.assertIn('view currency USD',bank)
         self.assertEqual(before,self.http.store.snapshot('shapla-services'))
+
+    def test_native_ledger_reimports_all_records_and_rescheduled_date(self):
+        business = "shapla-services"
+        store = self.http.store
+        bill = dict(id="rescheduled-example", status="rescheduled", reschedule_allowed=True,
+                    due_date="2026-10-04", rescheduled_date="2026-10-10", amount_minor=100,
+                    payee="'=Example", description="@test", currency="BDT")
+        store.import_records(business, {"bills": [bill]}, "nadia")
+        native, _, _ = self.http.export(dict(kind=["records"], business_id=[business]), self.owner)
+        parsed = parse_combined_csv(native, business, "BDT")
+        self.assertTrue(all(parsed.values()))
+        recovered = next(row for row in parsed["bills"] if row["id"] == bill["id"])
+        for field, value in bill.items():
+            self.assertEqual(recovered[field], value)
+        before = store.records(business)
+        store.import_records(business, parsed, "nadia")
+        self.assertEqual(store.records(business), before)
 
     def test_selected_record_report_preserves_exact_ledger_provenance(self):
         text,_,_=self.http.export(dict(kind=['records'],business_id=['shapla-services'],display_currency=['USD']),self.owner)

@@ -56,7 +56,7 @@ def unique_json_object(pairs):
 def csv_cell(value):
     """Prevent spreadsheets from treating imported text as a formula."""
     text = "" if value is None else str(value)
-    return "'" + text if text.lstrip().startswith(("=", "+", "-", "@")) else text
+    return "'" + text if text.lstrip("'").lstrip().startswith(("=", "+", "-", "@")) else text
 
 
 class Application:
@@ -221,20 +221,20 @@ class Application:
                 return "\ufeff"+stream.getvalue(), "text/csv", f"tideway-{business_id}-records-{shown}.csv"
             writer.writerow(["record_type", "id", "date", "description", "amount_minor", "currency", "type", "category",
                              "customer", "payee", "payee_account", "issue_date", "due_date", "expected_collection_date",
-                             "paid_date", "status", "priority", "reschedule_allowed", "risk_flags", "source"])
+                             "paid_date", "status", "priority", "reschedule_allowed", "rescheduled_date", "risk_flags", "source"])
             for row in records["transactions"]:
                 writer.writerow(["transaction", row["id"], row["date"], csv_cell(row["description"]), row["amount_minor"],
-                                 row["currency"], row["type"], csv_cell(row["category"]), "", "", "", "", "", "", "", "", "", "",
+                                 row["currency"], row["type"], csv_cell(row["category"]), "", "", "", "", "", "", "", "", "", "", "",
                                  "|".join(row["risk_flags"]), row["source"]])
             for row in records["invoices"]:
                 writer.writerow(["invoice", row["id"], row["issue_date"], csv_cell(row["description"]), row["amount_minor"],
                                  row["currency"], "", "", csv_cell(row["customer"]), "", "", row["issue_date"], row["due_date"],
-                                 row["expected_collection_date"], row["paid_date"] or "", row["status"], "", "",
+                                 row["expected_collection_date"], row["paid_date"] or "", row["status"], "", "", "",
                                  "|".join(row["risk_flags"]), row["source"]])
             for row in records["bills"]:
                 writer.writerow(["bill", row["id"], "", csv_cell(row["description"]), row["amount_minor"], row["currency"], "", "",
                                  "", csv_cell(row["payee"]), csv_cell(row["payee_account"] or ""), "", row["due_date"], "", "",
-                                 row["status"], row["priority"], str(row["reschedule_allowed"]).lower(),
+                                 row["status"], row["priority"], str(row["reschedule_allowed"]).lower(), row["rescheduled_date"] or "",
                                  "|".join(row["risk_flags"]), row["source"]])
             return "﻿" + stream.getvalue(), "text/csv", f"tideway-{business_id}-records.csv"
         if kind == "receipts":

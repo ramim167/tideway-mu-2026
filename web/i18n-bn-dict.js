@@ -342,6 +342,8 @@ window.TIDEWAY_BN = {
  "Expected shortfall": "প্রত্যাশিত ঘাটতি",
  "Expired mandate, even if re-signed": "মেয়াদোত্তীর্ণ ম্যান্ডেট, আবার সই করলেও",
  "Explore assumed failure rates for early-payment agreements. These assumptions are not measured customer reliability.": "আগাম পেমেন্ট চুক্তি ব্যর্থ হওয়ার অনুমিত হার পরীক্ষা করুন। এই অনুমানগুলো ক্রেতাদের মাপা নির্ভরযোগ্যতা নয়।",
+ "Ledger CSV (for import)": "লেজার CSV (আমদানির জন্য)",
+ "Display-currency report": "প্রদর্শিত মুদ্রায় প্রতিবেদন",
  "Export CSV": "CSV এক্সপোর্ট",
  "Export evidence, records or the draft bank payment file.": "প্রমাণ, হিসাব বা ব্যাংক পেমেন্ট ফাইলের খসড়া এক্সপোর্ট করুন।",
  "Export to a spreadsheet from the Evidence page.": "প্রমাণ পেজ থেকে স্প্রেডশিটে এক্সপোর্ট করুন।",

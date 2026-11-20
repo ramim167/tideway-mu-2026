@@ -436,7 +436,7 @@ IGNORED_CSV_COLUMNS = ("risk_flags", "source")  # written by Tideway's export; r
 
 def _unguard(value):
     """Undo the apostrophe Tideway's export adds before =, +, - or @ so an exported file re-imports unchanged."""
-    if isinstance(value, str) and value.startswith("'") and value[1:].lstrip()[:1] in ("=", "+", "-", "@"):
+    if isinstance(value, str) and value.startswith("'") and value.lstrip("'").lstrip()[:1] in ("=", "+", "-", "@"):
         return value[1:]
     return value
 
