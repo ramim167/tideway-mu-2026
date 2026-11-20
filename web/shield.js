@@ -4,7 +4,7 @@
 // bilingual (English + বাংলা) verdict with reasons and safe next steps. Read-only: the server
 // saves, blocks and pays nothing. Every server string is escaped before rendering.
 window.TidewayShield = (() => {
-  let text = "", sender = "", result = null, failure = "", lang = "both", renderGlobal = () => {};
+  let text = "", sender = "", result = null, failure = "", revision = 0, lang = "both", renderGlobal = () => {};
   const SAMPLES = {
     fakeCashIn: {label: "Fake cash-in SMS", sender: "01712345678",
       text: "You have received Tk 5,000.00 from 01712345678. Ref order. Fee Tk 0.00. Balance Tk 5,410.00. TrxID 8N7A6B5C4D at 20/11/2026 10:15"},
@@ -83,23 +83,38 @@ window.TidewayShield = (() => {
       <div id="shield-result">${resultHtml()}</div>`;
   }
 
+  function invalidate() {
+    revision += 1;
+    result = null;
+    failure = "";
+    // Update only the result: replacing the form while typing would lose focus/cursor position.
+    const host = document.getElementById("shield-result");
+    if (host) host.innerHTML = resultHtml();
+    return revision;
+  }
+
   async function check() {
     if (!text.trim()) { toast("Paste a message first."); return; }
-    failure = "";
-    const response = await act("Scam Shield", () => api("/api/shield/check", {text, sender}));
-    if (response) result = response; else if (!result) failure = "The check did not complete. Try again.";
+    const requestRevision = invalidate();
+    const payload = {text, sender};
+    let response;
+    try { response = await act("Scam Shield", () => api("/api/shield/check", payload)); }
+    catch (_) { response = null; }
+    if (requestRevision !== revision) return; // Input changed or a newer check superseded this one.
+    if (response) result = response;
+    else failure = "The check did not complete. Try again.";
     renderGlobal();
   }
 
   async function action(name, data) {
-    if (name === "sample") { const s = SAMPLES[data.sample]; if (s) { text = s.text; sender = s.sender; result = null; failure = ""; renderGlobal(); await check(); } }
-    else if (name === "clear") { text = ""; sender = ""; result = null; failure = ""; renderGlobal(); }
+    if (name === "sample") { const s = SAMPLES[data.sample]; if (s) { text = s.text; sender = s.sender; invalidate(); renderGlobal(); await check(); } }
+    else if (name === "clear") { text = ""; sender = ""; invalidate(); renderGlobal(); }
     else if (name === "lang") { lang = data.lang; renderGlobal(); }
   }
 
   document.addEventListener("input", (event) => {
-    if (event.target.id === "shield-text") text = event.target.value;
-    else if (event.target.id === "shield-sender") sender = event.target.value;
+    if (event.target.id === "shield-text") { text = event.target.value; invalidate(); }
+    else if (event.target.id === "shield-sender") { sender = event.target.value; invalidate(); }
   });
   document.addEventListener("submit", (event) => {
     if (event.target.id !== "shield-form") return;
@@ -107,5 +122,9 @@ window.TidewayShield = (() => {
     check().catch((error) => toast(error.message));
   });
 
-  return {render, action, bind(renderer) { renderGlobal = renderer; }, resultHtml: (r) => { const saved = result; result = r; const html = resultHtml(); result = saved; return html; }};
+  return {render, action, bind(renderer) { renderGlobal = renderer; }, resultHtml: (r) => {
+    const saved = result, savedFailure = failure;
+    result = r; failure = "";
+    try { return resultHtml(); } finally { result = saved; failure = savedFailure; }
+  }};
 })();

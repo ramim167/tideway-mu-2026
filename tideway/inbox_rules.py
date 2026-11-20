@@ -43,6 +43,18 @@ _IN = re.compile(r"\breceived\b|\bcredited\b|\bcredit\b|recebid[oa]|收款|\bdep
                  r"\breçu\b", re.I)
 _OUT = re.compile(r"\bdebited\b|\bsent\b|\bspent\b|\bpaid to\b|向.{1,40}?付款|\bwithdrawn?\b|\bpurchase\b|\bdebit\b|"
                   r"\benviad[oa]\b|\bdibayar\b", re.I)
+# Balances and fees describe an account or the cost of a transfer, not the amount transferred.
+_ANCILLARY_BEFORE = re.compile(
+    r"(?:\b(?:bal(?:ance)?\.?|fees?|charges?)|余额|餘額|手续费|手續費|ব্যালেন্স|চার্জ|ফি)"
+    r"\s*(?:(?:is|of|为|為)\s*)?[:=：]?\s*$", re.I)
+_UNSETTLED = re.compile(
+    r"\b(?:not|never)\s+(?:(?:yet|been)\s+)*(?:received|credited|debited|sent|paid|transferred|deposited)\b|"
+    r"\b(?:haven|hasn|wasn|weren|isn|aren|didn|couldn)['’]t\s+"
+    r"(?:(?:yet|been)\s+)*(?:received|credited|debited|sent|paid|transferred|deposited)\b|"
+    r"\b(?:payment|transaction|transfer|deposit)\b(?:(?!\.(?!\d)|[!?;\n]).){0,180}"
+    r"\b(?:failed|unsuccessful|declined|pending|cancelled|canceled|reversed)\b|"
+    r"\b(?:failed|unsuccessful|declined|cancelled|canceled|reversed)\s+(?:payment|transaction|transfer|deposit)\b|"
+    r"(?<!no )\bpending\s+(?:payment|transaction|transfer|deposit)\b", re.I)
 _INVOICE = re.compile(r"\binvoice\b|\bfactura\b|发票|\bnota fiscal\b|\bfacture\b(?!\s+fournisseur)", re.I)
 _BILL = re.compile(r"\bbill\b|\btagihan\b|facture fournisseur|amount due|please pay|账单|\bfactura de proveedor\b", re.I)
 _PROMISE = re.compile(r"will pay|i'?ll pay|\bte pago\b|\bpagar[ée]\b|saya bayar|akan bayar|de dunga|de denge|\bdibo\b|"
@@ -181,7 +193,14 @@ def _record(segment, business_currency, today, known):
     amounts = list(_AMOUNT.finditer(segment))
     checks = []
     if amounts:
-        first = amounts[0]
+        candidates = [match for match in amounts
+                      if not _ANCILLARY_BEFORE.search(segment[max(0, match.start() - 60):match.start()])]
+        # Multiple different amounts without a clear ancillary label are ambiguous. Do not guess.
+        values = {(_parse_number(match["num"] or match["num2"]),
+                   _currency(match["pre"] or match["post"], business_currency)) for match in candidates}
+        if len(values) != 1:
+            return None
+        first = candidates[0]
         number, token = (first["num"], first["pre"]) if first["num"] else (first["num2"], first["post"])
         amount, currency, spans = _parse_number(number), _currency(token, business_currency), [first.span()]
     else:
@@ -205,6 +224,8 @@ def _record(segment, business_currency, today, known):
     else:
         kind, direction = "transaction", None
         checks.append("could not tell whether money came in or went out: check the type")
+    if kind == "transaction" and _UNSETTLED.search(segment):
+        return None  # A denied, failed or pending transfer is not settled cash.
     issue = due = when = None
     for start, end, value, note in _dates(masked, today):
         before, after = masked[max(0, start - 30):start], masked[end:end + 12]

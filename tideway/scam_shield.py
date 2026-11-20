@@ -243,7 +243,8 @@ def check(text, sender="", _model=None):
 
     provider = _provider(normal)
     looks_like_notice = bool(_TXN_NOTICE.search(normal))
-    sender_is_phone = bool(_PHONE.fullmatch(sender.replace(" ", "").replace("-", ""))) if sender else False
+    normalized_sender = re.sub(r"[\s-]+", "", sender.translate(_BN_DIGITS))
+    sender_is_phone = bool(_PHONE.fullmatch(normalized_sender)) if sender else False
     if sender_is_phone and (looks_like_notice or (provider and _RECEIVED.search(normal))):
         add("notice_from_phone_number", 70,
             "It looks like an official transaction SMS but came from a personal phone number. Real bKash, Nagad and Rocket "

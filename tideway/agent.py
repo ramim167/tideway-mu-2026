@@ -714,6 +714,8 @@ class Agent:
         joiner, stop = ("\uff1b", "\u3002") if lang == "zh" else ("; ", ".")
         if kind == "unknown_customer":
             return t(lang, "no_customer", names=", ".join(customers[:20]) or "-"), None, None
+        if kind == "ambiguous_delay":
+            return t(lang, "clarify_delays"), None, None
         if kind == "refuse":
             return t(lang, "refuse_money"), None, None
         if kind == "whatif":

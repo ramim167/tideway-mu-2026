@@ -122,6 +122,25 @@ _INTENTS = {group: tuple((name, re.compile(pattern, re.I)) for name, pattern in 
 _CUSTOMER_INTENTS = ("credit", "customer")
 
 
+def _customer_delays(text, named, matches):
+    """Pair alternating name/day clauses in either order; refuse ambiguous assignments."""
+    masked = list(text)
+    for start, end in ([(start, end) for start, end, _ in named]
+                       + [(match.start(), match.end()) for match in matches]):
+        masked[start:end] = " " * (end - start)
+    if re.search(r"\d", "".join(masked)):
+        return None  # e.g. '10 and 20 days': the first quantity has no day unit.
+    if len(matches) == 1:
+        return {name: int(matches[0].group(1)) for _, _, name in named}
+    if len(named) != len(matches):
+        return None
+    sequence = sorted([(start, "name") for start, _, _ in named]
+                      + [(match.start(), "days") for match in matches])
+    if any(sequence[index][1] == sequence[index + 1][1] for index in range(len(sequence) - 1)):
+        return None
+    return {name: int(match.group(1)) for (_, _, name), match in zip(named, matches)}
+
+
 def intent(message, customers, lang="en"):
     """(intent, details) for a question in another language, or (None, {}).
 
@@ -146,13 +165,9 @@ def intent(message, customers, lang="en"):
         if days and _DELAY[group].search(folded):
             if not named:
                 return "unknown_customer", {}
-            delays = {}
-            for start, end, name in named:  # each customer takes the first day count after its name
-                after = [value for position, value in days if position >= end]
-                before = [value for position, value in days if position < start]
-                value = after[0] if after else before[-1] if before else None
-                if value is not None:
-                    delays.setdefault(name, value)
+            delays = _customer_delays(folded, named, list(days_re.finditer(folded)))
+            if delays is None:
+                return "ambiguous_delay", {}
             return "whatif", {"delays": delays, "customer": next(iter(delays))}
         for kind, pattern in _INTENTS[group]:
             if not pattern.search(folded):
