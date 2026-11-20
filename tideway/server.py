@@ -275,6 +275,12 @@ class Application:
         business_id = validate_business_id(body.get("business_id", "")) if "business_id" in body else None
         if business_id:
             operator = self.scoped(operator, business_id)
+        if path == "/api/chat/preview" or (path == "/api/lab/privacy" and self.lab_enabled):
+            self.fields(body, ("business_id", "target_date", "message", "history", "input_currency", "lang"), ("business_id", "message"))
+            if body.get("lang", "en") not in ("en", "bn"):
+                raise ValidationError("Invalid chat language.")
+            return self.agent.privacy_preview(business_id, body.get("target_date"), self.currency_question(business_id, body),
+                                              body.get("history"), operator["role"], body.get("lang"))
         if path.startswith("/api/owner/"):
             if not business_id:
                 raise ValidationError("business_id is required.")
@@ -308,9 +314,6 @@ class Application:
                 self.fields(body, shared + ("kind", "max_days", "delay_days"), ("business_id", "kind"))
                 return self.lab.analyze(business_id, body.get("target_date"), body["kind"], plan_id=body.get("plan_id"),
                                         bundle_id=body.get("bundle_id"), max_days=body.get("max_days", 30), delay_days=body.get("delay_days", 7))
-            if path == "/api/lab/privacy":
-                self.fields(body, ("business_id", "target_date", "message", "history", "input_currency"), ("business_id", "message"))
-                return self.agent.privacy_preview(business_id, body.get("target_date"), self.currency_question(business_id,body), body.get("history"), operator["role"])
             if path == "/api/lab/watch":
                 self.fields(body, ("business_id", "enabled", "pin"), ("business_id", "enabled", "pin"))
                 self.require(operator, "owner")

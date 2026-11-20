@@ -16,12 +16,13 @@ Each MODEL setting may be a comma-separated list.
 from __future__ import annotations
 
 import json
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 
-from .provider_http import open_provider_request
+from .provider_http import open_provider_request, remaining_budget
 from .agent import OPENROUTER_DEFAULT_MODEL, OPENROUTER_URL, ProviderError, chat_to_responses, responses_to_chat
 
 KNOWN = {
@@ -83,12 +84,12 @@ def label(providers):
     return " → ".join(f"{p.name} ({p.models[0]}{' +' + str(len(p.models) - 1) if len(p.models) > 1 else ''})" for p in providers)
 
 
-def _post(provider, chat):
+def _post(provider, chat, deadline):
     headers = {"Authorization": f"Bearer {provider.key}", "Content-Type": "application/json"}
     if provider.name == "openrouter":
         headers.update({"HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "Tideway"})
     request = urllib.request.Request(provider.url, data=json.dumps(chat, ensure_ascii=False).encode(), headers=headers, method="POST")
-    with open_provider_request(request, timeout=TIMEOUT_SECONDS) as response:
+    with open_provider_request(request, timeout=remaining_budget(deadline, TIMEOUT_SECONDS)) as response:
         raw = response.read(262145)
     if len(raw) > 262144:
         raise ProviderError("The AI response exceeded the 256 KiB limit.")
@@ -111,14 +112,19 @@ def make_transport(providers):
     if not providers:
         raise ValueError("No AI provider is configured.")
 
-    def transport(payload, _key=None):
+    def attempts(payload):
         chat = responses_to_chat(payload)
-        tried = []
         for provider in providers:
-            for model in provider.models:
-                chat["model"] = model
+            yield provider, [{**chat, "model": model} for model in provider.models]
+
+    def transport(payload, _key=None, deadline=None):
+        if deadline is None:
+            deadline = time.monotonic() + 120
+        tried = []
+        for provider, bodies in attempts(payload):
+            for chat in bodies:
                 try:
-                    result = _post(provider, chat)
+                    result = _post(provider, chat, deadline)
                     if _has_content(result):
                         return result
                     tried.append(f"{provider.name}: empty reply")  # some free models answer with nothing: try the next
@@ -140,5 +146,9 @@ def make_transport(providers):
         raise ProviderError(("Every AI provider is busy right now" if busy else "No AI provider answered")
                             + f" ({', '.join(tried[:8])}). The local agent still works; try again in a minute.")
 
+    def preview_attempts(payload):
+        return [{"provider": provider.name, "payload": body} for provider, bodies in attempts(payload) for body in bodies]
+
+    transport.preview_attempts = preview_attempts
     transport.providers = providers
     return transport

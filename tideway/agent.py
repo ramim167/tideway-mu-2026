@@ -21,7 +21,7 @@ import time
 import urllib.error
 import urllib.request
 
-from .provider_http import open_provider_request
+from .provider_http import DeadlineExpired, open_provider_request, remaining_budget, send_with_deadline
 from . import conversation, copilot, i18n
 from .domain import SecurityError, ValidationError, canonical_json, human_date, money_text
 from .projection import summary
@@ -51,13 +51,13 @@ class ProviderError(Exception):
     pass
 
 
-def request_openai(payload, key):
+def request_openai(payload, key, deadline=None):
     request = urllib.request.Request("https://api.openai.com/v1/responses",
                                      data=json.dumps(payload, ensure_ascii=False).encode(),
                                      headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
                                      method="POST")
     try:
-        with open_provider_request(request, timeout=40) as response:
+        with open_provider_request(request, timeout=remaining_budget(deadline, 40)) as response:
             raw = response.read(262145)
             if len(raw) > 262144:
                 raise ProviderError("The AI response exceeded the 256 KiB limit.")
@@ -121,19 +121,26 @@ def chat_to_responses(response):
     return {"output": output}
 
 
-def request_openrouter(payload, key):
-    """Send to OpenRouter. The model may be a comma-separated list: busy or unavailable models fall through to the next."""
-    models = [m.strip() for m in str(payload.get("model") or "").split(",") if m.strip()] or [OPENROUTER_DEFAULT_MODEL.split(",")[0]]
+def openrouter_attempts(payload):
+    models = [m.strip() for m in str(payload.get("model") or "").split(",") if m.strip()]
     chat = responses_to_chat(payload)
+    return [{"provider": "openrouter", "payload": {**chat, "model": model}}
+            for model in (models or [OPENROUTER_DEFAULT_MODEL.split(",")[0]])]
+
+
+def request_openrouter(payload, key, deadline=None):
+    """Send to OpenRouter with one deadline for its ordered model list."""
+    if deadline is None:
+        deadline = time.monotonic() + 120
     last = None
-    for model in models:
-        chat["model"] = model
+    for attempt in openrouter_attempts(payload):
+        chat = attempt["payload"]
         request = urllib.request.Request(OPENROUTER_URL, data=json.dumps(chat, ensure_ascii=False).encode(),
                                          headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json",
                                                   "HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "Tideway"},
                                          method="POST")
         try:
-            with open_provider_request(request, timeout=60) as response:
+            with open_provider_request(request, timeout=remaining_budget(deadline, 60)) as response:
                 raw = response.read(262145)
                 if len(raw) > 262144:
                     raise ProviderError("The AI response exceeded the 256 KiB limit.")
@@ -376,7 +383,7 @@ class Agent:
                 "input": inputs, "tools": [item for item in TOOLS if item["name"] in allowed],
                 "parallel_tool_calls": False, "store": False, "max_output_tokens": 1500}
 
-    def privacy_preview(self, business_id, target_date, message, history=None, role="owner"):
+    def privacy_preview(self, business_id, target_date, message, history=None, role="owner", ui_lang=None):
         if not isinstance(message, str) or not message.strip() or len(message) > 2000:
             raise ValidationError("Enter a question of 1-2000 characters.")
         if history is not None and (not isinstance(history, list) or len(history) > 20):
@@ -385,9 +392,18 @@ class Agent:
         target = self.app._target(snapshot, target_date)
         aliases = Pseudonyms(snapshot["records"])
         inputs = self.cloud_inputs(aliases, message, history or [])
-        payload = self.provider_payload(target, inputs, role)
+        payload = self.provider_payload(target, inputs, role, ui_lang)
+        if self.transport is request_openrouter:
+            attempts = openrouter_attempts(payload)
+        elif hasattr(self.transport, "preview_attempts"):
+            attempts = self.transport.preview_attempts(payload)
+        else:
+            attempts = [{"provider": "OpenAI" if self.transport is request_openai else "configured transport",
+                         "payload": payload}]
+        payload = attempts[0]["payload"]
         return {"business_id": business_id, "snapshot_hash": snapshot["snapshot_hash"], "read_only": True,
                 "provider_configured": bool(self.key), "network_call_made": False, "consent_granted": False,
+                "destinations": [{"provider": item["provider"], "model": item["payload"]["model"]} for item in attempts],
                 "initial_payload": payload, "payload_sha256": hashlib.sha256(canonical_json(payload).encode()).hexdigest(),
                 "tool_output_preview": aliases.scrub({"invoices": snapshot["records"]["invoices"][:5], "bills": snapshot["records"]["bills"][:5]}),
                 "note": "Exact initial cloud payload built by the same function used for sending. Later tool outputs are separately scrubbed. IDs, amounts, dates and unrecognised personal text may remain: inspect before consent. This preview sends nothing and grants no consent."}
@@ -782,7 +798,10 @@ class Agent:
                 if time.monotonic() - started >= 120:
                     raise ProviderError("The 120-second answer budget was reached. Ask a narrower question.")
                 payload = self.provider_payload(target, inputs, role, ui_lang)
-                response = self.transport(payload, self.key)
+                if self.transport in (request_openai, request_openrouter) or hasattr(self.transport, "preview_attempts"):
+                    response = send_with_deadline(self.transport, payload, self.key, started + 120)
+                else:
+                    response = self.transport(payload, self.key)
                 if time.monotonic() - started >= 120:
                     raise ProviderError("The 120-second answer budget was reached; no further tools were run.")
                 if not isinstance(response, dict) or not isinstance(response.get("output"), list):
@@ -860,6 +879,6 @@ class Agent:
                     inputs.append({"type": "function_call_output", "call_id": item.get("call_id"),
                                    "output": json.dumps(result, ensure_ascii=False)})
             raise ProviderError("The AI turn limit was reached. Ask a narrower question.")
-        except ProviderError as exc:
+        except (ProviderError, DeadlineExpired) as exc:
             self.store.audit(business_id, "agent.provider_error", actor, "agent_read", {"error": str(exc)[:200]})
             return {"text": str(exc), "mode": "provider_error", "trace": trace, "unverified_numbers": []}

@@ -107,6 +107,45 @@ class Fallback(unittest.TestCase):
             out = make_transport(providers_from_env(self.env))(PAYLOAD)
         self.assertEqual(out["output"][0]["content"][0]["text"], "answer from api.groq.com llama-3.3-70b-versatile")
 
+    def test_deadline_caps_each_model_and_stops_the_fallback_chain(self):
+        from tideway.provider_http import DeadlineExpired
+        clock = [0.0]
+        timeouts = []
+
+        def busy(request, timeout):
+            timeouts.append(timeout)
+            clock[0] += timeout
+            raise urllib.error.HTTPError(request.full_url, 429, "busy", {}, None)
+
+        transport = make_transport(providers_from_env({"GROQ_API_KEY": "test", "GROQ_MODEL": "a,b,c,d,e,f"}))
+        with mock.patch("tideway.provider_http.monotonic", side_effect=lambda: clock[0]), \
+                mock.patch.object(ai_providers, "open_provider_request", busy), self.assertRaises(DeadlineExpired):
+            transport(PAYLOAD, deadline=95)
+        self.assertEqual(timeouts, [30, 30, 30, 5])
+
+    def test_bangla_preview_shows_wire_body_with_lab_disabled(self):
+        from tideway.server import Application
+        calls = []
+        providers = providers_from_env(self.env)
+        app = Application(":memory:", "configured", "multiple providers", transport=make_transport(providers))
+        self.addCleanup(app.store.close)
+        app.lab_enabled = False
+        operator = {"id": "nadia", "name": "Nadia", "role": "owner"}
+        body = {"business_id": "shapla-services", "message": "Explain Nila Traders", "lang": "bn"}
+
+        def send(request, timeout):
+            calls.append(json.loads(request.data))
+            return Response(json.dumps({"choices": [{"message": {"content": "নগদ দেখুন।"}}]}).encode())
+
+        with mock.patch.object(ai_providers, "open_provider_request", send):
+            preview = app.post("/api/chat/preview", body, operator, None)
+            self.assertFalse(calls)
+            app.post("/api/chat", {**body, "consent": True}, operator, None)
+        self.assertEqual(preview["initial_payload"], calls[0])
+        self.assertIn("Always reply in standard Bangla", calls[0]["messages"][0]["content"])
+        self.assertEqual([d["model"] for d in preview["destinations"]], [m for p in providers for m in p.models])
+        self.assertNotIn("gm-k", str(preview))
+
     def test_everyone_busy_gives_a_clear_message(self):
         out, _ = self.run_with({("generativelanguage.googleapis.com", "gemini-2.5-flash"): 429, ("api.groq.com", "llama-3.3-70b-versatile"): 429,
                                 ("openrouter.ai", "a:free"): 429, ("openrouter.ai", "b:free"): 429})

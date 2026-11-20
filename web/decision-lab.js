@@ -69,7 +69,7 @@ window.TidewayLab = (() => {
       const r=results.privacy;
       content=`<h3>Inspect what the optional cloud model would receive</h3><p>This preview sends nothing and does not grant consent. The actual first request uses this same payload builder; later tool results are scrubbed separately.</p>
         <label class="field">Question<textarea data-lab-field="privacyText" maxlength="2000">${esc(field("privacyText","Explain Bay Logistics cash risk. Contact owner@example.com; account AC-2201-4471."))}</textarea></label><p class="small">${(draft.privacyHistory||[]).length} earlier chat turn(s) included.</p>${button("privacy","Preview outgoing data")} ${button("return-chat","Return question to chat")}
-        ${r?`<div class="row section-gap"><span class="pill ok">Network calls: 0</span><span class="pill">Consent: not granted</span><span class="pill">Cloud provider ${r.provider_configured?'configured':'not configured'}</span></div><p class="small muted">${esc(r.note)}</p>`+json("Exact initial request payload",r.initial_payload)+json("Example of scrubbed tool output",r.tool_output_preview)+`<p class="small lab-hash">Payload SHA-256: ${esc(r.payload_sha256)}</p>`:""}`;
+        ${privacyResult(r)}`;
     } else if(tab==="bilateral") {
       const b=bills(), r=results.bilateral;
       content=`<h3>Find terms that preserve both businesses' payroll and reserve</h3><p>The supplier ledger below is a supplied synthetic assumption, never another tenant's records. Compatible terms become a normal proposal with signed human approval and simulated counterparty consent.</p>
@@ -92,7 +92,7 @@ window.TidewayLab = (() => {
     const origin=state.businessId, target=state.targetDate, actor=state.operator?.id, serial=epoch, args=analysisArgs();
     let path, body, slot=name, after=null;
     if(["reverse","promises","frontier"].includes(name)) {path="/api/lab/analyze";body={...args,kind:name,max_days:Number(field("maxDays",30)),delay_days:Number(field("promiseDays",7))};}
-    else if(name==="privacy") {path="/api/lab/privacy";body={...common(),message:field("privacyText","Explain Bay Logistics cash risk. Contact owner@example.com; account AC-2201-4471."),history:draft.privacyHistory||[],input_currency:displayCurrency()};}
+    else if(name==="privacy") {path=state.config?.features?.decision_lab===false?"/api/chat/preview":"/api/lab/privacy";body={...common(),lang:state.lang,message:field("privacyText","Explain Bay Logistics cash risk. Contact owner@example.com; account AC-2201-4471."),history:draft.privacyHistory||[],input_currency:displayCurrency()};}
     else if(name==="watch-load") {pending=true;renderApp();try{const r=await api(`/api/lab/watch?business_id=${encodeURIComponent(origin)}`);if(state.businessId===origin&&state.operator?.id===actor&&epoch===serial)watching=r;}finally{pending=false;renderApp();}return;}
     else if(name==="watch-toggle") {const answer=await askPin(watching?.enabled?"Disarm event monitor":"Arm event monitor","The monitor may propose again after authorised synthetic events. Financial execution needs fresh approvals.");if(!answer)return;path="/api/lab/watch";body={business_id:origin,enabled:!watching?.enabled,pin:answer.pin};after="watch";}
     else if(name==="event") {
@@ -121,10 +121,18 @@ window.TidewayLab = (() => {
       if(after==="proposal") {state.view="rescue";toast("Bilateral proposal created. Review both cash assumptions and approve normally.");}
     } finally {pending=false;renderApp();}
   }
+  function privacyResult(r) {
+    if (!r) return "";
+    return `<section class="result-card" aria-label="Cloud request preview"><p>${esc(r.note)}</p>
+      <p>Provider and model order: ${esc(r.destinations.map(d=>d.provider+" ("+d.model+")").join(" → "))}</p>
+      <span class="pill ok">Network calls: 0</span> <span class="pill">Consent: not granted</span>
+      ${json("Exact initial request payload",r.initial_payload)}${json("Example of scrubbed tool output",r.tool_output_preview)}
+      <p class="small lab-hash">Payload SHA-256: ${esc(r.payload_sha256)}</p></section>`;
+  }
   function renderApp(){renderGlobal();}
   // app.js passes its renderer after defining the application's lexical state.
   let renderGlobal=()=>{};
   document.addEventListener("input",event=>{const name=event.target?.dataset?.labField;if(name)draft[name]=event.target.hasAttribute("data-money-currency")?moneyDraft(event.target,true):event.target.value;});
   document.addEventListener("change",event=>{const name=event.target?.dataset?.labField;if(name){draft[name]=event.target.hasAttribute("data-money-currency")?moneyDraft(event.target,true):event.target.value;if(name==="eventType"){delete draft.eventRecord;delete draft.eventDate;renderApp();}else if(name==="bundle"){results={};renderApp();}}});
-  return {render,action,validateCurrency(){sync();for(const value of Object.values(draft))if(value?.error)throw new Error('Fix invalid Decision lab amounts before changing currency.');},bind(renderer){renderGlobal=renderer;},async previewChat(message){sync();if(!message.trim())throw new Error("Write your question before previewing it.");draft.privacyText=message;draft.privacyHistory=state.chat.slice(-8).map(x=>({role:x.role==="user"?"user":"assistant",content:x.text}));tab="privacy";state.view="lab";await action("privacy",{});},reset(){key="";epoch++;results={};draft={};watching=null;eventRequest=null;pending=false;}};
+  return {render,action,chatPreview(){sync();return state.config?.features?.decision_lab===false?privacyResult(results.privacy):"";},validateCurrency(){sync();for(const value of Object.values(draft))if(value?.error)throw new Error('Fix invalid Decision lab amounts before changing currency.');},bind(renderer){renderGlobal=renderer;},async previewChat(message){sync();if(!message.trim())throw new Error("Write your question before previewing it.");draft.privacyText=message.trim();draft.privacyHistory=state.chat.slice(-8).map(x=>({role:x.role==="user"?"user":"assistant",content:x.text}));tab="privacy";if(state.config?.features?.decision_lab!==false)state.view="lab";await action("privacy",{});},reset(){key="";epoch++;results={};draft={};watching=null;eventRequest=null;pending=false;}};
 })();
