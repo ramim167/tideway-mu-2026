@@ -43,10 +43,10 @@ def _round_up(value, step=100_000):
     return -(-value // step) * step if value > 0 else 0
 
 
-def _deferral_options(business, policy, bill, end, blocked):
+def _deferral_options(business, policy, bill, end, blocked, *, as_of=None):
     if bill["status"] not in ("open", "scheduled") or bill.get("rescheduled_date"):
         return [], None
-    if not business["opening_date"] <= bill["due_date"] <= end:
+    if not (as_of or business["opening_date"]) <= bill["due_date"] <= end:
         return [], None
     if bill["priority"] == "payroll":
         return [], "POLICY_BLOCKED: payroll is protected and never deferred."
@@ -83,14 +83,14 @@ def _deferral_options(business, policy, bill, end, blocked):
     return options, None
 
 
-def _early_payment_options(business, policy, invoice, expected, breach_date, end):
+def _early_payment_options(business, policy, invoice, expected, breach_date, end, *, as_of):
     if invoice["status"] not in OPEN_INVOICE_STATUSES or policy["max_discount_bps"] <= 0:
         return []
     if invoice["amount_minor"] > policy["action_limit_minor"]:
         return []
     anchor = breach_date or end
     pay_by = max(add_days(business["opening_date"], 2), add_days(anchor, -1))
-    if pay_by >= expected or pay_by > end:
+    if pay_by >= expected or not as_of <= pay_by <= end:
         return []
     accelerated = days_between(pay_by, expected)
     options = []
@@ -273,6 +273,7 @@ def plan_recovery(business, policy, records, target_date, *, accepted=(), promis
                   basis_dates=None, basis="likely", blocked=None, excluded_counterparties=(),
                   mc_seed=0, mc_runs=400, late_share=None, as_of=None, prefer="lowest_cost", required_actions=()):
     """Compare recovery bundles for one business and target date."""
+    as_of = as_of or business["opening_date"]
     blocked = dict(blocked or {})
     excluded = set(excluded_counterparties)
     end = horizon_end(business, target_date, policy["lookahead_days"])
@@ -283,6 +284,8 @@ def plan_recovery(business, policy, records, target_date, *, accepted=(), promis
         raise ValidationError("Counter-offer repair exceeds the bounded record-group limit.")
     if any(action["record_id"] in blocked for action in required):
         raise ValidationError("Counter-offer repair contains a security-blocked record.")
+    if any(min(action["from_date"], action["to_date"]) < as_of for action in required):
+        raise ValidationError("Counter-offer repair contains a past action date.")
     dates = basis_dates if basis != "base" else None
     common = {"adjustments": accepted, "promises": promises, "lookahead_days": policy["lookahead_days"]}
     baseline = project(business, policy, records, target_date, scenario="base", **common)
@@ -301,7 +304,7 @@ def plan_recovery(business, policy, records, target_date, *, accepted=(), promis
             rejected.append({"record_id": bill["id"], "counterparty": bill["payee"], "code": "DECLINED",
                              "reason": "The supplier declined in this sandbox; re-planned without them."})
             continue
-        options, reason = _deferral_options(business, policy, bill, end, blocked)
+        options, reason = _deferral_options(business, policy, bill, end, blocked, as_of=as_of)
         if reason:
             code, _, text = reason.partition(": ")
             rejected.append({"record_id": bill["id"], "counterparty": bill["payee"], "code": code, "reason": text})
@@ -319,7 +322,7 @@ def plan_recovery(business, policy, records, target_date, *, accepted=(), promis
         expected = ledger.invoice_dates.get(invoice["id"]) or (dates or {}).get(invoice["id"]) or invoice["expected_collection_date"]
         if (promises or {}).get(invoice["id"]):
             expected = max(promises[invoice["id"]], expected)
-        options = _early_payment_options(business, policy, invoice, expected, breach, end)
+        options = _early_payment_options(business, policy, invoice, expected, breach, end, as_of=as_of)
         if options:
             groups.append(options)
     groups.sort(key=lambda options: -max(option.get("face_minor", option["amount_minor"]) for option in options))

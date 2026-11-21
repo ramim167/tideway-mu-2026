@@ -276,7 +276,7 @@ from .screening import INJECTION_PATTERNS, PAYMENT_REVIEW_FLAGS, scan_text
 
 PAYROLL_PATTERN = re.compile(
     r"\b(?:payroll|salar(?:y|ies)|wages?|staff\s+(?:pay|costs?)|bonus(?:es)?)\b"
-    r"|(?<![\u0980-\u09ff])(?:বেতন|মজুরি|মজুরী|বোনাস)(?:ের|র|াদি)?(?![\u0980-\u09ff])"
+    r"|(?<![\u0980-\u09ff])(?:বেতনভাতা|বেতন|মজুরি|মজুরী|বোনাস)(?:ের|র|াদি)?(?![\u0980-\u09ff])"
 )
 
 

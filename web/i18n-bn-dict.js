@@ -3,6 +3,7 @@
 // dates and ledger names, which are passed through unchanged. Regenerate the missing list with
 // node scripts/bangla_coverage.mjs --out missing.json
 window.TIDEWAY_BN = {
+  "No payroll recorded": "বেতনের কোনো রেকর্ড নেই",
  "All tools": "সব টুল",
  "Options": "সেটিংস",
  "Forecast": "পূর্বাভাস",

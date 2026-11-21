@@ -678,7 +678,7 @@ class Agent:
             projections = self.tool("project_cash", business_id, target, actor, trace)
             risk = self.tool("simulate_risk", business_id, target, actor, trace)
             topic = "payroll"
-            answer = (("Payroll is not fully funded on the schedule: cash goes negative on a payroll day. "
+            answer = "No payroll recorded." if not projections["base"]["payroll_recorded"] else (("Payroll is not fully funded on the schedule: cash goes negative on a payroll day. "
                        if projections["base"]["payroll_at_risk"] else "Payroll is funded on the schedule. ") +
                       f"In {round(risk['probability_payroll_unfunded'] * 20)} of 20 simulated futures payroll is unfunded. "
                       "Payroll is protected: I never propose deferring it.")

@@ -202,6 +202,7 @@ def project(business, policy, records, target_date, adjustments=(), scenario="ba
             "minimum_cash_date": minimum_date, "reserve_floor_minor": reserve,
             "reserve_shortfall_minor": shortfall, "first_breach_date": first_breach,
             "first_negative_date": first_negative, "payroll_at_risk": payroll_at_risk,
+            "payroll_recorded": any(event.get("payroll") for event in events),
             "payroll_outflow_minor": -sum(event["effect_minor"] for event in events if event.get("payroll")),
             "total_inflow_minor": total_in, "total_outflow_minor": total_out,
             "days": days, "source_references": events, "excluded": excluded,
@@ -215,7 +216,7 @@ def summary(projection):
     keys = ("scenario", "currency", "opening_date", "target_date", "end_date", "opening_cash_minor",
             "closing_cash_minor", "target_closing_cash_minor", "minimum_cash_minor", "minimum_cash_date",
             "reserve_floor_minor", "reserve_shortfall_minor", "first_breach_date", "first_negative_date",
-            "payroll_at_risk", "payroll_outflow_minor", "total_inflow_minor", "total_outflow_minor")
+            "payroll_at_risk", "payroll_recorded", "payroll_outflow_minor", "total_inflow_minor", "total_outflow_minor")
     return {key: projection.get(key) for key in keys}
 
 

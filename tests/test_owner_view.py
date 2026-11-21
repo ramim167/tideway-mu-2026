@@ -2,7 +2,8 @@
 import unittest
 from unittest.mock import patch
 
-from tideway.domain import ValidationError, is_payroll_text
+from tideway.domain import ValidationError, is_payroll_text, validate_bill
+from tideway.planner import _deferral_options, _early_payment_options
 from tideway.owner_view import build_report, brief_html
 from tideway.projection import project
 from tideway.server import Application
@@ -28,6 +29,32 @@ def facts(s):
 
 
 class CashExplanationTests(unittest.TestCase):
+    def test_opening_reserve_shortfall_survives_same_day_receipt(self):
+        s = example()
+        opening = s["business"]["opening_date"]
+        s["state"]["current_date"] = opening
+        s["business"]["opening_cash_minor"] = 500
+        s["records"]["bills"] = []
+        s["records"]["transactions"][0].update(date=opening, amount_minor=10000)
+        f = facts(s)
+        report = build_report(s, f)
+        self.assertEqual(report["likely"]["reserve_shortfall_minor"], 1500)
+        self.assertEqual(report["status"], "buffer_shortfall_unknown_payroll")
+        self.assertFalse(f["projections"]["likely"]["payroll_recorded"])
+
+    def test_past_action_dates_and_bangla_payroll(self):
+        s = example()
+        business = s["business"]
+        policy = dict(max_discount_bps=500, action_limit_minor=10000)
+        invoice = s["records"]["invoices"][0]
+        self.assertEqual(_early_payment_options(business, policy, invoice, "2026-10-30",
+                                               "2026-10-12", "2026-10-31", as_of="2026-10-12"), [])
+        bill = s["records"]["bills"][0]
+        self.assertEqual(_deferral_options(business, policy, bill, "2026-10-31", {}, as_of="2026-10-04")[0], [])
+        with self.assertRaisesRegex(ValidationError, "looks like payroll"):
+            validate_bill(dict(id="wages", description="অক্টোবরের বেতনভাতা", amount=30, due_date="2026-10-03",
+                               currency="BDT", reschedule_allowed=True), "example", "BDT")
+
     def test_exact_spending_boundary_has_independent_one_minor_unit_failure(self):
         s = example()
         r = build_report(s, facts(s))

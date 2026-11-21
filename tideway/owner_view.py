@@ -44,8 +44,11 @@ def _window(projection, as_of):
         return {"available": False, "minimum_cash_minor": None, "minimum_cash_date": None,
                 "reserve_shortfall_minor": None, "payroll_unfunded": None}
     minimum = min(days, key=lambda d: d["closing_cash_minor"])
-    return {"available": True, "minimum_cash_minor": minimum["closing_cash_minor"], "minimum_cash_date": minimum["date"],
-            "reserve_shortfall_minor": max(0, projection["reserve_floor_minor"] - minimum["closing_cash_minor"]),
+    cash, day = minimum["closing_cash_minor"], minimum["date"]
+    if as_of <= projection["opening_date"] and projection["opening_cash_minor"] <= cash:
+        cash, day = projection["opening_cash_minor"], projection["opening_date"]
+    return {"available": True, "minimum_cash_minor": cash, "minimum_cash_date": day,
+            "reserve_shortfall_minor": max(0, projection["reserve_floor_minor"] - cash),
             "payroll_unfunded": any(d["closing_cash_minor"] < 0 and any(e.get("payroll") for e in d["source_references"]) for d in days)}
 
 
@@ -56,7 +59,8 @@ def _spending_room(projection, as_of, spending_date):
     reserve = projection["reserve_floor_minor"]
     before = [d for d in projection["days"] if as_of <= d["date"] < spending_date]
     after = [d for d in projection["days"] if d["date"] >= spending_date]
-    if any(d["closing_cash_minor"] < reserve for d in before):
+    if (as_of <= projection["opening_date"] and projection["opening_cash_minor"] < reserve
+            or any(d["closing_cash_minor"] < reserve for d in before)):
         return {"available": True, "ceiling_minor": 0, "reason": "earlier_shortfall", "binding_date": window["minimum_cash_date"]}
     binding = min(after, key=lambda d: d["closing_cash_minor"])
     raw = max(0, binding["closing_cash_minor"] - reserve)

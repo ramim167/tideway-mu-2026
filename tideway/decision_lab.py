@@ -100,7 +100,8 @@ class DecisionLab:
         if not bill:
             raise ValidationError("Select a bill from this business.")
         options, reason = planner._deferral_options(context.business, context.policy, bill,
-                                                    horizon_end(context.business, context.target, context.policy["lookahead_days"]), context.derived["blocked"])
+                                                    horizon_end(context.business, context.target, context.policy["lookahead_days"]), context.derived["blocked"],
+                                                    as_of=snapshot["state"]["current_date"])
         if bill["payee"] in context.payload.get("excluded_counterparties", []):
             options, reason = [], "The owner excluded this supplier."
         quotes = []

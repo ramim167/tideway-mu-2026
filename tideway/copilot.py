@@ -473,7 +473,8 @@ def reply_from_results(results, currency, lang="en"):
             lines.append(t(lang, "projection", scenario=t(lang, "scenario")[r["scenario"]],
                            amount=money_text(r["minimum_cash_minor"], currency), date=day(lang, r["minimum_cash_date"]),
                            short=money_text(r["reserve_shortfall_minor"], currency),
-                           payroll=t(lang, "payroll_risk" if r["payroll_at_risk"] else "payroll_ok")))
+                           payroll=t(lang, "payroll_missing" if not r.get("payroll_recorded", r.get("payroll_outflow_minor", 0) > 0)
+                                     else "payroll_risk" if r["payroll_at_risk"] else "payroll_ok")))
         elif tool == "simulate_risk":
             lines.append(t(lang, "risk", short=r["futures_short_of_20"], payroll=round(r["probability_payroll_unfunded"] * 100),
                            runs=r["runs"]))
