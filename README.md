@@ -6,7 +6,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.11%2B-0b2a45?logo=python&logoColor=white)
 ![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-none-1f8a96)
-![Tests](https://img.shields.io/badge/tests-695%20passing-1f8a96)
+![Tests](https://img.shields.io/badge/tests-698%20passing-1f8a96)
 ![Self-test](https://img.shields.io/badge/attacks%20blocked-25%2F25-d4a72c)
 ![License](https://img.shields.io/badge/license-MIT-0b2a45)
 
@@ -187,14 +187,14 @@ python run.py --no-demo --db data/empty.sqlite3                                 
 
 ### Dictation on desktop and phones
 
-Open **Ask Tideway**, pick English or বাংলা, then tap the microphone. With recording enabled, use **Pause**, **Resume**, and **Finish**. The transcript goes into your editable draft. Review it, then press **Ask** to send the question. If your browser’s speech service fails, choose **Use recording** when it appears.
+Open **Ask MoneyGuard**, pick English or বাংলা, then tap the microphone. With recording enabled, use **Pause**, **Resume**, and **Finish**. The transcript goes into your editable draft. Review it, then press **Ask** to send the question. If your browser’s speech service fails, choose **Use recording** when it appears.
 
 Recording uses the browser’s microphone on `localhost` or an HTTPS site. On a phone, use the HTTPS address of the hosted demo and allow microphone access. Each recording can hold up to 45 seconds of speech. Use the microphone again to add another clip. [Browser microphone requirements](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)
 
-To enable recording, configure one of these options and restart Tideway.
+To enable recording, configure one of these options and restart MoneyGuard.
 
-- **Local computer**. Install `faster-whisper` in the Python environment that runs Tideway. Download the multilingual `Systran/faster-whisper-base` snapshot using the setup commands below and set `TIDEWAY_SPEECH_MODEL_DIR=models/faster-whisper-base` in `.env`. After setup, Tideway transcribes clips locally without a provider key. [faster-whisper](https://github.com/SYSTRAN/faster-whisper)
-- **Hosted demo**. Set `TIDEWAY_SPEECH_GROQ_API_KEY` as a secret environment variable in the Render dashboard. Tideway asks for permission before making a Groq recording and sends the clip to Groq for transcription. [Groq speech-to-text](https://console.groq.com/docs/speech-to-text)
+- **Local computer**. Install `faster-whisper` in the Python environment that runs MoneyGuard. Download the multilingual `Systran/faster-whisper-base` snapshot using the setup commands below and set `TIDEWAY_SPEECH_MODEL_DIR=models/faster-whisper-base` in `.env`. After setup, MoneyGuard transcribes clips locally without a provider key. [faster-whisper](https://github.com/SYSTRAN/faster-whisper)
+- **Hosted demo**. Set `TIDEWAY_SPEECH_GROQ_API_KEY` as a secret environment variable in the Render dashboard. MoneyGuard asks for permission before making a Groq recording and sends the clip to Groq for transcription. [Groq speech-to-text](https://console.groq.com/docs/speech-to-text)
 
 ```bash
 python -m pip install faster-whisper==1.2.1
