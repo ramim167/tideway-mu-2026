@@ -3,6 +3,16 @@
 // dates and ledger names, which are passed through unchanged. Regenerate the missing list with
 // node scripts/bangla_coverage.mjs --out missing.json
 window.TIDEWAY_BN = {
+  "Retry witness checkpoint": "সাক্ষীর যাচাই আবার চেষ্টা করুন",
+  "Cloud request preview": "ক্লাউডে পাঠানোর আগে দেখুন",
+  "Provider and model order": "সেবা ও মডেল ব্যবহারের ক্রম",
+  "Network calls: 0": "নেটওয়ার্ক অনুরোধ: ০",
+  "Consent: not granted": "সম্মতি: দেওয়া হয়নি",
+  "Exact initial request payload": "প্রথম অনুরোধে যা পাঠানো হবে",
+  "Example of scrubbed tool output": "সংবেদনশীল তথ্য সরানোর পর টুলের ফলাফলের নমুনা",
+  "original ledger units": "খতিয়ানের মূল একক",
+  "Payload SHA-256": "অনুরোধের SHA-256",
+
   "No payroll recorded": "বেতনের কোনো রেকর্ড নেই",
  "All tools": "সব টুল",
  "Options": "সেটিংস",

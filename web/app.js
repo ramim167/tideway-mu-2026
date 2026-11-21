@@ -1889,8 +1889,8 @@ async function saveInbox() {
 // ---------------------------------------------------------------------------- what-if
 
 function projectionPayroll(projection) {
-  if (!(projection.payroll_recorded ?? projection.payroll_outflow_minor > 0)) return L("No payroll recorded");
-  return projection.payroll_at_risk ? L("At risk") : L("Funded");
+  if (!(projection.payroll_recorded ?? projection.payroll_outflow_minor > 0)) return "No payroll recorded";
+  return projection.payroll_at_risk ? "At risk" : "Funded";
 }
 
 function renderWhatIf() {
@@ -2432,11 +2432,17 @@ document.addEventListener("input", (event) => {
   else if (target.form?.id === "policy-form") state.policyDraft[target.name] = target.hasAttribute("data-money-currency") ? moneyDraft(target,true) : target.value;
   else if (target.id === "chat-input") {
     state.chatDraft = target.value;
+    window.TidewayLab.refreshPrivacyPreview();
     // Any manual edit takes precedence over a pending dictation update.
     pauseVoiceForEdit();
     resizeChatInput(target);
   }
-  else if (target.id === "inbox-text") state.inbox.text = target.value;
+  else if (target.id === "inbox-text" && state.inbox.text !== target.value) {
+    const {photo, photoName} = state.inbox;
+    state.inbox = {...freshInbox(), text: target.value, photo, photoName};
+    $("#inbox-results")?.replaceChildren();
+    $(".photo-drop details")?.remove();
+  }
   else if (target.dataset?.draft !== undefined && !["selected", "type"].includes(target.dataset.field)) {
     const draft = state.inbox.drafts?.[Number(target.dataset.draft)];
     if (draft) {

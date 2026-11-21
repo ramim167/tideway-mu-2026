@@ -20,6 +20,13 @@ export async function checkDecisionLab({evaluate, click, until, view, viewport, 
   await tab('privacy');await click('[data-action=lab-privacy]');await idle();
   if (!await evaluate("document.querySelector('.lab-panel').textContent.includes('Network calls: 0')")) throw new Error("Privacy preview did not render");
   await shot('33-lab-privacy');
+  await evaluate(`(() => {
+    const question = document.querySelector('[data-lab-field=privacyText]');
+    question.value += " Revised.";
+    question.dispatchEvent(new Event("input", {bubbles: true}));
+  })()`);
+  if (await evaluate("!!document.querySelector('.cloud-request-preview')")) throw new Error("Edited lab question retained its old preview");
+
   await click('[data-action=lab-return-chat]');
   if (!await evaluate("state.view==='assistant' && document.querySelector('#chat-input').value.includes('Explain')")) throw new Error("Privacy preview did not return unsent question to chat");
   await view('lab');await tab('replay');

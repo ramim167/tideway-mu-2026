@@ -316,6 +316,33 @@ try {
   const homeAnswer = await evaluate("({reply:state.chat.at(-1),dashboard:state.dashboard})");
   assertHomePayrollAnswer(homeAnswer.reply, homeAnswer.dashboard);
   await checkChatComposer({evaluate, click, until, viewport, shot, phoneCheck, send});
+  if (!testLocalBackend && !testRealBackend) {
+    await evaluate(`(() => {
+      window.originalPreviewConfig = [state.config.ai_configured, state.config.features.decision_lab];
+      state.config.ai_configured = true;
+      state.config.features.decision_lab = false;
+      state.chatDraft = "Explain cash.";
+      render();
+    })()`);
+    await click('.topbar [data-action="lang"][data-lang="bn"]');
+    await click('[data-action="privacy-preview-chat"]');
+    await until("document.querySelector('.cloud-request-preview')?.textContent.includes('সেবা ও মডেল ব্যবহারের ক্রম')",
+      "inline cloud preview in Bangla");
+    await evaluate(`(() => {
+      const box = document.querySelector("#chat-input");
+      box.value = "Explain payroll.";
+      box.dispatchEvent(new Event("input", {bubbles:true}));
+    })()`);
+    if (await evaluate("!!document.querySelector('.cloud-request-preview')")) throw new Error("Edited chat draft retained its old cloud preview");
+    await evaluate(`(() => {
+      [state.config.ai_configured, state.config.features.decision_lab] = window.originalPreviewConfig;
+      delete window.originalPreviewConfig;
+      state.chatDraft = "";
+      render();
+    })()`);
+    await click('.topbar [data-action="lang"][data-lang="en"]');
+  }
+
   await click('[data-view="overview"]');
   await until("!!document.querySelector('.owner-view')", "simple cash forecast");
   await click('[data-action=owner-detailed]');
@@ -545,6 +572,18 @@ try {
     console.log("Photo browser passed: PNG file selection, CSP preview, JPEG upload and returned draft.");
   }
 
+
+  if (!testLocalBackend && !testRealBackend) {
+    await evaluate("document.querySelector('#inbox-form').requestSubmit()");
+    await until("document.querySelector('[data-action=inbox-shield]') && document.querySelector('[data-action=inbox-save]')",
+      "Inbox assessment and draft");
+    await evaluate(`(() => {
+      const box = document.querySelector("#inbox-text");
+      box.value = "Revised question";
+      box.dispatchEvent(new Event("input", {bubbles:true}));
+    })()`);
+    if (await evaluate("document.querySelector('#inbox-results').textContent.trim()")) throw new Error("Inbox retained results for edited source");
+  }
   await view("whatif");
   await evaluate(`(() => { const slider = document.querySelector('input[type=range][data-customer="Bay Logistics"]'); slider.value = 12; slider.dispatchEvent(new Event('input', {bubbles: true})); document.querySelector('#whatif-form').requestSubmit(); return true; })()`);
   await until("!!document.querySelector('.line-what')", "what-if line");

@@ -19,8 +19,24 @@ window.TidewayLab = (() => {
   const button = (action,label,extra="") => `<button type="button" class="button primary" data-action="lab-${action}" ${pending?"disabled":""} ${extra}>${esc(label)}</button>`;
   const table = (heads,rows) => `<div class="table-wrap"><table><thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   const percent = value => isNum(value)?`${(value*100).toFixed(2)}%`:"—";
-  const json = (title,value) => `<details class="section-gap"><summary>${esc(title)} (original ledger units)</summary><pre class="lab-json">${esc(JSON.stringify(value,null,2))}</pre></details>`;
+  const L = text => state.lang === "bn" ? window.TidewayBangla.translate(text) ?? text : text;
+  const json = (title,value) => `<details class="section-gap"><summary>${esc(L(title))} (${esc(L("original ledger units"))})</summary><pre class="lab-json">${esc(JSON.stringify(value,null,2))}</pre></details>`;
   const common = () => ({business_id:state.businessId,target_date:state.targetDate});
+  const defaultQuestion = "Explain Bay Logistics cash risk. Contact owner@example.com; account AC-2201-4471.";
+  const privacyBody = (message, history) => ({...common(), lang: state.lang, message: message.trim(), history,
+    input_currency: displayCurrency()});
+  const labPrivacyBody = () => privacyBody(field("privacyText", defaultQuestion), draft.privacyHistory || []);
+  const chatPrivacyBody = () => privacyBody(state.chatDraft, state.chat.slice(-8).map(
+    item => ({role: item.role === "user" ? "user" : "assistant", content: item.text})));
+  const currentPrivacyBody = () => state.config?.features?.decision_lab === false ? chatPrivacyBody() : labPrivacyBody();
+  const privacyKey = body => JSON.stringify(body);
+  function visiblePrivacy(body) {
+    return results.privacy?.key === privacyKey(body) ? results.privacy.value : null;
+  }
+  function refreshPrivacyPreview() {
+    if (!visiblePrivacy(currentPrivacyBody())) document.querySelector(".cloud-request-preview")?.remove();
+  }
+
   const analysisArgs = () => ({...common(), ...(state.dashboard.plan?{plan_id:state.dashboard.plan.plan_id}:{}), ...(draft.bundle?{bundle_id:draft.bundle}:{})});
   const cashInput = (label,name,fallback) => `<label class="field">${esc(label)}${moneyInput(draft[name],fallback*100,`data-lab-field="${name}"`)}</label>`;
   function nativeMinor(name, fallback) {if(draft[name]?.empty)throw new Error('Enter an amount explicitly; use 0 for zero.');return selectedMinor(draft[name],fallback*100);}
@@ -66,7 +82,7 @@ window.TidewayLab = (() => {
         <div class="row section-gap">${button("capsule","Download private replay capsule")}<label class="field">Replay a capsule<input id="lab-capsule-file" type="file" accept="application/json,.json"></label>${button("replay","Verify and recompute capsule")}</div>
         ${results.challenge?json("Challenge result and guard evidence",results.challenge):""}${results.replay?`<p class="pill ${results.replay.passed?'ok':'storm'}">${results.replay.passed?'Replay matched':'Replay did not match'}</p>`+json("Recomputed financial outputs",results.replay):""}`;
     } else if(tab==="privacy") {
-      const r=results.privacy;
+      const r=visiblePrivacy(labPrivacyBody());
       content=`<h3>Inspect what the optional cloud model would receive</h3><p>This preview sends nothing and does not grant consent. The actual first request uses this same payload builder; later tool results are scrubbed separately.</p>
         <label class="field">Question<textarea data-lab-field="privacyText" maxlength="2000">${esc(field("privacyText","Explain Bay Logistics cash risk. Contact owner@example.com; account AC-2201-4471."))}</textarea></label><p class="small">${(draft.privacyHistory||[]).length} earlier chat turn(s) included.</p>${button("privacy","Preview outgoing data")} ${button("return-chat","Return question to chat")}
         ${privacyResult(r)}`;
@@ -92,7 +108,7 @@ window.TidewayLab = (() => {
     const origin=state.businessId, target=state.targetDate, actor=state.operator?.id, serial=epoch, args=analysisArgs();
     let path, body, slot=name, after=null;
     if(["reverse","promises","frontier"].includes(name)) {path="/api/lab/analyze";body={...args,kind:name,max_days:Number(field("maxDays",30)),delay_days:Number(field("promiseDays",7))};}
-    else if(name==="privacy") {path=state.config?.features?.decision_lab===false?"/api/chat/preview":"/api/lab/privacy";body={...common(),lang:state.lang,message:field("privacyText","Explain Bay Logistics cash risk. Contact owner@example.com; account AC-2201-4471."),history:draft.privacyHistory||[],input_currency:displayCurrency()};}
+    else if(name==="privacy") {path=state.config?.features?.decision_lab===false?"/api/chat/preview":"/api/lab/privacy";body=currentPrivacyBody();}
     else if(name==="watch-load") {pending=true;renderApp();try{const r=await api(`/api/lab/watch?business_id=${encodeURIComponent(origin)}`);if(state.businessId===origin&&state.operator?.id===actor&&epoch===serial)watching=r;}finally{pending=false;renderApp();}return;}
     else if(name==="watch-toggle") {const answer=await askPin(watching?.enabled?"Disarm event monitor":"Arm event monitor","The monitor may propose again after authorised synthetic events. Financial execution needs fresh approvals.");if(!answer)return;path="/api/lab/watch";body={business_id:origin,enabled:!watching?.enabled,pin:answer.pin};after="watch";}
     else if(name==="event") {
@@ -117,22 +133,32 @@ window.TidewayLab = (() => {
       if(after==="reload"||after==="proposal") {await loadDashboard();sync();}
       if(after==="watch") {watching={...(watching||{}),enabled:r.enabled};}
       else if(after==="download") {const url=URL.createObjectURL(new Blob([JSON.stringify(r,null,2)],{type:"application/json"}));const link=document.createElement('a');link.href=url;link.download=`tideway-${origin}-private-replay.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast("Private replay capsule downloaded.");}
-      else results[slot]=r;
+      else if (name === "privacy") {
+        sync();
+        if (epoch === serial && privacyKey(body) === privacyKey(currentPrivacyBody())) {
+          results.privacy = {key: privacyKey(body), value: r};
+        }
+      } else results[slot]=r;
       if(after==="proposal") {state.view="rescue";toast("Bilateral proposal created. Review both cash assumptions and approve normally.");}
     } finally {pending=false;renderApp();}
   }
   function privacyResult(r) {
     if (!r) return "";
-    return `<section class="result-card" aria-label="Cloud request preview"><p>${esc(r.note)}</p>
-      <p>Provider and model order: ${esc(r.destinations.map(d=>d.provider+" ("+d.model+")").join(" → "))}</p>
-      <span class="pill ok">Network calls: 0</span> <span class="pill">Consent: not granted</span>
+    return `<section class="result-card cloud-request-preview" aria-label="${esc(L("Cloud request preview"))}"><p>${esc(r.note)}</p>
+      <p>${esc(L("Provider and model order"))}: ${esc(r.destinations.map(d=>d.provider+" ("+d.model+")").join(" → "))}</p>
+      <span class="pill ok">${esc(L("Network calls: 0"))}</span> <span class="pill">${esc(L("Consent: not granted"))}</span>
       ${json("Exact initial request payload",r.initial_payload)}${json("Example of scrubbed tool output",r.tool_output_preview)}
-      <p class="small lab-hash">Payload SHA-256: ${esc(r.payload_sha256)}</p></section>`;
+      <p class="small lab-hash">${esc(L("Payload SHA-256"))}: ${esc(r.payload_sha256)}</p></section>`;
   }
   function renderApp(){renderGlobal();}
   // app.js passes its renderer after defining the application's lexical state.
   let renderGlobal=()=>{};
-  document.addEventListener("input",event=>{const name=event.target?.dataset?.labField;if(name)draft[name]=event.target.hasAttribute("data-money-currency")?moneyDraft(event.target,true):event.target.value;});
+  document.addEventListener("input", event => {
+    const name = event.target?.dataset?.labField;
+    if (!name) return;
+    draft[name] = event.target.hasAttribute("data-money-currency") ? moneyDraft(event.target, true) : event.target.value;
+    if (name === "privacyText") refreshPrivacyPreview();
+  });
   document.addEventListener("change",event=>{const name=event.target?.dataset?.labField;if(name){draft[name]=event.target.hasAttribute("data-money-currency")?moneyDraft(event.target,true):event.target.value;if(name==="eventType"){delete draft.eventRecord;delete draft.eventDate;renderApp();}else if(name==="bundle"){results={};renderApp();}}});
-  return {render,action,chatPreview(){sync();return state.config?.features?.decision_lab===false?privacyResult(results.privacy):"";},validateCurrency(){sync();for(const value of Object.values(draft))if(value?.error)throw new Error('Fix invalid Decision lab amounts before changing currency.');},bind(renderer){renderGlobal=renderer;},async previewChat(message){sync();if(!message.trim())throw new Error("Write your question before previewing it.");draft.privacyText=message.trim();draft.privacyHistory=state.chat.slice(-8).map(x=>({role:x.role==="user"?"user":"assistant",content:x.text}));tab="privacy";if(state.config?.features?.decision_lab!==false)state.view="lab";await action("privacy",{});},reset(){key="";epoch++;results={};draft={};watching=null;eventRequest=null;pending=false;}};
+  return {render,action,refreshPrivacyPreview,chatPreview(){sync();return state.config?.features?.decision_lab===false?privacyResult(visiblePrivacy(chatPrivacyBody())):"";},validateCurrency(){sync();for(const value of Object.values(draft))if(value?.error)throw new Error('Fix invalid Decision lab amounts before changing currency.');},bind(renderer){renderGlobal=renderer;},async previewChat(message){sync();if(!message.trim())throw new Error("Write your question before previewing it.");draft.privacyText=message.trim();draft.privacyHistory=state.chat.slice(-8).map(x=>({role:x.role==="user"?"user":"assistant",content:x.text}));tab="privacy";if(state.config?.features?.decision_lab!==false)state.view="lab";await action("privacy",{});},reset(){key="";epoch++;results={};draft={};watching=null;eventRequest=null;pending=false;}};
 })();
