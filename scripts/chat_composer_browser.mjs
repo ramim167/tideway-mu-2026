@@ -18,6 +18,7 @@ export async function checkChatComposer({evaluate, click, until, viewport, shot,
   const setDraft = (text) => evaluate(`(() => {
     const box = document.getElementById('chat-input');
     box.value = ${JSON.stringify(text)};
+    box.setSelectionRange(box.value.length, box.value.length);
     box.dispatchEvent(new Event('input', {bubbles: true}));
   })()`);
   const value = () => evaluate("document.getElementById('chat-input').value");
@@ -101,10 +102,15 @@ export async function checkChatComposer({evaluate, click, until, viewport, shot,
   await evaluate("window.testRecognition.speak('discard late result')");
   assert.equal(await value(), "Edited draft");
   await click(pause);
-  await evaluate("window.testRecognition.onerror({error:'not-allowed'}); window.testRecognition.end()");
+  await evaluate(`(() => {
+    window.realPermissionQuery = navigator.permissions.query;
+    navigator.permissions.query = async () => ({state: "denied"});
+    window.testRecognition.onerror({error: "not-allowed"});
+  })()`);
+  await until("voice.error === 'denied'", "confirmed microphone permission denial");
   assert.equal(await value(), "Edited draft", "Speech errors leave the draft available");
   await click('.topbar [data-action="lang"][data-lang="en"]');
-  assert.match(await note(), /Microphone access was refused/);
+  assert.match(await note(), /Microphone permission is denied/);
   assert.equal(await evaluate("voice.timer"), null, "Permission errors do not retry automatically");
   await click(pause);
   assert.equal(await evaluate(`(() => {
@@ -113,6 +119,52 @@ export async function checkChatComposer({evaluate, click, until, viewport, shot,
     document.querySelector(${JSON.stringify(finish)}).click();
     return scheduled && voice === null;
   })()`), true, "Finish cancels a pending reconnect");
+
+
+  // Preserve the selected text's surroundings and keep the caret at the insertion.
+  await setDraft("Check old today.");
+  await evaluate("document.getElementById('chat-input').setSelectionRange(6, 9)");
+  await click(mic);
+  await evaluate("window.testRecognition.speak('cash')");
+  assert.equal(await value(), "Check cash today.");
+  await click(finish);
+  await evaluate("window.testRecognition.end()");
+  const caret = () => evaluate("document.getElementById('chat-input').selectionStart");
+  assert.equal(await caret(), "Check cash".length);
+  await click(mic);
+  await evaluate("window.testRecognition.speak('and payroll'); window.previousRecognition = window.testRecognition; window.testRecognition.end()");
+  await until("window.testRecognition !== window.previousRecognition", "mid-sentence automatic restart");
+  await evaluate("window.testRecognition.speak('and reserves')");
+  await click(finish);
+  await evaluate("window.testRecognition.end()");
+  assert.equal(await value(), "Check cash and payroll and reserves today.");
+  assert.equal(await caret(), "Check cash and payroll and reserves".length);
+
+  // Safari-style engines finish after one utterance and are started by a fresh click.
+  await evaluate(`Object.defineProperty(navigator, "userAgent", {configurable:true,
+    value:"Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 Version/18.2 Safari/605.1.15"}), true`);
+  await click(mic);
+  assert.equal(await evaluate("window.testRecognition.continuous"), false);
+  await evaluate("window.testRecognition.speak('and expenses'); window.testRecognition.end()");
+  assert.equal(await evaluate("voice"), null);
+  assert.equal(await value(), "Check cash and payroll and reserves and expenses today.");
+  assert.equal(await caret(), "Check cash and payroll and reserves and expenses".length);
+  await evaluate("delete navigator.userAgent");
+
+  // Granted access must never be shown as denied when the speech backend fails.
+  await evaluate("navigator.permissions.query = async () => ({state:'granted'}), true");
+  await click(mic);
+  for (const [error, message] of [["not-allowed", /could not start its speech service/],
+    ["service-not-allowed", /could not start its speech service/], ["network", /speech service is unreachable/],
+    ["audio-capture", /could not capture audio/]]) {
+    await evaluate(`window.testRecognition.onerror({error:${JSON.stringify(error)}})`);
+    assert.match(await note(), message);
+    assert.equal(await evaluate("voice.timer"), null, "A speech error waits for a user gesture");
+    await click(pause);
+  }
+  await click(finish);
+  await evaluate("window.testRecognition.end(); navigator.permissions.query = window.realPermissionQuery; delete window.realPermissionQuery");
+  await setDraft("Edited draft");
 
   // Real keyboard input keeps Shift+Enter as a newline and Enter as form submission.
   await evaluate(`(() => {
