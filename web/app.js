@@ -1363,21 +1363,21 @@ const CHAT_MAX_LENGTH = 2000;
 const VOICE_RESTART_MS = 350;
 const VOICE_COPY = {
   en: {
-    start: "Start dictation", pause: "Pause", resume: "Resume", finish: "Finish",
+    group: "Dictation", start: "Start dictation", pause: "Pause", resume: "Resume", finish: "Finish",
     idle: "Tap the microphone to add words to your draft using your browser’s speech service.",
-    starting: "Starting microphone…", listening: "Listening… pause or finish when you’re ready.",
-    reconnecting: "Reconnecting the microphone…", pausing: "Pausing microphone…",
-    paused: "Paused. Resume speaking or finish to review your draft.",
+    ready: "Draft ready. Review it before sending.",
+    starting: "Starting…", listening: "Listening", speaking: "Hearing you",
+    reconnecting: "Reconnecting…", pausing: "Pausing…", paused: "Paused",
     interrupted: "The microphone stopped. Resume to try again.",
     denied: "Microphone access was refused. Allow it in the browser, then press Resume.",
-    finishing: "Finishing dictation…",
+    finishing: "Finishing…",
   },
   bn: {
-    start: "কথা বলা শুরু করুন", pause: "বিরতি", resume: "আবার বলুন", finish: "শেষ করুন",
+    group: "কথা থেকে লেখা", start: "কথা বলা শুরু করুন", pause: "বিরতি", resume: "আবার বলুন", finish: "শেষ করুন",
     idle: "মাইক্রোফোনে চাপ দিন। আপনার ব্রাউজারের ভয়েস সেবা কথাগুলো খসড়ায় যোগ করবে।",
-    starting: "মাইক্রোফোন চালু হচ্ছে…", listening: "শুনছি… চাইলে বিরতি নিন বা শেষ করুন।",
-    reconnecting: "মাইক্রোফোন আবার চালু হচ্ছে…", pausing: "মাইক্রোফোন বিরতিতে যাচ্ছে…",
-    paused: "বিরতিতে আছে। আবার বলুন অথবা খসড়া দেখতে শেষ করুন।",
+    ready: "খসড়া তৈরি হয়েছে। পাঠানোর আগে দেখে নিন।",
+    starting: "মাইক চালু হচ্ছে…", listening: "শুনছি", speaking: "কথা শুনতে পাচ্ছি",
+    reconnecting: "আবার সংযোগ হচ্ছে…", pausing: "বিরতিতে যাচ্ছে…", paused: "বিরতিতে",
     interrupted: "মাইক্রোফোন থেমে গেছে। আবার বলুন বোতামে চাপ দিন।",
     denied: "মাইক্রোফোনের অনুমতি পাওয়া যায়নি। ব্রাউজারে অনুমতি দিয়ে আবার বলুন বোতামে চাপ দিন।",
     finishing: "কথা থেকে লেখা শেষ হচ্ছে…",
@@ -1391,7 +1391,7 @@ function resizeChatInput(input = document.getElementById("chat-input")) {
   input.style.height = `${input.scrollHeight + input.offsetHeight - input.clientHeight}px`;
 }
 
-function syncVoiceControls() {
+function syncVoiceControls({draftReady = false} = {}) {
   if (!SpeechRec) return;
   const controls = $("#chat-voice-controls");
   const note = $("#chat-voice-note");
@@ -1400,14 +1400,19 @@ function syncVoiceControls() {
   const start = controls.querySelector('[data-action="voice"]');
   const pause = controls.querySelector('[data-action="voice-pause"]');
   const finish = controls.querySelector('[data-action="voice-finish"]');
+  const panel = controls.querySelector(".voice-panel");
+  const help = $("#chat-voice-help");
   const paused = voice?.mode === "paused";
   const finishing = voice?.mode === "finishing";
-  const listening = voice?.mode === "listening" && voice.connected;
+  const listening = voice?.mode === "listening" && voice.listeningSince !== null;
   const status = !voice ? "idle" : finishing ? "finishing" : paused
     ? voice.rec ? "pausing" : voice.error || "paused"
-    : listening ? "listening" : voice.timer !== null ? "reconnecting" : "starting";
+    : listening ? (voice.speaking ? "speaking" : "listening") : voice.reconnecting ? "reconnecting" : "starting";
 
   controls.dataset.active = String(Boolean(voice));
+  controls.setAttribute("aria-label", copy.group);
+  panel.hidden = !voice;
+  panel.dataset.status = status;
   start.hidden = Boolean(voice);
   start.setAttribute("aria-label", copy.start);
   start.title = copy.start;
@@ -1415,10 +1420,36 @@ function syncVoiceControls() {
   pause.disabled = finishing || Boolean(paused && voice.rec);
   finish.disabled = finishing;
   pause.querySelector("use").setAttribute("href", paused ? "#i-play" : "#i-pause");
-  pause.querySelector("span").textContent = paused ? copy.resume : copy.pause;
-  finish.querySelector("span").textContent = copy.finish;
-  note.classList.toggle("on", Boolean(listening));
+  const pauseLabel = pause.querySelector("span");
+  if (pauseLabel.textContent !== (paused ? copy.resume : copy.pause)) pauseLabel.textContent = paused ? copy.resume : copy.pause;
+  const finishLabel = finish.querySelector("span");
+  if (finishLabel.textContent !== copy.finish) finishLabel.textContent = copy.finish;
   if (note.textContent !== copy[status]) note.textContent = copy[status];
+  if (help) {
+    help.hidden = Boolean(voice);
+    const hint = draftReady ? copy.ready : copy.idle;
+    if (help.textContent !== hint) help.textContent = hint;
+  }
+  updateVoiceClock();
+}
+
+function updateVoiceClock() {
+  const clock = $("#chat-voice-clock");
+  if (!clock || !voice) return;
+  const active = voice.listeningSince === null ? 0 : performance.now() - voice.listeningSince;
+  const seconds = Math.floor((voice.elapsed + active) / 1000);
+  const label = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+  if (clock.textContent !== label) clock.textContent = label;
+}
+
+function stopVoiceClock(session) {
+  if (session.listeningSince !== null) {
+    session.elapsed += performance.now() - session.listeningSince;
+    session.listeningSince = null;
+    clearInterval(session.clock);
+    session.clock = null;
+  }
+  session.speaking = false;
 }
 
 function clearVoiceTimer(session) {
@@ -1430,7 +1461,7 @@ function disconnectVoice(session) {
   clearVoiceTimer(session);
   const rec = session.rec;
   session.rec = null;
-  session.connected = false;
+  stopVoiceClock(session);
   rec?.abort();
 }
 
@@ -1484,8 +1515,20 @@ function connectVoice(session) {
   rec.interimResults = true;
   rec.maxAlternatives = 1;
   rec.onstart = () => {
-    if (!current()) return;
-    session.connected = true;
+    if (!current() || session.mode !== "listening" || session.listeningSince !== null) return;
+    session.reconnecting = false;
+    session.listeningSince = performance.now();
+    session.clock = setInterval(updateVoiceClock, 250);
+    syncVoiceControls();
+  };
+  rec.onspeechstart = () => {
+    if (!current() || session.mode !== "listening") return;
+    session.speaking = true;
+    syncVoiceControls();
+  };
+  rec.onspeechend = () => {
+    if (!current() || !session.speaking) return;
+    session.speaking = false;
     syncVoiceControls();
   };
   rec.onresult = (event) => {
@@ -1493,21 +1536,24 @@ function connectVoice(session) {
     state.chatDraft = voiceDraft(prefix, event.results);
     if (state.chatDraft !== prefix) session.fastEnds = 0;
     const input = document.getElementById("chat-input");
-    if (input) {
+    if (input && input.value !== state.chatDraft) {
+      const followTail = input.scrollHeight - input.clientHeight - input.scrollTop < 24;
       input.value = state.chatDraft;
       resizeChatInput(input);
+      if (followTail) input.scrollTop = input.scrollHeight;
     }
   };
   rec.onerror = (event) => {
     if (!current() || session.mode !== "listening" || event.error === "no-speech") return;
     session.mode = "paused";
     session.error = ["not-allowed", "service-not-allowed"].includes(event.error) ? "denied" : "interrupted";
+    stopVoiceClock(session);
     syncVoiceControls();
   };
   rec.onend = () => {
     if (!current()) return;
     session.rec = null;
-    session.connected = false;
+    stopVoiceClock(session);
     if (session.mode === "finishing") {
       completeVoice();
       return;
@@ -1520,6 +1566,7 @@ function connectVoice(session) {
         session.mode = "paused";
         session.error = "interrupted";
       } else {
+        session.reconnecting = true;
         session.timer = setTimeout(() => connectVoice(session), VOICE_RESTART_MS);
       }
     }
@@ -1539,7 +1586,8 @@ function startVoice() {
   const composer = voiceComposer();
   if (!composer) return;
   state.chatDraft = composer.value;
-  voice = {mode: "listening", rec: null, connected: false, timer: null, error: "", fastEnds: 0};
+  voice = {mode: "listening", rec: null, timer: null, error: "", fastEnds: 0,
+    speaking: false, reconnecting: false, elapsed: 0, listeningSince: null, clock: null, startingDraft: composer.value};
   connectVoice(voice);
   $('[data-action="voice-pause"]')?.focus({preventScroll: true});
 }
@@ -1554,19 +1602,26 @@ function toggleVoicePause() {
     voice.mode = "listening";
     voice.error = "";
     voice.fastEnds = 0;
+    voice.reconnecting = false;
     connectVoice(voice);
     return;
   }
   voice.mode = "paused";
   clearVoiceTimer(voice);
+  stopVoiceClock(voice);
   voice.rec?.stop();
   syncVoiceControls();
 }
 
 function completeVoice() {
+  const draftReady = state.chatDraft !== voice.startingDraft;
   voice = null;
-  syncVoiceControls();
-  $("#chat-input")?.focus({preventScroll: true});
+  syncVoiceControls({draftReady});
+  const composer = document.getElementById("chat-input");
+  if (!composer) return;
+  composer.focus({preventScroll: true});
+  composer.setSelectionRange(composer.value.length, composer.value.length);
+  composer.scrollTop = composer.scrollHeight;
 }
 
 function finishVoice() {
@@ -1574,6 +1629,7 @@ function finishVoice() {
   const stopping = voice.mode === "paused";
   voice.mode = "finishing";
   clearVoiceTimer(voice);
+  stopVoiceClock(voice);
   if (!voice.rec) { completeVoice(); return; }
   if (!stopping) voice.rec.stop();
   syncVoiceControls();
@@ -1603,14 +1659,22 @@ function renderAssistant() {
       <label class="sr-only" for="chat-input">Your question</label>
       <textarea id="chat-input" rows="1" maxlength="${CHAT_MAX_LENGTH}" placeholder="${on ? "Ask in any language…" : "Ask about payroll, risk, a what-if or a plan…"}" autocomplete="off" required>
 ${esc(state.chatDraft)}</textarea>
-      ${SpeechRec ? `<div class="voice-controls" id="chat-voice-controls">
+      ${SpeechRec ? `<div class="voice-controls" id="chat-voice-controls" role="group">
         <button type="button" class="button ghost voice-button" data-action="voice">${icon("mic")}</button>
-        <button type="button" class="button ghost small" data-action="voice-pause" hidden>${icon("pause")}<span></span></button>
-        <button type="button" class="button ghost small" data-action="voice-finish" hidden>${icon("check")}<span></span></button>
+        <div class="voice-panel" hidden>
+          <div class="voice-status">
+            <span class="voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+            <div><span class="voice-label" id="chat-voice-note" role="status"></span><span class="voice-clock" id="chat-voice-clock" aria-hidden="true">00:00</span></div>
+          </div>
+          <div class="voice-actions">
+            <button type="button" class="button ghost small" data-action="voice-pause">${icon("pause")}<span></span></button>
+            <button type="button" class="button teal small" data-action="voice-finish">${icon("check")}<span></span></button>
+          </div>
+        </div>
       </div>` : ""}
       <button class="button primary" type="submit">${icon("send")}Ask</button>
     </form>
-    ${SpeechRec ? '<p id="chat-voice-note" class="hint voice-note" role="status"></p>' : ""}</div>
+    ${SpeechRec ? '<p id="chat-voice-help" class="hint voice-note" role="status"></p>' : ""}</div>
     ${disclosure("assistant-prompts", "More example questions", `<div class="chips">${prompts.map((prompt) => `<button class="chip" data-action="prompt" data-prompt="${esc(prompt)}">${esc(prompt)}</button>`).join("")}</div>`)}
     ${disclosure("assistant-details", "How Tideway answers", `${on ? "" : tidelmStatusCard("Ask Tideway still works with the local tool agent.")}
     ${consent ? `<div class="section-gap">${consent}</div>` : ""}
