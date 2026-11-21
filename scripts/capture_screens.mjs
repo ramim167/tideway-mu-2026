@@ -223,6 +223,22 @@ try {
   if (!await evaluate("state.view === 'home' && !!document.querySelector('.home-hero h2') && document.querySelectorAll('.home-task').length === 4 && document.querySelectorAll('.home-tile').length === 4")) throw new Error("Home is not the default landing page with a payday answer, four tasks and four numbers");
   if (await evaluate("!!document.querySelector('#view [data-action=approve], #view [data-action=execute]')")) throw new Error("Home exposes an approval or execution control");
   if (!await evaluate("document.querySelector('.home-hero').classList.contains('storm') && document.querySelector('.home-hero h2').textContent.includes('Salary money will run short')")) throw new Error("Home does not warn that Shapla's salary money runs short");
+  await send("Emulation.setTimezoneOverride", {timezoneId: "America/Los_Angeles"});
+  if (!await evaluate(`(() => {
+    const today = document.querySelector('#home-dhaka-date');
+    const demo = document.querySelector('#home-ledger-date');
+    const beforeMidnight = new Date('2026-11-20T17:59:59Z');
+    const afterMidnight = new Date('2026-11-20T18:00:00Z');
+    today.dateTime = '2000-01-01';
+    window.TidewayHome.refreshDate();
+    return today.dateTime === dhakaDate() && demo.dateTime === '2026-10-01'
+      && demo.parentElement.textContent.includes('Demo ledger date')
+      && dhakaDate(beforeMidnight) === '2026-11-20' && dhakaDate(afterMidnight) === '2026-11-21'
+      && dhakaTimestamp('2026-11-20T18:00:00Z').includes('21 Nov 2026')
+      && dhakaTimestamp('2026-11-20T18:00:00Z').includes('00:00:00')
+      && day('2026-11-20', true) === '20 Nov 2026';
+  })()`)) throw new Error("Dhaka midnight, Home current date and demo ledger date must stay distinct");
+  await send("Emulation.setTimezoneOverride", {timezoneId: ""});
   await shot("00b-home");
   await viewport(375, 812, true);
   await phoneCheck("Home", "#view");
@@ -252,6 +268,8 @@ try {
   await click('[data-section=home-activity] > summary');
   await click('.topbar [data-action="lang"][data-lang="bn"]');
   await until("state.lang === 'bn' && document.querySelector('.home-hero h2').textContent.includes('বেতনের টাকা কম পড়বে') && document.querySelector('#page-title').textContent === 'হোম'", "Home in Bangla");
+  if (!await evaluate("document.querySelector('#home-dhaka-date').parentElement.textContent.includes('বাংলাদেশে আজ') && document.querySelector('#home-ledger-date').parentElement.textContent.includes('ডেমোর হিসাবের তারিখ')"))
+    throw new Error("Bangla Home must also distinguish today's date from the demo ledger date");
   if (!await evaluate("document.querySelector('[data-section=home-activity]').open")) throw new Error("Language switch closed the activity section");
   await shot("00c-home-bangla");
   await click('[data-view="shield"]');

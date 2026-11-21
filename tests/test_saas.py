@@ -3,7 +3,9 @@ import http.client
 import json
 import threading
 import unittest
+from datetime import datetime
 from http.server import ThreadingHTTPServer
+from unittest.mock import patch
 
 from tideway.security import RateLimiter
 from tideway.server import Application, make_handler
@@ -57,6 +59,16 @@ class SaaS(unittest.TestCase):
         self.assertEqual(self.call("GET", f"/api/dashboard?business_id={business}", cookie=nadia)[0], 403)
         self.assertEqual(self.call("GET", "/api/dashboard?business_id=shapla-services", cookie=owner)[0], 403)
         self.assertEqual(self.call("POST", "/api/plan/propose", {"business_id": "shapla-services"}, cookie=owner)[0], 403)
+
+    def test_signup_uses_dhaka_date_at_utc_day_boundary(self):
+        instant = datetime.fromisoformat("2026-11-20T18:05:00+00:00")
+        with patch("tideway.domain.datetime") as clock:
+            clock.now.side_effect = instant.astimezone
+            business, _ = self.signup(username="dhaka.clock", currency="BDT", country="BD")
+        snapshot = self.app.store.snapshot(business)
+        self.assertEqual(snapshot["business"]["opening_date"], "2026-11-21")
+        self.assertEqual(snapshot["business"]["default_target_date"], "2026-12-21")
+        self.assertEqual(snapshot["state"]["current_date"], "2026-11-21")
 
     def test_invite_join_role_and_seat_limit(self):
         business, owner = self.signup(username="lena.b", business_name="Kestrel B")

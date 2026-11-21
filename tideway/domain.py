@@ -12,8 +12,20 @@ import io
 import json
 import re
 import unicodedata
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+try:
+    DHAKA_TIME = ZoneInfo("Asia/Dhaka")
+except ZoneInfoNotFoundError:
+    # Windows without tzdata still uses the current Bangladesh offset.
+    DHAKA_TIME = timezone(timedelta(hours=6), "Asia/Dhaka")
+
+
+def dhaka_today():
+    """The calendar day in Bangladesh, independent of the host time zone."""
+    return datetime.now(DHAKA_TIME).date().isoformat()
 
 
 class ValidationError(ValueError):

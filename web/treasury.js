@@ -158,7 +158,7 @@ window.TidewayTreasury = (() => {
       card = `<section class="tw-passport section-gap"><div class="row between"><div><span class="pill teal">${icon("shield")}Signed · Ed25519 public key</span><h3>${esc(p.business.name)} credit passport</h3><p class="tiny muted">Passport ${esc(p.passport_id)} · issuer key ${esc(p.public_signature.key_id)}</p></div>
         <div class="row">${button("download", `${icon("download")}Download JSON`, "ghost small")}${button("verify", `${icon("check")}Verify`, "ghost small")}${button("tamper", `${icon("alert")}Tamper drill`, "ghost small")}</div></div>
         <div class="kv section-gap">
-          <div><span>As of</span><strong>${esc(day(p.as_of, true))}</strong></div><div><span>Expires</span><strong>${esc(day(p.expires_at, true))}</strong></div>
+          <div><span>As of</span><strong>${esc(day(p.as_of, true))}</strong></div><div><span>Expires (${dhakaTimeLabel()})</span><strong>${esc(dhakaTimestamp(p.expires_at))}</strong></div>
           <div><span>Health score</span><strong>${esc(p.health.score)} / 100 · ${esc(p.health.band)}</strong></div>
           <div><span>Week-13 closing (likely)</span><strong>${esc(money(likely.closing_cash_minor))}</strong></div>
           <div><span>Lowest likely cash</span><strong>${esc(money(likely.lowest_cash_minor))}</strong></div>

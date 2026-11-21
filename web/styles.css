@@ -1818,6 +1818,9 @@ th { background: var(--accent-soft); border-bottom-color: var(--accent-line); }
 .home { gap: 20px; }
 .home-greeting { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
 .home-greeting strong { font-size: 18px; }
+.home-dates { font-variant-numeric: tabular-nums; text-align: end; }
+.home-greeting .home-dates p { font-size: 13px; }
+.home-dates time { font-weight: 700; margin-inline-start: 5px; }
 .home-hero { padding: 23px; border-radius: 16px; box-shadow: var(--shadow); }
 .home-hero.storm, .home-hero.unsettled, .home-hero.clear, .home-hero.info { background: #153932; }
 .home-hero::after { content: none; }
@@ -1907,6 +1910,7 @@ th { background: var(--accent-soft); border-bottom-color: var(--accent-line); }
   .home-task .home-task-icon { width: 34px; height: 34px; }
   .home-task-text strong { font-size: 14px; }
   .home-task-text span { font-size: 12px; }
+  .home-dates { text-align: start; }
   .home-hero { grid-template-columns: minmax(0, 1fr); }
   .home-hero-icon { display: none; }
   .home-hero-actions .button { flex: 1 1 auto; }

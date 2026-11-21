@@ -6,9 +6,9 @@
 window.TidewayHome = (() => {
   const T = {
     en: {
-      hello: "Hello", today: "Today is",
-      cashToday: "Cash today", cashTodayNote: "Money in the business now",
-      lowest: "Lowest point coming", lowestNote: "on {date}",
+      hello: "Hello", today: "Today in Bangladesh", demoDate: "Demo ledger date", ledgerDate: "Ledger date",
+      cashOnRecord: "Cash on record", cashOnRecordNote: "Opening balance on {date}",
+      lowest: "Forecast low", lowestNote: "on {date}",
       owedToYou: "Customers owe you", owedNote: "{n} unpaid bill(s)",
       youOwe: "You owe suppliers", youOweNote: "Bills not paid yet",
       safety: "Safety money", safetyNote: "Cash you never want to go below",
@@ -45,9 +45,9 @@ window.TidewayHome = (() => {
       viewerNote: "You can look, but only the owner or accountant can make a plan.",
     },
     bn: {
-      hello: "আসসালামু আলাইকুম", today: "আজ",
-      cashToday: "আজকের নগদ টাকা", cashTodayNote: "এখন ব্যবসায় যে টাকা আছে",
-      lowest: "সামনে সবচেয়ে কম টাকা", lowestNote: "{date} তারিখে",
+      hello: "আসসালামু আলাইকুম", today: "বাংলাদেশে আজ", demoDate: "ডেমোর হিসাবের তারিখ", ledgerDate: "হিসাবের তারিখ",
+      cashOnRecord: "হিসাবে থাকা নগদ", cashOnRecordNote: "{date} তারিখের শুরুর নগদ",
+      lowest: "পূর্বাভাসে সর্বনিম্ন নগদ", lowestNote: "{date} তারিখে",
       owedToYou: "ক্রেতাদের কাছে পাওনা", owedNote: "{n}টি বিল বাকি",
       youOwe: "সরবরাহকারীদের দেনা", youOweNote: "এখনো পরিশোধ হয়নি",
       safety: "নিরাপত্তার টাকা", safetyNote: "এর নিচে নগদ নামতে দিতে চান না",
@@ -92,19 +92,21 @@ window.TidewayHome = (() => {
   const lang = () => (state.lang === "bn" ? "bn" : "en");
   const words = () => T[lang()];
   const fill = (text, values) => String(text).replace(/\{(\w+)\}/g, (_, key) => values[key] ?? "");
-  const date = (value) => {
+  const date = (value, withYear = false) => {
     if (!value) return "—";
-    if (lang() === "en") return day(value);
+    if (lang() === "en") return day(value, withYear);
     const d = new Date(`${String(value).slice(0, 10)}T12:00:00Z`);
+    if (withYear) return d.toLocaleDateString("bn-BD", {day: "numeric", month: "short", year: "numeric", timeZone: "UTC"});
     return `${d.getUTCDate()} ${BN_MONTHS[d.getUTCMonth()]}`;
   };
   const cash = (minor) => (isNum(minor) ? money(minor) : "—");
 
-  function cashToday(d) {
+  function openingLedgerCash(d) {
     const days = d.projections?.likely?.days || [];
     const now = d.state?.current_date;
     const row = days.find((item) => item.date === now);
-    return row ? row.opening_cash_minor : d.business?.opening_cash_minor;
+    return row ? {amount: row.opening_cash_minor, date: row.date}
+      : {amount: d.business?.opening_cash_minor, date: d.business?.opening_date};
   }
 
   function hero(d, w) {
@@ -134,8 +136,9 @@ window.TidewayHome = (() => {
     const unpaid = ov.data_checks?.unpaid_invoices ?? 0;
     const tile = (label, value, note, cls = "") => `<div class="metric home-tile ${cls}"><span class="label">${esc(label)}</span><span class="value">${value}</span><span class="note">${esc(note)}</span></div>`;
     const low = ov.likely?.minimum_cash_minor;
+    const opening = openingLedgerCash(d);
     return `<section class="metrics home-tiles" aria-label="${esc(lang() === "bn" ? "মূল হিসাব" : "Key numbers")}">
-      ${tile(w.cashToday, cash(cashToday(d)), w.cashTodayNote)}
+      ${tile(w.cashOnRecord, cash(opening.amount), fill(w.cashOnRecordNote, {date: date(opening.date)}))}
       ${tile(w.lowest, cash(low), fill(w.lowestNote, {date: date(ov.likely?.minimum_cash_date)}), isNum(low) && low < 0 ? "bad" : isNum(low) && low < (ov.reserve_floor_minor || 0) ? "warn" : "good")}
       ${tile(w.owedToYou, cash(k.open_receivables_minor), fill(w.owedNote, {n: unpaid}))}
       ${tile(w.safety, cash(ov.reserve_floor_minor), w.safetyNote)}
@@ -246,9 +249,14 @@ window.TidewayHome = (() => {
     const d = state.dashboard, w = words();
     if (!d) return `<div class="loading">Loading…</div>`;
     const name = String(state.operator?.name || "").split(" ")[0];
+    const today = dhakaDate(), ledgerDate = d.state?.current_date;
     return `<div class="home" lang="${lang()}">
       <div class="home-greeting"><p><strong>${esc(w.hello)}${name ? `, ${esc(name)}` : ""}</strong></p>
-        <p class="muted">${esc(w.today)} ${esc(date(d.state?.current_date))}</p></div>
+        <div class="home-dates">
+          <p><span>${esc(w.today)}</span> <time id="home-dhaka-date" datetime="${esc(today)}">${esc(date(today, true))}</time></p>
+          ${ledgerDate ? `<p class="muted"><span>${esc(d.business?.synthetic ? w.demoDate : w.ledgerDate)}</span> <time id="home-ledger-date" datetime="${esc(ledgerDate)}">${esc(date(ledgerDate, true))}</time></p>` : ""}
+        </div>
+      </div>
       ${hero(d, w)}
       ${typeof onboardingHtml === "function" ? onboardingHtml(d) : ""}
       ${tiles(d, w)}
@@ -260,6 +268,15 @@ window.TidewayHome = (() => {
         <div class="disclosure-content grid cols-2 home-pair">${owed(d, w)}${bills(d, w)}</div>
       </details>
     </div>`;
+  }
+
+  function refreshDate() {
+    const label = document.getElementById("home-dhaka-date");
+    if (!label) return;
+    const today = dhakaDate();
+    if (label.dateTime === today) return;
+    label.dateTime = today;
+    label.textContent = date(today, true);
   }
 
   async function action(name, data) {
@@ -276,5 +293,5 @@ window.TidewayHome = (() => {
     }
   }
   let render_ = () => {};
-  return {render, action, bind(renderer) { render_ = renderer; }};
+  return {render, refreshDate, action, bind(renderer) { render_ = renderer; }};
 })();

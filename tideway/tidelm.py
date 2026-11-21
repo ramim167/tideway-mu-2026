@@ -21,7 +21,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from . import conversation, copilot, i18n
-from .domain import (CURRENCIES, SecurityError, ValidationError, canonical_json, scan_text, validate_bill, validate_invoice,
+from .domain import (CURRENCIES, SecurityError, ValidationError, canonical_json, dhaka_today, scan_text, validate_bill, validate_invoice,
                      validate_transaction)
 from .ml.tidelm_data import EXTRACT_SYSTEM, PLAN_SYSTEM
 from .local_model import LocalModel, LocalModelUnavailable
@@ -570,18 +570,20 @@ class TideLM:
         """Draft records from pasted text.  Nothing is saved; a person confirms with ``confirm``."""
         if not isinstance(text, str) or not text.strip() or len(text) > MAX_INPUT:
             raise ValidationError(f"Pasted text must contain 1-{MAX_INPUT:,} characters.")
-        business = app.store.get_business(business_id)
+        snapshot = app.store.snapshot(business_id)
+        business = snapshot["business"]
+        reference_date = snapshot["state"]["current_date"] if business["synthetic"] else dhaka_today()
+        system = f"{EXTRACT_SYSTEM}\nReference date for relative dates: {reference_date}."
         extractor, fallback_reason = "tidelm", None
         try:
-            output = parse_json(self._generate(EXTRACT_SYSTEM, text.strip(), max_tokens=600))
+            output = parse_json(self._generate(system, text.strip(), max_tokens=600))
         except TideLMUnavailable as exc:
             # No model on this computer (the default install): read the documented alert formats with plain
             # rules instead.  Same output shape, same draft builder, validators, currency check and screening.
             from . import inbox_rules
-            snapshot = app.store.snapshot(business_id)
             known = {row[field] for kind, field in (("invoices", "customer"), ("bills", "payee"))
                      for row in snapshot["records"][kind] if not row.get("risk_flags")}
-            output = inbox_rules.extract(text.strip(), business, snapshot["state"]["current_date"], known)
+            output = inbox_rules.extract(text.strip(), business, reference_date, known)
             extractor, fallback_reason = "rules", str(exc)
         if output is None or not isinstance(output.get("records"), list):
             raise ValidationError("TideLM could not read records from that text.")

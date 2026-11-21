@@ -9,7 +9,7 @@ const bills = [
 ];
 const dashboard = {records:{bills},state:{current_date:'2026-11-20',adjustments:[
   {kind:'bill_deferral',bill_id:'rent',amount_minor:400,to_date:'2026-11-30'}]}};
-const context = {window:{},state:{dashboard,lang:'en'},day:String,esc:String,money:String,icon:()=>'',
+const context = {window:{},state:{dashboard,lang:'en'},day:String,dhakaDate:()=>'2026-11-21',esc:String,money:String,icon:()=>'',
   isNum:Number.isFinite,canApprove:()=>false};
 vm.runInNewContext(readFileSync(new URL('../web/home.js',import.meta.url),'utf8'),context);
 const html = context.window.TidewayHome.render();

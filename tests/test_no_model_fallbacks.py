@@ -9,6 +9,7 @@ import random
 import re
 import unittest
 from datetime import date, timedelta
+from unittest.mock import patch
 
 from tideway import conversation, inbox_rules
 from tideway.agent import Agent
@@ -276,6 +277,18 @@ class InboxWithoutModel(unittest.TestCase):
         if lm.status().get("available"):
             self.skipTest("a local model is installed on this computer")
         self.assertEqual(lm.extract(self.app, SHAPLA, self.CLEAN)["extractor"], "rules")
+
+    def test_relative_sms_date_uses_dhaka_for_user_workspaces_and_scenario_date_for_demo(self):
+        with patch("tideway.service.dhaka_today", return_value="2026-11-20"):
+            business, _ = self.app.signup({"business_name": "Dhaka Shop", "currency": "BDT", "country": "BD",
+                                           "opening_cash": "2000", "reserve_floor": "500", "owner_name": "Owner",
+                                           "username": "dhaka.inbox", "pin": "572914"})
+        text = "Received Tk 500 today"
+        with patch("tideway.tidelm.dhaka_today", return_value="2026-11-21"):
+            actual = self.lm.extract(self.app, business["business_id"], text)
+            demo = self.lm.extract(self.app, SHAPLA, text)
+        self.assertEqual(actual["drafts"][0]["record"]["date"], "2026-11-21")
+        self.assertEqual(demo["drafts"][0]["record"]["date"], "2026-10-01")
 
     def test_injection_is_flagged_and_stays_a_draft(self):
         before = self.app.store.snapshot(SHAPLA)

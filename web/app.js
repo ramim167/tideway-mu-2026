@@ -170,6 +170,28 @@ function day(value, withYear = false) {
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleDateString("en-GB", {day: "numeric", month: "short", ...(withYear ? {year: "numeric"} : {}), timeZone: "UTC"});
 }
+const DHAKA_ZONE = "Asia/Dhaka";
+const dhakaCalendar = new Intl.DateTimeFormat("en-CA", {
+  timeZone: DHAKA_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
+});
+
+function dhakaDate(now = new Date()) {
+  const parts = Object.fromEntries(dhakaCalendar.formatToParts(now).map(({type, value}) => [type, value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function dhakaTimestamp(value, withTime = true) {
+  if (!value) return "—";
+  const instant = new Date(value);
+  if (Number.isNaN(instant.getTime())) return "—";
+  return instant.toLocaleString(state.lang === "bn" ? "bn-BD" : "en-GB", {
+    timeZone: DHAKA_ZONE, day: "numeric", month: "short", year: "numeric",
+    ...(withTime ? {hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"} : {}),
+  });
+}
+
+const dhakaTimeLabel = () => state.lang === "bn" ? "ঢাকার সময়" : "Dhaka time";
+
 function pct(probability) { return isNum(probability) ? `${Math.round(probability * 100)}%` : "—"; }
 function days(count) { return isNum(count) ? `${count} days` : "—"; }
 function addDays(isoDate, count) {
@@ -888,10 +910,10 @@ function renderTeam() {
   const removable = (member) => owner && !(member.role === "owner" && owners <= 1);  // a business keeps at least one owner
   return `<section class="grid split">
     <div class="card"><div class="card-head"><div><h3>Members</h3><p>Each person signs in with their own username and PIN. Roles apply to this business only.</p></div></div>
-      <ul class="member-list">${members.map((member) => `<li><span class="avatar">${icon("user")}</span><div><strong>${esc(member.name)}</strong><span class="small muted">@${esc(member.id)}${member.id === state.operator?.id ? " · you" : ""} · joined ${esc(day(member.created_at, true))}</span></div>
+      <ul class="member-list">${members.map((member) => `<li><span class="avatar">${icon("user")}</span><div><strong>${esc(member.name)}</strong><span class="small muted">@${esc(member.id)}${member.id === state.operator?.id ? " · you" : ""} · joined ${esc(dhakaTimestamp(member.created_at, false))}</span></div>
         <span class="pill ${ROLE_PILL[member.role] || ""}">${esc(member.role)}</span>${removable(member) ? `<button class="button small ghost" data-action="remove-member" data-id="${esc(member.id)}" data-name="${esc(member.name)}" aria-label="Remove ${esc(member.name)} from this business">Remove</button>` : ""}</li>`).join("")}</ul>
       <h3 class="section-gap">Pending invites</h3>
-      ${invites.length ? `<ul class="member-list">${invites.map((item) => `<li><span class="avatar pending">${icon("send")}</span><div><strong>${esc(item.display_name)}</strong><span class="small muted">invited by @${esc(item.created_by)} · expires ${esc(day(item.expires_at, true))}</span></div><span class="pill ${ROLE_PILL[item.role] || ""}">${esc(item.role)}</span></li>`).join("")}</ul>`
+      ${invites.length ? `<ul class="member-list">${invites.map((item) => `<li><span class="avatar pending">${icon("send")}</span><div><strong>${esc(item.display_name)}</strong><span class="small muted">invited by @${esc(item.created_by)} · expires ${esc(dhakaTimestamp(item.expires_at))} (${dhakaTimeLabel()})</span></div><span class="pill ${ROLE_PILL[item.role] || ""}">${esc(item.role)}</span></li>`).join("")}</ul>`
         : `<p class="small muted section-gap">No pending invites.</p>`}
     </div>
     <div class="stack">
@@ -902,7 +924,7 @@ function renderTeam() {
       ${owner ? `<div class="card"><h3>Invite someone</h3><p class="small muted">They get a one-time code to create their account or add this business to an existing one.</p>
         ${invite ? `<div class="invite-code section-gap" role="status"><span class="eyebrow">Invite code for ${esc(invite.name)} (${esc(invite.role)})</span><code id="invite-code">${esc(invite.code)}</code>
           <button class="button small teal" data-action="copy-invite">Copy code</button>
-          <p class="small">Share this code privately. It works once and expires on ${esc(day(invite.expires_at, true))}. It is shown only now: Tideway stores only a hash of it.</p>
+          <p class="small">Share this code privately. It works once and expires on ${esc(dhakaTimestamp(invite.expires_at))} (${dhakaTimeLabel()}). It is shown only now: Tideway stores only a hash of it.</p>
           <button class="text-link" data-action="dismiss-invite">Done, hide the code</button></div>` : ""}
         <form id="invite-form" class="auth-form section-gap" novalidate autocomplete="off">
           <label class="field">Their name<input name="name" maxlength="80" required></label>
@@ -1083,7 +1105,7 @@ function mandateCard(view) {
     if (["rejected", "countered"].includes(view.status)) controls.push(`<button class="button teal" data-action="replan" data-mandate="${esc(m.mandate_id)}">Re-plan without them</button>`);
     controls.push(`<button class="button ghost" data-action="cancel-mandate" data-mandate="${esc(m.mandate_id)}">Cancel mandate</button>`);
   }
-  return `<section class="card section-gap" id="mandate-${esc(m.mandate_id)}"><div class="card-head"><div><span class="eyebrow">Signed mandate · ${esc(m.version)}</span><h3>${esc(m.actions.length)} bound action(s) · exposure ${money(m.exposure_minor)}</h3><p>Approved by ${m.approvals.map((item) => `${esc(item.operator_id)} (${esc(item.role)})`).join(" + ")} · expires ${esc(new Date(m.expires_at).toLocaleTimeString())} · human present</p></div><span class="pill ${statusPill}">${esc(view.status)}</span></div>
+  return `<section class="card section-gap" id="mandate-${esc(m.mandate_id)}"><div class="card-head"><div><span class="eyebrow">Signed mandate · ${esc(m.version)}</span><h3>${esc(m.actions.length)} bound action(s) · exposure ${money(m.exposure_minor)}</h3><p>Approved by ${m.approvals.map((item) => `${esc(item.operator_id)} (${esc(item.role)})`).join(" + ")} · expires ${esc(dhakaTimestamp(m.expires_at))} (${dhakaTimeLabel()}) · human present</p></div><span class="pill ${statusPill}">${esc(view.status)}</span></div>
     <div class="status-strip"><span class="tag">plan ${esc(m.plan_hash.slice(0, 10))}…</span><span class="tag">snapshot ${esc(m.snapshot_hash.slice(0, 10))}…</span><span class="tag">signature ${esc(m.signature.slice(0, 14))}…</span><span class="tag">nonce ${esc(m.nonce.slice(0, 8))}…</span>
       <button class="button small ghost" data-action="verify-mandate" data-mandate="${esc(m.mandate_id)}">Verify signature</button><button class="button small ghost" data-action="tamper-mandate" data-mandate="${esc(m.mandate_id)}">Tamper test</button></div>
     ${transcript.length ? `<div class="transcript section-gap">${transcript.join("")}</div>` : `<p class="small muted section-gap">No requests sent yet. Counterparties are rule-based simulations with their own limits; nobody real is contacted.</p>`}
@@ -1721,7 +1743,7 @@ function renderSecurity() {
       <div class="card"><div class="card-head"><div><h3>Autonomy dial</h3><p>Who may do what at each level. Current: <strong>${esc(policy.autonomy_level)}</strong>.</p></div></div>
         <div class="table-wrap"><table class="matrix"><thead><tr><th>Action</th><th>Advise</th><th>Propose</th><th>Delegate</th></tr></thead><tbody>${state.config.autonomy_matrix.map((row) => `<tr><td class="small">${esc(row.action)}</td><td class="small">${esc(row.advise)}</td><td class="small">${esc(row.propose)}</td><td class="small">${esc(row.delegate)}</td></tr>`).join("")}</tbody></table></div>
         ${owner ? `<div class="row section-gap">${["advise", "propose", "delegate"].map((level) => `<button class="button small ${policy.autonomy_level === level ? "teal" : "ghost"}" data-action="autonomy" data-level="${level}">${esc(level)}</button>`).join("")}</div>` : ""}
-        ${d.standing_mandate ? `<p class="small section-gap">Standing (open) mandate ${esc(d.standing_mandate.mandate_id.slice(0, 8))}…: ${esc(JSON.stringify(d.standing_mandate.constraints))}; expires ${esc(day(d.standing_mandate.expires_at))}.</p>` : ""}</div></section>
+        ${d.standing_mandate ? `<p class="small section-gap">Standing (open) mandate ${esc(d.standing_mandate.mandate_id.slice(0, 8))}…: ${esc(JSON.stringify(d.standing_mandate.constraints))}; expires ${esc(dhakaTimestamp(d.standing_mandate.expires_at))} (${dhakaTimeLabel()}).</p>` : ""}</div></section>
     <section class="card section-gap"><div class="card-head"><div><h3>Policy</h3><p>Version ${esc(policy.version)}. Changing policy invalidates pending proposals and mandates. Owner only, PIN required.</p></div></div>
       <form id="policy-form" class="policy-grid">
         ${[["reserve_floor_minor", "Reserve floor"], ["action_limit_minor", "Per-action limit"], ["daily_cap_minor", "Daily exposure cap"], ["dual_approval_threshold_minor", "Two approvers above"]].map(([key, label]) => `<label class="field">${esc(label)} (${esc(displayCurrency())})${moneyInput(state.policyDraft[key],policy[key],`name="${key}" ${owner?"":"disabled"}`)}</label>`).join("")}
@@ -1755,8 +1777,8 @@ function renderEvidence() {
       <p class="hint section-gap">${esc(audit.note)}</p></div>
     <form class="card" id="verify-form"><details><summary><strong>Advanced verification: check a signed mandate file</strong></summary><p class="small muted">For auditors. In normal use, press <em>Verify signature</em> on the mandate card instead. Paste a signed mandate JSON exported from Tideway; the server checks only its HMAC-SHA256 signature. A valid signature does not mean money moved, that the mandate is still active, or that it can be executed. Change one character and it fails.</p><label class="field section-gap">Signed mandate JSON<textarea id="verify-input" spellcheck="false"></textarea></label><div class="row section-gap"><button class="button primary" type="submit">Verify signature</button></div><div id="verify-result" class="section-gap"></div></details></form></section>
     <section class="card section-gap"><div class="card-head"><div><h3>Audit trail (newest first)</h3><p>Who did what, under which permission tier.</p></div></div>
-      <div class="table-wrap"><table><thead><tr><th>#</th><th>Time (UTC)</th><th>Action</th><th>Actor</th><th>Permission</th><th>Details</th></tr></thead><tbody>
-      ${audit.entries.slice().reverse().slice(0, 200).map((entry) => `<tr><td>${esc(entry.id)}</td><td class="nowrap small">${esc(entry.timestamp.replace("T", " ").slice(0, 19))}</td><td><strong>${esc(entry.action)}</strong></td><td class="small">${esc(entry.actor)}</td><td><span class="tag ${entry.permission === "denied" ? "bad" : ""}">${esc(entry.permission)}</span></td><td><details><summary>${esc(entry.entry_hash.slice(0, 12))}…</summary><pre>${esc(JSON.stringify(entry.details, null, 2))}</pre></details></td></tr>`).join("")}
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>${dhakaTimeLabel()}</th><th>Action</th><th>Actor</th><th>Permission</th><th>Details</th></tr></thead><tbody>
+      ${audit.entries.slice().reverse().slice(0, 200).map((entry) => `<tr><td>${esc(entry.id)}</td><td class="nowrap small"><time datetime="${esc(entry.timestamp)}" title="${esc(entry.timestamp)}">${esc(dhakaTimestamp(entry.timestamp))}</time></td><td><strong>${esc(entry.action)}</strong></td><td class="small">${esc(entry.actor)}</td><td><span class="tag ${entry.permission === "denied" ? "bad" : ""}">${esc(entry.permission)}</span></td><td><details><summary>${esc(entry.entry_hash.slice(0, 12))}…</summary><pre>${esc(JSON.stringify(entry.details, null, 2))}</pre></details></td></tr>`).join("")}
       </tbody></table></div></section>`;
 }
 
@@ -2172,6 +2194,10 @@ document.addEventListener("submit", async (event) => {
   try {
     state.config = await api("/api/config");
     if (state.config.operator) await startShell(); else showLogin();
+    window.setInterval(window.TidewayHome.refreshDate, 30_000);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) window.TidewayHome.refreshDate();
+    });
   } catch (error) {
     document.body.innerHTML = `<p class="loading">Tideway could not start: ${esc(error.message)}. Is the local server running?</p>`;
   }

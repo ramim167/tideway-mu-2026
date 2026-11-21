@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 
 from . import analytics, counterparty, planner
 from .constraints import owner_constraints
-from .domain import CURRENCIES, MAX_AMOUNT_MINOR, OPEN_INVOICE_STATUSES, ValidationError, add_days, human_date, money_text, parse_combined_csv, parse_nonnegative, valid_date
+from .domain import CURRENCIES, MAX_AMOUNT_MINOR, OPEN_INVOICE_STATUSES, ValidationError, add_days, dhaka_today, human_date, money_text, parse_combined_csv, parse_nonnegative, valid_date
 from .fixtures import FIXTURE_VERSION, OPERATORS, fixtures
 from .projection import horizon_end, project, summary
 from .store import PLANS, Store
@@ -130,7 +130,7 @@ class Tideway:
         limit = max(reserve, opening // 4, 10_000)
         name = str(body.get("business_name") or "").strip()
         slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:40] or "business"
-        today = datetime.now(timezone.utc).date().isoformat()
+        today = dhaka_today()
         business = {"business_id": f"{slug}-{secrets.token_hex(3)}", "name": name, "currency": body.get("currency"),
                     "opening_cash_minor": opening, "opening_date": today, "default_target_date": add_days(today, 30),
                     "country": str(body.get("country") or "").upper(), "sector": body.get("sector") or "", "synthetic": False}

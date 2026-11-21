@@ -96,7 +96,11 @@ class HttpBoundaries(unittest.TestCase):
             with self.raw("Content-Length: 200\r\n", b"{") as connection:
                 for _ in range(3):
                     time.sleep(.075)
-                    connection.sendall(b" ")
+                    try:
+                        connection.sendall(b" ")
+                    except BrokenPipeError:
+                        # The server can time out and close while the test thread is asleep.
+                        break
                 self.assertIn(b"408", connection.recv(4096).split(b"\r\n", 1)[0])
 
     def test_nested_duplicate_fields_are_rejected_before_dispatch(self):
