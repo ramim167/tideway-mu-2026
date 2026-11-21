@@ -2,14 +2,18 @@ import assert from "node:assert/strict";
 
 // Exercise the real composer handlers without recording audio or using a speech service.
 export const testSpeechRecognition = `window.SpeechRecognition = class {
-  start() { window.testRecognition = this; }
-  stop() { this.onend?.(); }
-  abort() { this.aborted = true; this.onend?.(); }
+  start() { window.testRecognition = this; this.onstart?.(); }
+  stop() { this.stopped = true; }
+  end() { this.onend?.(); }
+  abort() { this.aborted = true; this.end(); }
   speak(...parts) { this.onresult({results: parts.map(transcript => [{transcript}])}); }
 }`;
 
-export async function checkChatComposer({evaluate, click, viewport, shot, phoneCheck, send}) {
+export async function checkChatComposer({evaluate, click, until, viewport, shot, phoneCheck, send}) {
   const mic = '[data-action="voice"]';
+  const pause = '[data-action="voice-pause"]';
+  const finish = '[data-action="voice-finish"]';
+  const note = () => evaluate("document.getElementById('chat-voice-note').textContent");
   const setDraft = (text) => evaluate(`(() => {
     const box = document.getElementById('chat-input');
     box.value = ${JSON.stringify(text)};
@@ -37,25 +41,58 @@ export async function checkChatComposer({evaluate, click, viewport, shot, phoneC
   await setDraft("My existing question.");
   await click(mic);
   assert.equal(await value(), "My existing question.", "Starting the microphone keeps the draft");
+  assert.equal(await evaluate("window.testRecognition.continuous"), true);
   await evaluate("window.testRecognition.speak('Check cash')");
   await evaluate("window.testRecognition.speak('Check salaries', ' and reserves')");
   assert.equal(await value(), "My existing question. Check salaries and reserves");
-  await click(mic);
+  await evaluate("window.previousRecognition = window.testRecognition; window.testRecognition.end()");
+  await until("window.testRecognition !== window.previousRecognition", "dictation reconnects after a normal browser stop");
+  assert.equal(await value(), "My existing question. Check salaries and reserves");
+  await evaluate("window.testRecognition.onerror({error:'no-speech'}); window.previousRecognition = window.testRecognition; window.testRecognition.end()");
+  await until("window.testRecognition !== window.previousRecognition", "dictation reconnects after silence");
+  await evaluate("window.testRecognition.speak('Next question')");
+  await click(pause);
+  assert.equal(await evaluate("window.testRecognition.stopped"), true, "Pause stops the underlying microphone");
+  await evaluate("window.testRecognition.speak('Next question.'); window.previousRecognition = window.testRecognition; window.testRecognition.end()");
+  assert.match(await note(), /Paused/);
+  assert.equal(await evaluate("voice.timer"), null, "Pausing cancels automatic reconnect");
+  assert.equal(await value(), "My existing question. Check salaries and reserves Next question.", "Pause keeps the last finalized words");
+
   await click('.topbar [data-action="lang"][data-lang="bn"]');
-  await click(mic);
+  await click(pause);
   assert.equal(await evaluate("window.testRecognition.lang"), "bn-BD");
   await evaluate("window.testRecognition.speak('বেতনের ঝুঁকিও দেখান।')");
-  assert.equal(await value(), "My existing question. Check salaries and reserves বেতনের ঝুঁকিও দেখান।");
+  assert.equal(await value(), "My existing question. Check salaries and reserves Next question. বেতনের ঝুঁকিও দেখান।");
+
+  await viewport(375, 812, true);
+  await phoneCheck("Dictation controls", "#chat-form");
+  await evaluate("document.getElementById('chat-form').scrollIntoView({block: 'center'})");
+  await shot("07-dictation-mobile", false);
+  await viewport(1440, 900);
+
+  await click(finish);
+  assert.equal(await evaluate("window.testRecognition.stopped"), true);
+  await evaluate("window.testRecognition.speak('বেতনের ঝুঁকিও দেখান।', 'ধন্যবাদ।'); window.testRecognition.end()");
+  assert.equal(await value(), "My existing question. Check salaries and reserves Next question. বেতনের ঝুঁকিও দেখান। ধন্যবাদ।");
+  assert.equal(await evaluate("voice"), null, "Finish ends the session without sending the draft");
+  await click(mic);
 
   // Manual edits win over late messages from a cancelled speech session.
   await setDraft("Edited draft");
   assert.equal(await evaluate("window.testRecognition.aborted"), true);
   await evaluate("window.testRecognition.speak('discard late result')");
   assert.equal(await value(), "Edited draft");
-  await click(mic);
-  await evaluate("window.testRecognition.onerror({error:'no-speech'})");
+  await click(pause);
+  await evaluate("window.testRecognition.onerror({error:'not-allowed'}); window.testRecognition.end()");
   assert.equal(await value(), "Edited draft", "Speech errors leave the draft available");
   await click('.topbar [data-action="lang"][data-lang="en"]');
+  assert.match(await note(), /Microphone access was refused/);
+  assert.equal(await evaluate("voice.timer"), null, "Permission errors do not retry automatically");
+  await click(pause);
+  await evaluate("window.testRecognition.end()");
+  assert.notEqual(await evaluate("voice.timer"), null, "Unexpected end schedules a reconnect");
+  await click(finish);
+  assert.equal(await evaluate("voice"), null, "Finish also cancels a pending reconnect");
 
   // Real keyboard input keeps Shift+Enter as a newline and Enter as form submission.
   await evaluate(`(() => {

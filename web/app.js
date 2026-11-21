@@ -1360,6 +1360,29 @@ function copilotHtml(c) {
 // The words land in the question box for the owner to check; nothing is sent to Tideway until they press Ask.
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 const CHAT_MAX_LENGTH = 2000;
+const VOICE_RESTART_MS = 350;
+const VOICE_COPY = {
+  en: {
+    start: "Start dictation", pause: "Pause", resume: "Resume", finish: "Finish",
+    idle: "Tap the microphone to add words to your draft using your browser’s speech service.",
+    starting: "Starting microphone…", listening: "Listening… pause or finish when you’re ready.",
+    reconnecting: "Reconnecting the microphone…", pausing: "Pausing microphone…",
+    paused: "Paused. Resume speaking or finish to review your draft.",
+    interrupted: "The microphone stopped. Resume to try again.",
+    denied: "Microphone access was refused. Allow it in the browser, then press Resume.",
+    finishing: "Finishing dictation…",
+  },
+  bn: {
+    start: "কথা বলা শুরু করুন", pause: "বিরতি", resume: "আবার বলুন", finish: "শেষ করুন",
+    idle: "মাইক্রোফোনে চাপ দিন। আপনার ব্রাউজারের ভয়েস সেবা কথাগুলো খসড়ায় যোগ করবে।",
+    starting: "মাইক্রোফোন চালু হচ্ছে…", listening: "শুনছি… চাইলে বিরতি নিন বা শেষ করুন।",
+    reconnecting: "মাইক্রোফোন আবার চালু হচ্ছে…", pausing: "মাইক্রোফোন বিরতিতে যাচ্ছে…",
+    paused: "বিরতিতে আছে। আবার বলুন অথবা খসড়া দেখতে শেষ করুন।",
+    interrupted: "মাইক্রোফোন থেমে গেছে। আবার বলুন বোতামে চাপ দিন।",
+    denied: "মাইক্রোফোনের অনুমতি পাওয়া যায়নি। ব্রাউজারে অনুমতি দিয়ে আবার বলুন বোতামে চাপ দিন।",
+    finishing: "কথা থেকে লেখা শেষ হচ্ছে…",
+  },
+};
 let voice = null;
 
 function resizeChatInput(input = document.getElementById("chat-input")) {
@@ -1370,27 +1393,64 @@ function resizeChatInput(input = document.getElementById("chat-input")) {
 
 function syncVoiceControls() {
   if (!SpeechRec) return;
-  const button = $(".voice-button");
+  const controls = $("#chat-voice-controls");
   const note = $("#chat-voice-note");
-  if (!button || !note) return;
-  const bn = state.lang === "bn";
-  const listening = Boolean(voice);
-  const label = listening ? (bn ? "শোনা বন্ধ করুন" : "Stop listening") : (bn ? "প্রশ্নটি বলুন" : "Speak your question");
-  button.classList.toggle("on", listening);
-  button.setAttribute("aria-pressed", String(listening));
-  button.setAttribute("aria-label", label);
-  button.title = label;
-  note.classList.toggle("on", listening);
-  note.textContent = listening
-    ? (bn ? "শুনছি… পাঠানোর আগে লেখাটি মিলিয়ে নিন।" : "Listening… review the words before sending.")
-    : (bn ? "মাইক্রোফোনে চাপ দিন। আপনার ব্রাউজারের ভয়েস সেবা কথাগুলো খসড়ায় যোগ করবে।" : "Tap the microphone to add words to your draft using your browser’s speech service.");
+  if (!controls || !note) return;
+  const copy = VOICE_COPY[state.lang];
+  const start = controls.querySelector('[data-action="voice"]');
+  const pause = controls.querySelector('[data-action="voice-pause"]');
+  const finish = controls.querySelector('[data-action="voice-finish"]');
+  const paused = voice?.mode === "paused";
+  const finishing = voice?.mode === "finishing";
+  const listening = voice?.mode === "listening" && voice.connected;
+  const status = !voice ? "idle" : finishing ? "finishing" : paused
+    ? voice.rec ? "pausing" : voice.error || "paused"
+    : listening ? "listening" : voice.timer !== null ? "reconnecting" : "starting";
+
+  controls.dataset.active = String(Boolean(voice));
+  start.hidden = Boolean(voice);
+  start.setAttribute("aria-label", copy.start);
+  start.title = copy.start;
+  pause.hidden = finish.hidden = !voice;
+  pause.disabled = finishing || Boolean(paused && voice.rec);
+  finish.disabled = finishing;
+  pause.querySelector("use").setAttribute("href", paused ? "#i-play" : "#i-pause");
+  pause.querySelector("span").textContent = paused ? copy.resume : copy.pause;
+  finish.querySelector("span").textContent = copy.finish;
+  note.classList.toggle("on", Boolean(listening));
+  if (note.textContent !== copy[status]) note.textContent = copy[status];
+}
+
+function clearVoiceTimer(session) {
+  if (session.timer !== null) clearTimeout(session.timer);
+  session.timer = null;
+}
+
+function disconnectVoice(session) {
+  clearVoiceTimer(session);
+  const rec = session.rec;
+  session.rec = null;
+  session.connected = false;
+  rec?.abort();
 }
 
 function cancelVoice() {
   if (!voice) return;
-  const rec = voice;
+  const session = voice;
   voice = null;
-  rec.abort();
+  disconnectVoice(session);
+  syncVoiceControls();
+}
+
+function pauseVoiceForEdit() {
+  if (!voice) return;
+  if (voice.mode === "finishing") {
+    cancelVoice();
+    return;
+  }
+  voice.mode = "paused";
+  voice.error = "";
+  disconnectVoice(voice);
   syncVoiceControls();
 }
 
@@ -1403,24 +1463,35 @@ function voiceDraft(prefix, results) {
   return prefix + addition;
 }
 
-function toggleVoice() {
-  if (!SpeechRec) return;
-  if (voice) { voice.stop(); return; }
+function voiceComposer() {
   const composer = document.getElementById("chat-input");
-  if (!composer) return;
-  const prefix = composer.value;
-  if (prefix.length >= CHAT_MAX_LENGTH) {
+  if (composer?.value.length >= CHAT_MAX_LENGTH) {
     toast(state.lang === "bn" ? "খসড়া পূর্ণ। আরও কথা যোগ করতে কিছু লেখা মুছুন।" : "Your draft is full. Shorten it to add more words.");
-    return;
+    return null;
   }
-  state.chatDraft = prefix;
+  return composer;
+}
+
+function connectVoice(session) {
+  if (voice !== session || session.mode !== "listening") return;
+  session.timer = null;
+  const prefix = state.chatDraft;
   const rec = new SpeechRec();
+  const startedAt = performance.now();
+  const current = () => voice === session && session.rec === rec;
   rec.lang = state.lang === "bn" ? "bn-BD" : "en-US";
+  rec.continuous = true;
   rec.interimResults = true;
   rec.maxAlternatives = 1;
+  rec.onstart = () => {
+    if (!current()) return;
+    session.connected = true;
+    syncVoiceControls();
+  };
   rec.onresult = (event) => {
-    if (voice !== rec) return;
+    if (!current()) return;
     state.chatDraft = voiceDraft(prefix, event.results);
+    if (state.chatDraft !== prefix) session.fastEnds = 0;
     const input = document.getElementById("chat-input");
     if (input) {
       input.value = state.chatDraft;
@@ -1428,26 +1499,83 @@ function toggleVoice() {
     }
   };
   rec.onerror = (event) => {
-    if (voice !== rec) return;
-    voice = null;
+    if (!current() || session.mode !== "listening" || event.error === "no-speech") return;
+    session.mode = "paused";
+    session.error = ["not-allowed", "service-not-allowed"].includes(event.error) ? "denied" : "interrupted";
     syncVoiceControls();
-    const bn = state.lang === "bn";
-    toast(event.error === "not-allowed" || event.error === "service-not-allowed"
-      ? (bn ? "মাইক্রোফোন ব্যবহারের অনুমতি পাওয়া যায়নি। ব্রাউজারে অনুমতি দিন, অথবা প্রশ্নটি লিখুন।" : "Microphone access was refused. Allow it in the browser, or type your question.")
-      : event.error === "no-speech" ? (bn ? "কোনো কথা শোনা যায়নি। মাইক্রোফোনে চাপ দিয়ে আবার বলুন।" : "No speech heard. Tap the microphone and try again.")
-      : (bn ? "কথাকে লেখায় বদলানো গেল না। প্রশ্নটি লিখে দিন।" : "Could not turn speech into text. Please type your question."));
   };
   rec.onend = () => {
-    if (voice !== rec) return;
-    voice = null;
+    if (!current()) return;
+    session.rec = null;
+    session.connected = false;
+    if (session.mode === "finishing") {
+      completeVoice();
+      return;
+    }
+    if (session.mode === "listening") {
+      // Reopen after normal platform timeouts. Bound retries if capture immediately disconnects.
+      const endedImmediately = performance.now() - startedAt < 1000 && state.chatDraft === prefix;
+      session.fastEnds = endedImmediately ? session.fastEnds + 1 : 0;
+      if (session.fastEnds >= 3) {
+        session.mode = "paused";
+        session.error = "interrupted";
+      } else {
+        session.timer = setTimeout(() => connectVoice(session), VOICE_RESTART_MS);
+      }
+    }
     syncVoiceControls();
-    if (document.activeElement?.classList.contains("voice-button")) $("#chat-input")?.focus({preventScroll: true});
   };
-  voice = rec;
+  session.rec = rec;
   try { rec.start(); } catch (_) {
-    voice = null;
-    toast(state.lang === "bn" ? "মাইক্রোফোন চালু করা গেল না। আবার চেষ্টা করুন।" : "The microphone could not start. Try again.");
+    session.rec = null;
+    session.mode = "paused";
+    session.error = "interrupted";
   }
+  syncVoiceControls();
+}
+
+function startVoice() {
+  if (!SpeechRec || voice) return;
+  const composer = voiceComposer();
+  if (!composer) return;
+  state.chatDraft = composer.value;
+  voice = {mode: "listening", rec: null, connected: false, timer: null, error: "", fastEnds: 0};
+  connectVoice(voice);
+  $('[data-action="voice-pause"]')?.focus({preventScroll: true});
+}
+
+function toggleVoicePause() {
+  if (!voice || voice.mode === "finishing") return;
+  if (voice.mode === "paused") {
+    if (voice.rec) return;
+    const composer = voiceComposer();
+    if (!composer) return;
+    state.chatDraft = composer.value;
+    voice.mode = "listening";
+    voice.error = "";
+    voice.fastEnds = 0;
+    connectVoice(voice);
+    return;
+  }
+  voice.mode = "paused";
+  clearVoiceTimer(voice);
+  voice.rec?.stop();
+  syncVoiceControls();
+}
+
+function completeVoice() {
+  voice = null;
+  syncVoiceControls();
+  $("#chat-input")?.focus({preventScroll: true});
+}
+
+function finishVoice() {
+  if (!voice || voice.mode === "finishing") return;
+  const stopping = voice.mode === "paused";
+  voice.mode = "finishing";
+  clearVoiceTimer(voice);
+  if (!voice.rec) { completeVoice(); return; }
+  if (!stopping) voice.rec.stop();
   syncVoiceControls();
 }
 
@@ -1475,7 +1603,11 @@ function renderAssistant() {
       <label class="sr-only" for="chat-input">Your question</label>
       <textarea id="chat-input" rows="1" maxlength="${CHAT_MAX_LENGTH}" placeholder="${on ? "Ask in any language…" : "Ask about payroll, risk, a what-if or a plan…"}" autocomplete="off" required>
 ${esc(state.chatDraft)}</textarea>
-      ${SpeechRec ? `<button type="button" class="button ghost voice-button" data-action="voice">${icon("mic")}</button>` : ""}
+      ${SpeechRec ? `<div class="voice-controls" id="chat-voice-controls">
+        <button type="button" class="button ghost voice-button" data-action="voice">${icon("mic")}</button>
+        <button type="button" class="button ghost small" data-action="voice-pause" hidden>${icon("pause")}<span></span></button>
+        <button type="button" class="button ghost small" data-action="voice-finish" hidden>${icon("check")}<span></span></button>
+      </div>` : ""}
       <button class="button primary" type="submit">${icon("send")}Ask</button>
     </form>
     ${SpeechRec ? '<p id="chat-voice-note" class="hint voice-note" role="status"></p>' : ""}</div>
@@ -2117,7 +2249,9 @@ document.addEventListener("click", async (event) => {
       }
       case "prompt": await ask(data.prompt); break;
       case "ai-retry": setAi(true); await ask(data.prompt); break;
-      case "voice": toggleVoice(); break;
+      case "voice": startVoice(); break;
+      case "voice-pause": toggleVoicePause(); break;
+      case "voice-finish": finishVoice(); break;
       case "copy-message": copyText(data.text || ""); break;
       case "privacy-preview-chat": await window.TidewayLab.previewChat($("#chat-input").value); break;
       case "whatif-reset": state.whatif = freshWhatIf(); render(); break;
@@ -2230,7 +2364,7 @@ document.addEventListener("input", (event) => {
   else if (target.id === "chat-input") {
     state.chatDraft = target.value;
     // Any manual edit takes precedence over a pending dictation update.
-    cancelVoice();
+    pauseVoiceForEdit();
     resizeChatInput(target);
   }
   else if (target.id === "inbox-text") state.inbox.text = target.value;
@@ -2276,6 +2410,7 @@ document.addEventListener("submit", async (event) => {
     if (state.config.operator) await startShell(); else showLogin();
     window.setInterval(window.TidewayHome.refreshDate, 30_000);
     window.addEventListener("resize", () => resizeChatInput());
+    window.addEventListener("pagehide", cancelVoice);
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) window.TidewayHome.refreshDate();
     });

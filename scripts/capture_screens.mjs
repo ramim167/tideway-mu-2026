@@ -302,7 +302,7 @@ try {
   await until("state.view === 'assistant' && !state.busy && state.chat.at(-1)?.role === 'agent' && !state.chat.at(-1).pending && state.chat.at(-2)?.text === 'Can I pay salaries this month?'", "Home question answered in the assistant");
   const homeAnswer = await evaluate("({reply:state.chat.at(-1),dashboard:state.dashboard})");
   assertHomePayrollAnswer(homeAnswer.reply, homeAnswer.dashboard);
-  await checkChatComposer({evaluate, click, viewport, shot, phoneCheck, send});
+  await checkChatComposer({evaluate, click, until, viewport, shot, phoneCheck, send});
   await click('[data-view="overview"]');
   await until("!!document.querySelector('.owner-view')", "simple cash forecast");
   await click('[data-action=owner-detailed]');

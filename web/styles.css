@@ -1706,20 +1706,21 @@ th { background: var(--accent-soft); border-bottom-color: var(--accent-line); }
 @media (max-width: 640px) { .learn-body { padding-left: 16px; } }
 
 /* Speak your question */
-.chat-form:has(.voice-button) { grid-template-columns: minmax(0, 1fr) auto auto; }
+.chat-form:has(.voice-controls) { grid-template-columns: minmax(0, 1fr) auto auto; }
+.chat-form:has(.voice-controls[data-active="true"]) { grid-template-columns: minmax(0, 1fr) auto; }
+.chat-form:has(.voice-controls[data-active="true"]) textarea { grid-column: 1 / -1; }
+.voice-controls { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 6px; }
+.voice-controls .button.small { min-height: 40px; }
 .voice-button { width: 46px; min-width: 46px; padding: 0; display: grid; place-items: center; border-radius: 999px; }
 .voice-button .icon { width: 20px; height: 20px; }
-.voice-button.on { background: var(--accent); color: #fff; border-color: var(--accent); animation: voice-pulse 1.4s ease-out infinite; }
 .voice-note { margin: 6px 0 0; }
 .voice-note.on { color: var(--accent-dark); font-weight: 700; }
+.voice-note.on::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-inline-end: 8px; border-radius: 50%; background: var(--storm); }
 @media (max-width: 560px) {
-  .chat-form, .chat-form:has(.voice-button) { grid-template-columns: minmax(0, 1fr) auto; }
+  .chat-form, .chat-form:has(.voice-controls) { grid-template-columns: minmax(0, 1fr) auto; }
   .chat-form textarea { grid-column: 1 / -1; }
-  .chat-form .voice-button { justify-self: end; }
   .chat-form button[type="submit"] { grid-column: 2; }
 }
-@keyframes voice-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); } 100% { box-shadow: 0 0 0 12px transparent; } }
-@media (prefers-reduced-motion: reduce) { .voice-button.on { animation: none; } }
 
 .hero-ctas:has([data-demo-only]:not([hidden])) a[href="#signup"] {
   color: #fff;
