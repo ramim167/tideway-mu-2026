@@ -100,6 +100,48 @@ if __name__ == "__main__":
     unittest.main()
 
 
+class DemoIdentity(unittest.TestCase):
+    def test_public_demo_account_cannot_redeem_private_invite(self):
+        from tideway.domain import ValidationError
+        from tideway.service import Tideway
+
+        app = Tideway(":memory:")
+        self.addCleanup(app.store.close)
+        private = app.signup(SIGNUP)[0]["business_id"]
+        owner = app.store.verify_pin(SIGNUP["username"], SIGNUP["pin"])
+        invite = app.store.create_invite(private, owner, "viewer", "Personal viewer")
+        demo = app.store.verify_pin("nadia", "2468")
+        with self.assertRaisesRegex(ValidationError, "Use a personal account"):
+            app.store.accept_invite(invite["code"], demo)
+        joined = app.store.accept_invite(invite["code"], username="actual.viewer", pin="731692")
+        self.assertEqual(joined["business_id"], private)
+
+    def test_legacy_fixture_username_collision_keeps_both_accounts(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        from tideway.domain import ValidationError, validate_username
+        from tideway.service import Tideway
+
+        with TemporaryDirectory() as folder:
+            database = Path(folder) / "test.db"
+            app = Tideway(database, seed=False)
+            with self.assertRaisesRegex(ValidationError, "reserved"):
+                app.signup({**SIGNUP, "username": "nadia"})
+            with patch.object(app.store, "_validate_personal_username", validate_username):
+                private = app.signup({**SIGNUP, "username": "nadia"})[0]["business_id"]
+            app.store.close()
+            app = Tideway(database)
+            try:
+                fixture = next(account for account in app.config()["demo_accounts"] if account["role"] == "owner")
+                self.assertNotEqual(fixture["id"], "nadia")
+                self.assertEqual(app.store.verify_pin(fixture["id"], fixture["pin"])["role"], "owner")
+                self.assertEqual(app.store.businesses_for("nadia")[0]["id"], private)
+                self.assertIsNone(app.store.membership_role(fixture["id"], private))
+            finally:
+                app.store.close()
+
+
 class Feedback(unittest.TestCase):
     def test_feedback_keeps_only_a_hash_of_the_question(self):
         from tideway.service import Tideway

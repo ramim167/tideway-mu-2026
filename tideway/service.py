@@ -102,8 +102,8 @@ PLAN_MC_RUNS = 400
 
 class Tideway:
     def __init__(self, db_path, seed=True, key_path=None, witness_path=None):
-        self.demo_enabled = seed
         self.store = Store(db_path, key_path, witness_path)
+        self.demo_accounts = [self.store.ensure_demo_operator(item) for item in OPERATORS] if seed else []
         if seed and not self.store.seeded():
             self.seed()
         if seed:
@@ -117,7 +117,7 @@ class Tideway:
         for fixture in fixtures():
             business_id = fixture["business"]["business_id"]
             if business_id in existing:
-                self.store.initialize_demo_memberships(business_id, OPERATORS)
+                self.store.initialize_demo_memberships(business_id, self.demo_accounts)
 
     def signup(self, body):
         """A new workspace with sensible, editable safety defaults derived from the owner's own numbers."""
@@ -140,8 +140,6 @@ class Tideway:
                                  body.get("plan") or "starter")
 
     def seed(self):
-        for item in OPERATORS:
-            self.store.ensure_operator(item["id"], item["name"], item["role"], item["pin"])
         existing = {item["id"] for item in self.store.list_businesses()}
         for fixture in fixtures():
             business = fixture["business"]
@@ -168,7 +166,7 @@ class Tideway:
                                 "synthetic": item["synthetic"], "story": stories.get(item["id"], ""), "role": item["role"]}
                                for item in businesses],
                 "demo_accounts": [{"id": item["id"], "name": item["name"], "role": item["role"], "pin": item["pin"]}
-                                  for item in OPERATORS if self.demo_enabled and any(
+                                  for item in self.demo_accounts if any(
                                       b["synthetic"] and b["id"] in stories for b in self.store.businesses_for(item["id"]))],
                 "plans": [{"id": key, **value} for key, value in PLANS.items() if key != "demo"],
                 "permission_tiers": [

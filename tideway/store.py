@@ -27,6 +27,7 @@ from pathlib import Path
 
 from . import analytics, security
 from .constraints import check_plan_constraints
+from .fixtures import OPERATORS
 from .domain import (
     OPEN_INVOICE_STATUSES,
     SecurityError,
@@ -120,6 +121,8 @@ CREATE TABLE IF NOT EXISTS operators (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('owner','accountant','viewer')),
     pin_salt TEXT NOT NULL, pin_hash TEXT NOT NULL, failed_attempts INTEGER NOT NULL DEFAULT 0,
     locked_until TEXT, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS demo_operators (
+    operator_id TEXT PRIMARY KEY REFERENCES operators(id));
 CREATE TABLE IF NOT EXISTS memberships (
     business_id TEXT NOT NULL, operator_id TEXT NOT NULL REFERENCES operators(id),
     role TEXT NOT NULL CHECK(role IN ('owner','accountant','viewer')), created_at TEXT NOT NULL,
@@ -227,6 +230,12 @@ class Store(EventStoreMixin):
             if "risk_acknowledgement" not in {row["name"] for row in db.execute("PRAGMA table_info(approvals)")}:
                 db.execute("ALTER TABLE approvals ADD COLUMN risk_acknowledgement TEXT")
             self._migrate_approval_rounds(db)
+            if not db.execute("SELECT 1 FROM metadata WHERE key='demo-operators-v1'").fetchone():
+                for account in OPERATORS:
+                    old = db.execute("SELECT pin_salt,pin_hash FROM operators WHERE id=?", (account["id"],)).fetchone()
+                    if old and security.check_pin(account["pin"], old["pin_salt"], old["pin_hash"]):
+                        db.execute("INSERT INTO demo_operators VALUES (?)", (account["id"],))
+                db.execute("INSERT INTO metadata VALUES ('demo-operators-v1','1')")
 
     def _migrate_approval_rounds(self, db):
         # Legacy versions left consumed votes in approvals and called a single
@@ -544,6 +553,36 @@ class Store(EventStoreMixin):
             db.execute("INSERT OR IGNORE INTO operators(id,name,role,pin_salt,pin_hash,created_at) VALUES (?,?,?,?,?,?)",
                        (operator_id, name, role, salt, digest, utc_now()))
 
+    def ensure_demo_operator(self, account):
+        operator_id = account["id"]
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            existing = db.execute("SELECT 1 FROM operators WHERE id=?", (operator_id,)).fetchone()
+            if existing and not self._is_demo_operator(db, operator_id):
+                operator_id = "demo:" + operator_id
+            if not self._is_demo_operator(db, operator_id):
+                salt, digest = security.hash_pin(account["pin"])
+                db.execute("INSERT INTO operators(id,name,role,pin_salt,pin_hash,created_at) VALUES (?,?,?,?,?,?)",
+                           (operator_id, account["name"], account["role"], salt, digest, utc_now()))
+                db.execute("INSERT INTO demo_operators VALUES (?)", (operator_id,))
+        return {**account, "id": operator_id}
+
+    @staticmethod
+    def _is_demo_operator(db, operator_id):
+        return bool(db.execute("SELECT 1 FROM demo_operators WHERE operator_id=?", (operator_id,)).fetchone())
+
+    @staticmethod
+    def _validate_personal_username(value):
+        username = validate_username(value)
+        if any(username == account["id"] for account in OPERATORS):
+            raise ValidationError("That username is reserved for the demo. Choose another.")
+        return username
+
+    @staticmethod
+    def _private_demo_access(db, business_id, operator_id):
+        return db.execute("SELECT 1 FROM businesses b CROSS JOIN demo_operators d "
+                          "WHERE b.id=? AND b.synthetic=0 AND d.operator_id=?", (business_id, operator_id)).fetchone()
+
     def operators(self):
         with self.connect() as db:
             return [{"id": row["id"], "name": row["name"], "role": row["role"]}
@@ -617,6 +656,8 @@ class Store(EventStoreMixin):
     def membership_role(self, operator_id, business_id):
         """The operator's role in this business, or None: tenants never see each other's data."""
         with self.connect() as db:
+            if self._private_demo_access(db, business_id, operator_id):
+                return None
             row = db.execute("SELECT role FROM memberships WHERE business_id=? AND operator_id=?",
                              (business_id, operator_id)).fetchone()
         return row["role"] if row else None
@@ -634,14 +675,15 @@ class Store(EventStoreMixin):
             raise ValidationError("A signed-in operator is required.")
         row = db.execute("SELECT role FROM memberships WHERE business_id=? AND operator_id=?",
                          (business_id, operator["id"])).fetchone()
-        if not row:
+        if not row or Store._private_demo_access(db, business_id, operator["id"]):
             raise ValidationError("An active membership in this business is required.")
         return {**operator, "role": row["role"]}
 
     def businesses_for(self, operator_id):
         with self.connect() as db:
             rows = db.execute("SELECT b.*, m.role FROM businesses b JOIN memberships m ON m.business_id=b.id "
-                              "WHERE m.operator_id=? ORDER BY b.rowid", (operator_id,)).fetchall()
+                              "WHERE m.operator_id=? AND (b.synthetic=1 OR NOT EXISTS "
+                              "(SELECT 1 FROM demo_operators d WHERE d.operator_id=m.operator_id)) ORDER BY b.rowid", (operator_id,)).fetchall()
         return [{**self._business_dict(row), "role": row["role"]} for row in rows]
 
     def initialize_demo_memberships(self, business_id, operators):
@@ -672,7 +714,7 @@ class Store(EventStoreMixin):
         """Create a workspace: the business, its owner account and membership, in one transaction."""
         if plan not in ("starter", "growth"):
             raise ValidationError("Choose the Starter or Growth plan.")
-        operator_id = validate_username(owner_id)
+        operator_id = self._validate_personal_username(owner_id)
         name = text_value({"name": owner_name}, "name", limit=80, label="Your name")
         check_new_pin(pin)
         salt, digest = security.hash_pin(pin)
@@ -738,7 +780,7 @@ class Store(EventStoreMixin):
             if not invite or invite["used_at"] or _expired(invite["expires_at"]):
                 raise ValidationError("That invite code is not valid, was already used or has expired.")
             if operator is None:
-                operator_id = validate_username(username)
+                operator_id = self._validate_personal_username(username)
                 display = text_value({"name": name or invite["display_name"]}, "name", limit=80, label="Your name")
                 check_new_pin(pin)
                 if db.execute("SELECT 1 FROM operators WHERE id=?", (operator_id,)).fetchone():
@@ -747,6 +789,8 @@ class Store(EventStoreMixin):
                 db.execute("INSERT INTO operators(id,name,role,pin_salt,pin_hash,created_at) VALUES (?,?,?,?,?,?)",
                            (operator_id, display, invite["role"], salt, digest, utc_now()))
                 operator = {"id": operator_id, "name": display, "role": invite["role"]}
+            if self._private_demo_access(db, invite["business_id"], operator["id"]):
+                raise ValidationError("Use a personal account to join a private workspace.")
             if db.execute("SELECT 1 FROM memberships WHERE business_id=? AND operator_id=?",
                           (invite["business_id"], operator["id"])).fetchone():
                 raise ValidationError("You are already a member of this business.")
