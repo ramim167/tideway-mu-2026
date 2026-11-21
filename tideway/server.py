@@ -565,7 +565,7 @@ def make_handler(app):
             self.send_header("X-Frame-Options", "DENY")
             # The microphone is allowed for Tideway's own pages only ("Speak your question"); never for other origins.
             self.send_header("Permissions-Policy", "camera=(), microphone=(self), geolocation=()")
-            self.send_header("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+            self.send_header("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; "
                                                         "connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; "
                                                         "frame-ancestors 'none'")
             if cookie:

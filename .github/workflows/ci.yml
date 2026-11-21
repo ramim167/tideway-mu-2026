@@ -108,8 +108,10 @@ jobs:
         run: node scripts/test_browser_assertions.mjs
       - name: Check exact currency conversion and untouched inputs
         run: node scripts/test_currency.mjs
+      - name: Install Pillow for receipt upload browser checks
+        run: python -m pip install --disable-pip-version-check Pillow==12.3.0
       - name: Test browser integration with a fixed-output local backend
-        run: node scripts/capture_screens.mjs --test-local-backend --out tmp/ci-local-backend
+        run: node scripts/capture_screens.mjs --test-local-backend --test-photo --out tmp/ci-local-backend
       - name: Test the linked payment-delay workflow
         run: node scripts/capture_screens.mjs --test-payment-delay --test-decision-lab --test-owner-view --test-currency
       - name: Validate the current source before packaging

@@ -37,6 +37,8 @@ const CHROME = option("--chrome") || process.env.CHROME || [
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const errors = [];
 const testLocalBackend = process.argv.includes("--test-local-backend");
+const testPhoto = process.argv.includes("--test-photo");
+if (testPhoto && !testLocalBackend) throw new Error("--test-photo requires --test-local-backend.");
 const testRealBackend = process.argv.includes("--test-real-backend");
 const testPaymentDelay = process.argv.includes("--test-payment-delay");
 const labOnly = process.argv.includes("--test-decision-lab-only");
@@ -67,6 +69,17 @@ if (testLocalBackend) {
     request.on("data", chunk => { raw += chunk; });
     request.on("end", () => {
       const message = JSON.parse(raw).messages?.[1]?.content || "";
+      if (Array.isArray(message)) {
+        const photo = message.find(part => part.type === "image_url")?.image_url?.url;
+        if (!photo?.startsWith("data:image/jpeg;base64,")) {
+          response.writeHead(400).end();
+          return;
+        }
+        const result = {transcript: "Receipt from Mina", records: [{record_type: "transaction", direction: "out",
+          amount: 500, currency: "BDT", date: "2026-10-02", counterparty: "Mina"}]};
+        response.end(JSON.stringify({choices: [{message: {content: JSON.stringify(result)}}]}));
+        return;
+      }
       const plan = /pay Rahman/i.test(message)
         ? {intent: "pay", calls: [{tool: "execute", args: {}}]}
         : /Cap discounts at 1%/.test(message) ? {intent: "rescue_plan", calls: [{tool: "propose_plan", args: {
@@ -77,7 +90,7 @@ if (testLocalBackend) {
   });
   await new Promise(resolve => modelServer.listen(0, "127.0.0.1", resolve));
   Object.assign(modelEnvironment, {TIDEWAY_LOCAL_MODEL_URL: `http://127.0.0.1:${modelServer.address().port}/v1`,
-    TIDEWAY_LOCAL_TEXT_MODEL: "tideway-browser-test", TIDEWAY_LOCAL_VISION_MODEL: ""});
+    TIDEWAY_LOCAL_TEXT_MODEL: "tideway-browser-test", TIDEWAY_LOCAL_VISION_MODEL: testPhoto ? "tideway-browser-test" : ""});
 }
 
 async function waitFor(url, tries = 60) {
@@ -513,6 +526,25 @@ try {
   await click('[data-sample="injection"]');
   await until("document.querySelector('#inbox-text').value.includes('Rahman Supplies')", "inbox sample");
   await shot("07b-inbox");
+  if (testPhoto) {
+    const path = join(work, "receipt.png");
+    const image = await evaluate(`(() => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 64;
+      canvas.getContext("2d").fillText("Receipt", 4, 20);
+      return canvas.toDataURL("image/png").split(",")[1];
+    })()`);
+    writeFileSync(path, Buffer.from(image, "base64"));
+    const {root} = await send("DOM.getDocument");
+    const {nodeId} = await send("DOM.querySelector", {nodeId: root.nodeId, selector: "#inbox-photo"});
+    await send("DOM.setFileInputFiles", {nodeId, files: [path]});
+    await until("document.querySelector('.photo-preview img')?.naturalWidth === 64", "receipt preview under CSP");
+    await click('[data-action="inbox-photo"]');
+    await until("document.querySelector('.photo-drop')?.textContent.includes('Receipt from Mina')", "uploaded receipt transcript");
+    await until("document.querySelector('[data-action=inbox-save]')", "receipt draft");
+    console.log("Photo browser passed: PNG file selection, CSP preview, JPEG upload and returned draft.");
+  }
+
   await view("whatif");
   await evaluate(`(() => { const slider = document.querySelector('input[type=range][data-customer="Bay Logistics"]'); slider.value = 12; slider.dispatchEvent(new Event('input', {bubbles: true})); document.querySelector('#whatif-form').requestSubmit(); return true; })()`);
   await until("!!document.querySelector('.line-what')", "what-if line");
