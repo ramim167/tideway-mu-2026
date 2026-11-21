@@ -20,6 +20,7 @@ from .agent import Agent
 from .domain import MAX_CSV_BYTES, SecurityError, ValidationError, canonical_json, parse_strict_json, validate_business_id
 from .security import RateLimiter
 from .service import Tideway
+from .speech import MAX_AUDIO_BODY, SpeechTranscriber, SpeechUnavailable
 from .tidelm import TideLM, TideLMUnavailable, confirm as confirm_inbox
 from .vision import MAX_BYTES as MAX_PHOTO_BYTES, MAX_PHOTO_BODY, TideVision, TideVisionUnavailable
 
@@ -64,6 +65,7 @@ class Application:
         self.selftest_cache = None
         self.tidelm = TideLM()
         self.vision = TideVision(semantic_model=self.tidelm)
+        self.speech = SpeechTranscriber()
         from .decision_lab import DecisionLab
         self.lab = DecisionLab(self.tideway)
         self.lab_enabled = os.environ.get("TIDEWAY_DECISION_LAB", "1").strip() != "0"
@@ -114,6 +116,7 @@ class Application:
         return {**self.tideway.config(operator), "csrf_token": self.csrf, "operator": operator,
                 "ai_configured": bool(self.agent.key), "ai_model": self.agent.model if self.agent.key else None,
                 "tidelm": self.tidelm.status(), "vision": {**self.vision.status(), "max_upload_bytes": MAX_PHOTO_BYTES},
+                "speech": self.speech.status(),
                 "features": {"decision_lab": self.lab_enabled}}
 
     def bundle_for(self, business_id, plan_id, bundle_id):
@@ -278,6 +281,10 @@ class Application:
         business_id = validate_business_id(body.get("business_id", "")) if "business_id" in body else None
         if business_id:
             operator = self.scoped(operator, business_id)
+        if path == "/api/speech/transcribe":
+            self.fields(body, ("business_id", "audio", "mime_type", "lang", "cloud_consent"),
+                        ("business_id", "audio", "mime_type", "lang"))
+            return self.speech.transcribe(body, operator["id"])
         if path == "/api/chat/preview" or (path == "/api/lab/privacy" and self.lab_enabled):
             self.fields(body, ("business_id", "target_date", "message", "history", "input_currency", "lang"), ("business_id", "message"))
             if body.get("lang", "en") not in ("en", "bn"):
@@ -718,6 +725,8 @@ def make_handler(app):
                     return self.reply(400, {"error": "Invalid Content-Length.", "code": "validation_error"})
                 length = int(raw_length)
                 limit = MAX_PHOTO_BODY if path == "/api/inbox/photo" else 2_000_000
+                if path == "/api/speech/transcribe":
+                    limit = MAX_AUDIO_BODY
                 if path == "/api/import" and operator is not None:
                     # JSON can escape each original byte as six ASCII characters.
                     limit = MAX_CSV_BYTES * 6 + 1024
@@ -745,6 +754,8 @@ def make_handler(app):
                 self.reply(401 if operator is None else 403, {"error": str(exc)})
             except LookupError:
                 self.reply(404, {"error": "Not found."})
+            except SpeechUnavailable as exc:
+                self.reply(503, {"error": str(exc), "code": "speech_unavailable"})
             except (TideLMUnavailable, TideVisionUnavailable) as exc:
                 self.reply(503, {"error": str(exc), "code": "tidelm_unavailable" if isinstance(exc, TideLMUnavailable)
                                  else "vision_unavailable"})

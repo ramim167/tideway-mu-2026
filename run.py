@@ -20,6 +20,7 @@ def load_env():
                 if key.strip() in ("OPENAI_API_KEY", "OPENAI_MODEL", "OPENROUTER_API_KEY", "OPENROUTER_MODEL", "GEMINI_API_KEY", "GEMINI_MODEL", "GROQ_API_KEY", "GROQ_MODEL",
                                    "CUSTOM_AI_BASE_URL", "CUSTOM_AI_API_KEY", "CUSTOM_AI_MODEL", "CUSTOM_AI_NAME", "TIDEWAY_AI_ORDER", "TIDEWAY_HOST", "TIDEWAY_PORT", "TIDEWAY_PUBLIC_HOSTS",
                                    "TIDEWAY_LOCAL_MODEL_URL", "TIDEWAY_LOCAL_TEXT_MODEL", "TIDEWAY_LOCAL_VISION_MODEL",
+                                   "TIDEWAY_SPEECH_MODEL_DIR", "TIDEWAY_SPEECH_GROQ_API_KEY",
                                    "TIDEWAY_LOCAL_STRUCTURED_PLANS", "TIDEWAY_SEMANTIC_SCREENING", "TIDEWAY_DECISION_LAB"):
                     os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
 
