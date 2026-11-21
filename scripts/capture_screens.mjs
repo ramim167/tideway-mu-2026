@@ -16,7 +16,7 @@ import {checkDecisionLab} from "./decision_lab_browser.mjs";
 import {checkOwnerView} from "./owner_view_browser.mjs";
 import {checkCurrency} from "./currency_browser.mjs";
 import {assertHomePayrollAnswer} from "./browser_assertions.mjs";
-import {checkChatComposer, testSpeechRecognition} from "./chat_composer_browser.mjs";
+import {checkChatComposer, checkRecordingComposer, testSpeechRecognition} from "./chat_composer_browser.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 function sourceDigest() {
@@ -316,6 +316,7 @@ try {
   const homeAnswer = await evaluate("({reply:state.chat.at(-1),dashboard:state.dashboard})");
   assertHomePayrollAnswer(homeAnswer.reply, homeAnswer.dashboard);
   await checkChatComposer({evaluate, click, until, viewport, shot, phoneCheck, send});
+  await checkRecordingComposer({evaluate, click, until, viewport, phoneCheck});
   if (!testLocalBackend && !testRealBackend) {
     await evaluate(`(() => {
       window.originalPreviewConfig = [state.config.ai_configured, state.config.features.decision_lab];

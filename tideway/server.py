@@ -46,6 +46,7 @@ CONTENT_TYPES = {"html": "text/html", "css": "text/css", "js": "text/javascript"
 BINARY = {"woff2", "webp"}
 COOKIE = "tideway_session"
 BODY_TIMEOUT_SECONDS = 2.0
+SPEECH_UPLOAD_TIMEOUT_SECONDS = 10.0
 
 
 def csv_cell(value):
@@ -580,9 +581,9 @@ def make_handler(app):
             # Unverified cookie strings must not create fresh rate-limit keys.
             return (token, operator) if operator else (None, None)
 
-        def read_body(self, length):
+        def read_body(self, length, timeout=BODY_TIMEOUT_SECONDS):
             """Read an exact bounded body with a total, not per-byte, deadline."""
-            deadline = time.monotonic() + BODY_TIMEOUT_SECONDS
+            deadline = time.monotonic() + timeout
             previous = self.connection.gettimeout()
             chunks, remaining = [], length
             try:
@@ -711,6 +712,9 @@ def make_handler(app):
                 return self.deny_post(415, "Use application/json.")
             path = urlsplit(self.path).path
             token, operator = self.session()
+            is_speech_upload = path == "/api/speech/transcribe"
+            if is_speech_upload and operator is None:
+                return self.deny_post(401, "Sign in first.")
             limiter = app.login_limiter if path in ("/api/session/login", "/api/signup", "/api/team/join") else app.post_limiter
             key = self.client_ip() if limiter is app.login_limiter else token or self.client_ip()
             if not limiter.allow(key):
@@ -725,14 +729,15 @@ def make_handler(app):
                     return self.reply(400, {"error": "Invalid Content-Length.", "code": "validation_error"})
                 length = int(raw_length)
                 limit = MAX_PHOTO_BODY if path == "/api/inbox/photo" else 2_000_000
-                if path == "/api/speech/transcribe":
+                if is_speech_upload:
                     limit = MAX_AUDIO_BODY
                 if path == "/api/import" and operator is not None:
                     # JSON can escape each original byte as six ASCII characters.
                     limit = MAX_CSV_BYTES * 6 + 1024
                 if not 0 < length <= limit:
                     return self.reply(413, {"error": f"Request body must be between 1 and {limit} bytes."})
-                body = parse_strict_json(self.read_body(length))
+                timeout = SPEECH_UPLOAD_TIMEOUT_SECONDS if is_speech_upload else BODY_TIMEOUT_SECONDS
+                body = parse_strict_json(self.read_body(length, timeout))
                 if not isinstance(body, dict):
                     raise ValidationError("Request must be a JSON object.")
                 candidate = body.get("business_id")

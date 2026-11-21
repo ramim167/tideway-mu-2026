@@ -185,6 +185,22 @@ python run.py --no-demo --db data/empty.sqlite3                                 
 
 **Optional: free cloud AI, with automatic fallback.** Not needed for anything above. Copy `.env.example` to `.env` and fill any of: `GEMINI_API_KEY` (Google AI Studio, free tier, good at Bangla), `GROQ_API_KEY` (free tier), `OPENROUTER_API_KEY` (`:free` models), or a custom OpenAI-compatible service. Restart. Tideway tries them in `TIDEWAY_AI_ORDER`, and each provider's model list in order, moving on when one is busy, down or out of quota (`tideway/ai_providers.py`). In **Ask Tideway**, tick the consent box to use it. Names are replaced with pseudonyms before anything is sent, the AI can only call read and propose tools, and every number it writes is checked against tool output. `.env` is git-ignored, so the key never reaches GitHub.
 
+### Dictation on desktop and phones
+
+Open **Ask Tideway**, pick English or বাংলা, then tap the microphone. With recording enabled, use **Pause**, **Resume**, and **Finish**. The transcript goes into your editable draft. Review it, then press **Ask** to send the question. If your browser’s speech service fails, choose **Use recording** when it appears.
+
+Recording uses the browser’s microphone on `localhost` or an HTTPS site. On a phone, use the HTTPS address of the hosted demo and allow microphone access. Each recording can hold up to 45 seconds of speech. Use the microphone again to add another clip. [Browser microphone requirements](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)
+
+To enable recording, configure one of these options and restart Tideway.
+
+- **Local computer**. Install `faster-whisper` in the Python environment that runs Tideway. Download the multilingual `Systran/faster-whisper-base` snapshot using the setup commands below and set `TIDEWAY_SPEECH_MODEL_DIR=models/faster-whisper-base` in `.env`. After setup, Tideway transcribes clips locally without a provider key. [faster-whisper](https://github.com/SYSTRAN/faster-whisper)
+- **Hosted demo**. Set `TIDEWAY_SPEECH_GROQ_API_KEY` as a secret environment variable in the Render dashboard. Tideway asks for permission before making a Groq recording and sends the clip to Groq for transcription. [Groq speech-to-text](https://console.groq.com/docs/speech-to-text)
+
+```bash
+python -m pip install faster-whisper==1.2.1
+python -c "from huggingface_hub import snapshot_download; snapshot_download('Systran/faster-whisper-base', local_dir='models/faster-whisper-base', allow_patterns=['config.json', 'model.bin', 'tokenizer.json', 'vocabulary.txt'])"
+```
+
 ## Proof, not promises
 
 <img src="docs/media/stats.svg" alt="Tideway by the numbers" width="100%">

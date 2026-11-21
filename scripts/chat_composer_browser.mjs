@@ -9,6 +9,128 @@ export const testSpeechRecognition = `window.SpeechRecognition = class {
   speak(...parts) { this.onresult({results: parts.map(transcript => [{transcript}])}); }
 }`;
 
+export async function checkRecordingComposer({evaluate, click, until, viewport, phoneCheck}) {
+  const mic = '[data-action="voice"]';
+  const record = '[data-action="voice-record"]';
+  const pause = '[data-action="voice-pause"]';
+  const finish = '[data-action="voice-finish"]';
+  const setDraft = text => evaluate(`(() => {
+    const input = document.getElementById('chat-input');
+    input.value = ${JSON.stringify(text)};
+    input.setSelectionRange(input.value.length, input.value.length);
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+  })()`);
+  const value = () => evaluate("document.getElementById('chat-input').value");
+  const done = "voice === null";
+  await viewport(375, 812, true);
+  await evaluate(`(() => {
+    const t = window.recordingTest = {
+      recorder: window.MediaRecorder, gum: navigator.mediaDevices.getUserMedia,
+      fetch: window.fetch, speech: state.config.speech, requests: [], opens: 0,
+      format: 'audio/mp4', nextStatus: 200, held: false,
+    };
+    navigator.mediaDevices.getUserMedia = async () => {
+      t.opens++;
+      if (t.deny) throw new DOMException('Permission denied', 'NotAllowedError');
+      t.track = {enabled: true, stopped: false, stop() { this.stopped = true; }};
+      return {getTracks: () => [t.track], getAudioTracks: () => [t.track]};
+    };
+    window.MediaRecorder = class {
+      static isTypeSupported(type) { return type === t.format; }
+      constructor(stream, options) { t.rec = this; this.mimeType = options.mimeType; this.state = 'inactive'; }
+      start() { this.state = 'recording'; }
+      pause() { this.state = 'paused'; }
+      resume() { this.state = 'recording'; }
+      stop() {
+        this.state = 'inactive';
+        queueMicrotask(() => {
+          this.ondataavailable({data: new Blob(['fixture'], {type: this.mimeType})});
+          this.onstop();
+        });
+      }
+    };
+    window.fetch = (url, options) => {
+      if (url !== '/api/speech/transcribe') return t.fetch(url, options);
+      t.requests.push(JSON.parse(options.body));
+      const response = new Response(JSON.stringify({text: 'payroll'}), {status: t.nextStatus});
+      if (t.held) return new Promise(resolve => {
+        t.reply = () => resolve(response);
+        options.signal.addEventListener('abort', () => { t.aborted = true; });
+      });
+      return Promise.resolve(response);
+    };
+    state.config.speech = {available: true, backend: 'groq', max_seconds: 45, max_upload_bytes: 1200000};
+    render();
+  })()`);
+
+  await setDraft("Check old today.");
+  await evaluate("document.getElementById('chat-input').setSelectionRange(6, 9)");
+  await click(mic);
+  await evaluate("window.testRecognition.onerror({error: 'network'})");
+  await click(record);
+  assert.equal(await evaluate("voice.mode === 'consent' && recordingTest.opens === 0 && recordingTest.requests.length === 0"), true);
+  assert.match(await evaluate("document.getElementById('chat-voice-note').textContent"), /Groq/);
+  await phoneCheck("recording consent", ".voice-panel");
+  await click(record);
+  await until("voice.mode === 'listening'", "recording after speech service failure");
+  await click(pause);
+  assert.equal(await evaluate("recordingTest.rec.state === 'paused' && !recordingTest.track.enabled && voice.clock === null"), true);
+  await click(pause);
+  assert.equal(await evaluate("recordingTest.rec.state === 'recording' && recordingTest.track.enabled"), true);
+  await click(finish);
+  await until(done, "recording transcribed");
+  assert.equal(await value(), "Check payroll today.");
+  assert.equal(await evaluate("recordingTest.track.stopped"), true);
+  assert.equal(await evaluate("recordingTest.requests[0].mime_type"), "audio/mp4");
+  assert.equal(await evaluate("recordingTest.requests[0].cloud_consent"), true);
+
+  await evaluate(`state.config.speech.backend = 'local';
+    recordingTest.format = 'audio/ogg;codecs=opus'; recordingTest.nextStatus = 503; render()`);
+  await setDraft("Existing draft");
+  await click(mic);
+  await until("voice.mode === 'listening'", "local recording started directly");
+  await click(finish);
+  await until("voice.error === 'upload'", "retry offered after a transcription error");
+  assert.equal(await value(), "Existing draft");
+  await evaluate("recordingTest.nextStatus = 200; recordingTest.held = true");
+  await click(pause);
+  await until("recordingTest.requests.length === 3", "same voice clip retried");
+  await setDraft("Edited while waiting");
+  await evaluate("recordingTest.reply()");
+  await until(done, "retry inserted into current draft");
+  assert.equal(await value(), "Edited while waiting payroll");
+  assert.equal(await evaluate(`recordingTest.requests[2].audio === recordingTest.requests[1].audio
+    && recordingTest.requests[2].mime_type === 'audio/ogg' && recordingTest.requests[2].cloud_consent === false`), true);
+
+  await click(mic);
+  await until("voice.mode === 'listening'", "new recording");
+  await click(finish);
+  await until("recordingTest.requests.length === 4", "recording uploading before cancel");
+  await click(finish);
+  assert.equal(await evaluate("voice === null && recordingTest.aborted"), true);
+  await evaluate("recordingTest.reply()");
+  assert.equal(await value(), "Edited while waiting payroll");
+
+  await evaluate("recordingTest.held = false; state.config.speech.max_seconds = 0.15");
+  await click(mic);
+  await until("voice.error === 'clipFull'", "the recording waits at the clip limit");
+  assert.equal(await evaluate("recordingTest.requests.length === 4 && recordingTest.track.stopped"), true);
+  await click(finish);
+  await until(done, "the capped clip is transcribed only after Finish");
+  assert.equal(await value(), "Edited while waiting payroll payroll");
+
+  await evaluate("recordingTest.deny = true");
+  await click(mic);
+  await until("voice.error === 'recordingDenied'", "recording permission denied");
+  await click(finish);
+  assert.equal(await evaluate(done), true);
+  await evaluate(`state.config.speech = recordingTest.speech;
+    window.fetch = recordingTest.fetch; window.MediaRecorder = recordingTest.recorder;
+    navigator.mediaDevices.getUserMedia = recordingTest.gum; delete window.recordingTest; render()`);
+  await setDraft("");
+  await viewport(1440, 900);
+}
+
 export async function checkChatComposer({evaluate, click, until, viewport, shot, phoneCheck, send}) {
   const mic = '[data-action="voice"]';
   const pause = '[data-action="voice-pause"]';

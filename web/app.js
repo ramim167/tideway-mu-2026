@@ -216,8 +216,8 @@ const role = () => currentBusiness()?.role || "";
 const canApprove = () => ["owner", "accountant"].includes(role());
 const isOwner = () => role() === "owner";
 
-async function api(path, body, retried = false) {
-  const options = {headers: {Accept: "application/json"}, credentials: "same-origin"};
+async function api(path, body, retried = false, signal) {
+  const options = {headers: {Accept: "application/json"}, credentials: "same-origin", signal};
   if (body !== undefined) {
     options.method = "POST";
     options.headers["Content-Type"] = "application/json";
@@ -231,9 +231,9 @@ async function api(path, body, retried = false) {
   if (response.status === 401) { showLogin(); throw new Error(data.error || "Please sign in."); }
   // A restarted server issues a new write token: fetch it once (same-origin read) and retry, instead of asking for a refresh.
   if (response.status === 403 && !retried && body !== undefined && /CSRF/.test(data.error || "")) {
-    const fresh = await api("/api/config");
+    const fresh = await api("/api/config", undefined, false, signal);
     state.config = {...state.config, csrf_token: fresh.csrf_token};
-    return api(path, body, true);
+    return api(path, body, true, signal);
   }
   if (!response.ok) { const error = new Error(data.error || `Request failed (${response.status}).`); error.status = response.status; throw error; }
   return data;
@@ -1373,12 +1373,12 @@ function copilotHtml(c) {
     <p class="hint">${esc(c.model_identity?.label || c.model_identity?.model || "Local model")} selected the calls. Financial figures and the decision summary come from deterministic tools.</p></div></div>`;
 }
 
-// ---- speak a question (the browser's own speech recognition, in বাংলা or English) -------------------------
-// The browser controls its recognition service and may process audio remotely.
-// The words land in the question box for the owner to check; nothing is sent to Tideway until they press Ask.
+// ---- dictate a question in বাংলা or English ---------------------------------------------------------------
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 const CHAT_MAX_LENGTH = 2000;
 const VOICE_RESTART_MS = 350;
+const RECORDING_TYPES = ["audio/webm;codecs=opus", "audio/mp4", "audio/ogg;codecs=opus", "audio/webm", "audio/ogg"];
+const RECORDING_MIMES = new Set(["audio/webm", "audio/mp4", "audio/ogg", "audio/wav"]);
 const VOICE_COPY = {
   en: {
     group: "Dictation", start: "Start dictation", pause: "Pause", resume: "Resume", finish: "Finish",
@@ -1388,12 +1388,26 @@ const VOICE_COPY = {
     reconnecting: "Reconnecting…", pausing: "Pausing…", paused: "Paused",
     interrupted: "The microphone stopped. Resume to try again.",
     denied: "Microphone permission is denied. Allow the microphone in your browser or system settings, then press Resume.",
-    service: "This browser could not start its speech service. Enable speech recognition (Siri on Safari), try Chrome or Edge, or type your question.",
-    network: "The browser’s speech service is unreachable or blocked. Check your connection or speech settings, try Chrome or Edge, or type.",
+    service: "This browser could not start its speech service. Try recording below if available, or use your keyboard’s dictation.",
+    network: "The browser’s speech service is unreachable or blocked. Try recording below if available, or use your keyboard’s dictation.",
     capture: "The browser could not capture audio. Check that a microphone is connected and available, then press Resume.",
     language: "The browser’s speech service does not support this language. Switch languages or type your question.",
     unsupported: "This browser does not provide dictation here. Type your question or use your device’s keyboard dictation.",
     finishing: "Finishing…",
+    record: "Use recording", cloudStart: "Allow and record", cancel: "Cancel", retry: "Retry transcription",
+    localIdle: "Tap the microphone to record. Tideway transcribes your clip on this server.",
+    cloudIdle: "Tap the microphone to record and add speech to your draft.",
+    consent: "Tideway will send the recording to Groq to turn it into text. You can review the text before asking your question.",
+    recording: "Recording. Finish to add the words to your draft.", transcribing: "Turning your recording into text…",
+    requested: "Allow microphone access to start recording.",
+    empty: "No words were detected. Try a new recording or type your question.",
+    upload: "Could not transcribe this clip. Retry transcription or keep your draft.",
+    unreadable: "This clip could not be read. Resume to record a new clip.",
+    oversized: "This clip is too large. Resume and use a shorter recording.",
+    recordingDenied: "Microphone access is blocked. Allow it in your browser or device settings, then press Resume.",
+    https: "Open Tideway over HTTPS to use the microphone, or use your keyboard’s dictation.",
+    clipFull: "Clip limit reached. Finish to add the recording to your draft.",
+    limit: "Clip limit reached. Review your draft and use the microphone again to add more.",
   },
   bn: {
     group: "কথা থেকে লেখা", start: "কথা বলা শুরু করুন", pause: "বিরতি", resume: "আবার বলুন", finish: "শেষ করুন",
@@ -1403,16 +1417,41 @@ const VOICE_COPY = {
     reconnecting: "আবার সংযোগ হচ্ছে…", pausing: "বিরতিতে যাচ্ছে…", paused: "বিরতিতে",
     interrupted: "মাইক্রোফোন থেমে গেছে। আবার বলুন বোতামে চাপ দিন।",
     denied: "মাইক্রোফোনের অনুমতি বন্ধ আছে। ব্রাউজার বা ডিভাইসের সেটিংসে অনুমতি দিয়ে আবার বলুন।",
-    service: "ব্রাউজারের কথা চেনার সেবা চালু হয়নি। সেবাটি চালু করুন (Safari-তে Siri), Chrome বা Edge ব্যবহার করুন, অথবা লিখুন।",
-    network: "ব্রাউজারের কথা চেনার সেবায় সংযোগ হয়নি বা সেবাটি বন্ধ। ইন্টারনেট বা সেটিংস দেখুন, Chrome বা Edge ব্যবহার করুন, অথবা লিখুন।",
+    service: "ব্রাউজারের কথা চেনার সেবা চালু হয়নি। নিচে রেকর্ডের সুবিধা থাকলে ব্যবহার করুন অথবা কিবোর্ডে কথা বলে লিখুন।",
+    network: "ব্রাউজারের কথা চেনার সেবায় সংযোগ হয়নি। নিচে রেকর্ডের সুবিধা থাকলে ব্যবহার করুন অথবা কিবোর্ডে কথা বলে লিখুন।",
     capture: "ব্রাউজার মাইক্রোফোন থেকে শব্দ নিতে পারেনি। মাইক্রোফোন সংযুক্ত ও ব্যবহারযোগ্য কি না দেখে আবার বলুন।",
     language: "এই ভাষায় ব্রাউজারের কথা চেনার সুবিধা নেই। ভাষা বদলান অথবা লিখুন।",
     unsupported: "এই ব্রাউজারে এখানে কথা থেকে লেখা যায় না। প্রশ্ন লিখুন অথবা আপনার ডিভাইসের কিবোর্ডে কথা থেকে লেখার সুবিধা ব্যবহার করুন।",
     finishing: "কথা থেকে লেখা শেষ হচ্ছে…",
+    record: "রেকর্ড করুন", cloudStart: "অনুমতি দিন ও রেকর্ড করুন", cancel: "বাতিল", retry: "আবার লেখা তৈরি করুন",
+    localIdle: "রেকর্ড করতে মাইক্রোফোনে চাপ দিন। Tideway এই সার্ভারেই রেকর্ড থেকে লেখা তৈরি করবে।",
+    cloudIdle: "মাইক্রোফোনে চাপ দিয়ে কথা রেকর্ড করুন ও খসড়ায় যোগ করুন।",
+    consent: "রেকর্ড থেকে লেখা তৈরি করতে Tideway সেটি Groq-এ পাঠাবে। প্রশ্ন পাঠানোর আগে লেখাটি দেখে নিতে পারবেন।",
+    recording: "রেকর্ড হচ্ছে। খসড়ায় লেখা যোগ করতে শেষ করুন চাপুন।", transcribing: "রেকর্ড থেকে লেখা তৈরি হচ্ছে…",
+    requested: "রেকর্ড করতে মাইক্রোফোন ব্যবহারের অনুমতি দিন।",
+    empty: "কোনো কথা বোঝা যায়নি। আবার রেকর্ড করুন বা প্রশ্ন লিখুন।",
+    upload: "এই রেকর্ড থেকে লেখা তৈরি করা যায়নি। আবার চেষ্টা করুন বা খসড়া রেখে দিন।",
+    unreadable: "রেকর্ডটি পড়া যায়নি। নতুন করে রেকর্ড করতে আবার বলুন চাপুন।",
+    oversized: "রেকর্ডটি খুব বড়। আবার বলুন চাপ দিয়ে ছোট করে রেকর্ড করুন।",
+    recordingDenied: "মাইক্রোফোন ব্যবহারের অনুমতি বন্ধ। ব্রাউজার বা ডিভাইসের সেটিংসে অনুমতি দিয়ে আবার বলুন চাপুন।",
+    https: "মাইক্রোফোনের জন্য HTTPS দিয়ে Tideway খুলুন অথবা কিবোর্ডে কথা বলে লিখুন।",
+    clipFull: "রেকর্ডের সময়সীমা শেষ। খসড়ায় লেখা যোগ করতে শেষ করুন চাপুন।",
+    limit: "রেকর্ডের সময়সীমা শেষ। খসড়া দেখে আরও কথা যোগ করতে আবার মাইক্রোফোনে চাপ দিন।",
   },
 };
 let voice = null;
 let voiceInputEvent = null;
+
+function recordingBackend() {
+  return state.config?.speech?.available && window.isSecureContext && navigator.mediaDevices?.getUserMedia
+    && typeof window.MediaRecorder === "function" ? state.config.speech.backend : null;
+}
+
+function preferredVoiceBackend() {
+  const backend = recordingBackend();
+  if (backend && (backend === "local" || !SpeechRec || singleUtteranceVoice())) return backend;
+  return SpeechRec ? "native" : null;
+}
 
 function resizeChatInput(input = document.getElementById("chat-input")) {
   if (!input || window.CSS?.supports("field-sizing", "content")) return;
@@ -1420,23 +1459,28 @@ function resizeChatInput(input = document.getElementById("chat-input")) {
   input.style.height = `${input.scrollHeight + input.offsetHeight - input.clientHeight}px`;
 }
 
-function syncVoiceControls({draftReady = false} = {}) {
-  if (!SpeechRec) return;
+function syncVoiceControls({draftReady = false, hintKey} = {}) {
   const controls = $("#chat-voice-controls");
   const note = $("#chat-voice-note");
   if (!controls || !note) return;
   const copy = VOICE_COPY[state.lang];
   const start = controls.querySelector('[data-action="voice"]');
   const pause = controls.querySelector('[data-action="voice-pause"]');
+  const record = controls.querySelector('[data-action="voice-record"]');
   const finish = controls.querySelector('[data-action="voice-finish"]');
   const panel = controls.querySelector(".voice-panel");
   const help = $("#chat-voice-help");
   const paused = voice?.mode === "paused";
   const finishing = voice?.mode === "finishing";
+  const recording = voice && voice.backend !== "native";
+  const consent = voice?.mode === "consent";
+  const permission = voice?.mode === "permission";
+  const retry = paused && voice.clip;
   const listening = voice?.mode === "listening" && voice.listeningSince !== null;
-  const status = !voice ? "idle" : finishing ? "finishing" : paused
-    ? voice.rec ? "pausing" : voice.error || "paused"
-    : listening ? (voice.speaking ? "speaking" : "listening") : voice.reconnecting ? "reconnecting" : "starting";
+  const status = !voice ? "idle" : consent ? "consent" : permission ? "requested"
+    : finishing ? (recording ? "transcribing" : "finishing") : paused ? voice.rec ? "pausing" : voice.error || "paused"
+    : listening ? recording ? "recording" : (voice.speaking ? "speaking" : "listening")
+    : voice.reconnecting ? "reconnecting" : "starting";
 
   controls.dataset.active = String(Boolean(voice));
   controls.setAttribute("aria-label", copy.group);
@@ -1445,18 +1489,25 @@ function syncVoiceControls({draftReady = false} = {}) {
   start.hidden = Boolean(voice);
   start.setAttribute("aria-label", copy.start);
   start.title = copy.start;
-  pause.hidden = finish.hidden = !voice;
+  pause.hidden = !voice || consent || permission || Boolean(recording && (finishing || voice.error === "clipFull"));
+  finish.hidden = !voice;
+  record.hidden = !voice || !(consent || (paused && !recording && recordingBackend()));
+  record.textContent = consent ? copy.cloudStart : copy.record;
   pause.disabled = finishing || Boolean(paused && voice.rec);
-  finish.disabled = finishing;
+  finish.disabled = finishing && !recording;
   pause.querySelector("use").setAttribute("href", paused ? "#i-play" : "#i-pause");
   const pauseLabel = pause.querySelector("span");
-  if (pauseLabel.textContent !== (paused ? copy.resume : copy.pause)) pauseLabel.textContent = paused ? copy.resume : copy.pause;
+  const pauseText = retry ? copy.retry : paused ? copy.resume : copy.pause;
+  if (pauseLabel.textContent !== pauseText) pauseLabel.textContent = pauseText;
   const finishLabel = finish.querySelector("span");
-  if (finishLabel.textContent !== copy.finish) finishLabel.textContent = copy.finish;
+  const finishText = consent || permission || (recording && finishing) ? copy.cancel : copy.finish;
+  if (finishLabel.textContent !== finishText) finishLabel.textContent = finishText;
   if (note.textContent !== copy[status]) note.textContent = copy[status];
   if (help) {
     help.hidden = Boolean(voice);
-    const hint = draftReady ? copy.ready : copy.idle;
+    const backend = preferredVoiceBackend();
+    const hint = hintKey ? copy[hintKey] : draftReady ? copy.ready
+      : backend === "local" ? copy.localIdle : backend === "groq" ? copy.cloudIdle : copy.idle;
     if (help.textContent !== hint) help.textContent = hint;
   }
   updateVoiceClock();
@@ -1492,6 +1543,8 @@ function disconnectVoice(session) {
   session.rec = null;
   stopVoiceClock(session);
   rec?.abort();
+  releaseRecording(session);
+  session.upload?.abort();
 }
 
 function cancelVoice() {
@@ -1504,12 +1557,18 @@ function cancelVoice() {
 
 function pauseVoiceForEdit() {
   if (!voice) return;
+  const input = $("#chat-input");
+  if (voice.backend !== "native") {
+    voice.selection = voiceSelection(input);
+    if (voice.mode === "listening") pauseRecording(voice);
+    return;
+  }
   if (voice.mode === "finishing") {
     cancelVoice();
     return;
   }
   voice.mode = "paused";
-  voice.selection = voiceSelection($("#chat-input"));
+  voice.selection = voiceSelection(input);
   voice.error = "";
   disconnectVoice(voice);
   syncVoiceControls();
@@ -1519,10 +1578,9 @@ function voiceSelection(input) {
   return [input.selectionStart ?? input.value.length, input.selectionEnd ?? input.value.length];
 }
 
-function voiceDraft(source, selection, results) {
+function voiceDraft(source, selection, transcript) {
   const [start, end] = selection;
   const prefix = source.slice(0, start), suffix = source.slice(end);
-  const transcript = Array.from(results, result => result[0].transcript.trim()).filter(Boolean).join(" ");
   if (!transcript) return {text: source, selection};
   const before = prefix && !/\s$/.test(prefix) && !/^[,.;:!?।]/.test(transcript) ? " " : "";
   const after = suffix && !/^[\s,.;:!?।)\]}]/.test(suffix) ? " " : "";
@@ -1532,6 +1590,24 @@ function voiceDraft(source, selection, results) {
   if (!insertion) return {text: source, selection};
   const caret = prefix.length + before.length + insertion.length;
   return {text: prefix + before + insertion + after + suffix, selection: [caret, caret]};
+}
+
+function applyVoiceText(session, source, selection, transcript) {
+  const {text, selection: next} = voiceDraft(source, selection, transcript);
+  session.selection = next;
+  if (text !== source) session.fastEnds = 0;
+  const input = $("#chat-input");
+  if (input && input.value !== text) {
+    const followTail = input.scrollHeight - input.clientHeight - input.scrollTop < 24;
+    input.value = text;
+    input.setSelectionRange(...next);
+    voiceInputEvent = new Event("input", {bubbles: true});
+    try { input.dispatchEvent(voiceInputEvent); } finally { voiceInputEvent = null; }
+    if (followTail && next[0] === text.length) input.scrollTop = input.scrollHeight;
+  } else {
+    state.chatDraft = text;
+    input?.setSelectionRange(...next);
+  }
 }
 
 function voiceComposer() {
@@ -1606,21 +1682,8 @@ function connectVoice(session) {
   };
   rec.onresult = (event) => {
     if (!current()) return;
-    const {text, selection: next} = voiceDraft(source, selection, event.results);
-    session.selection = next;
-    if (text !== source) session.fastEnds = 0;
-    const input = $("#chat-input");
-    if (input && input.value !== text) {
-      const followTail = input.scrollHeight - input.clientHeight - input.scrollTop < 24;
-      input.value = text;
-      input.setSelectionRange(...next);
-      voiceInputEvent = new Event("input", {bubbles: true});
-      try { input.dispatchEvent(voiceInputEvent); } finally { voiceInputEvent = null; }
-      if (followTail && next[0] === text.length) input.scrollTop = input.scrollHeight;
-    } else {
-      state.chatDraft = text;
-      input?.setSelectionRange(...next);
-    }
+    const transcript = Array.from(event.results, result => result[0].transcript.trim()).filter(Boolean).join(" ");
+    applyVoiceText(session, source, selection, transcript);
   };
   rec.onerror = (event) => {
     if (!current() || session.mode !== "listening" || event.error === "no-speech") return;
@@ -1658,19 +1721,217 @@ function connectVoice(session) {
   syncVoiceControls();
 }
 
+function showRecordingConsent(session) {
+  session.mode = "consent";
+  syncVoiceControls();
+  $('[data-action="voice-record"]')?.focus({preventScroll: true});
+}
+
+function chooseRecording() {
+  if (voice?.mode === "consent") {
+    connectRecording(voice);
+  } else if (voice?.mode === "paused" && voice.backend === "native") {
+    const backend = recordingBackend();
+    const composer = voiceComposer();
+    if (!backend || !composer) return;
+    disconnectVoice(voice);
+    voice.backend = backend;
+    voice.selection = voiceSelection(composer);
+    if (backend === "groq") showRecordingConsent(voice);
+    else connectRecording(voice);
+  }
+}
+
+function releaseRecording(session) {
+  const capture = session.capture;
+  if (!capture) return;
+  session.capture = null;
+  if (capture.rec.state !== "inactive") {
+    try { capture.rec.stop(); } catch (_) { /* The browser may have already stopped it. */ }
+  }
+  capture.stream.getTracks().forEach(track => track.stop());
+}
+
+function recordingFailure(session, status) {
+  clearVoiceTimer(session);
+  stopVoiceClock(session);
+  releaseRecording(session);
+  session.mode = "paused";
+  session.error = status;
+  syncVoiceControls();
+}
+
+async function connectRecording(session) {
+  session.mode = "permission";
+  session.lang = state.lang;
+  session.error = "";
+  session.elapsed = 0;
+  session.limited = false;
+  syncVoiceControls();
+  $('[data-action="voice-finish"]')?.focus({preventScroll: true});
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: {ideal: 1}}, video: false});
+    if (voice !== session) {
+      stream.getTracks().forEach(track => track.stop());
+      return;
+    }
+    const mimeType = RECORDING_TYPES.find(type => window.MediaRecorder.isTypeSupported?.(type));
+    const options = {audioBitsPerSecond: 32_000, ...(mimeType ? {mimeType} : {})};
+    // A device may reject a codec that its browser advertises.
+    let rec;
+    try { rec = new window.MediaRecorder(stream, options); }
+    catch (_) { rec = new window.MediaRecorder(stream); }
+    const capture = {rec, stream, chunks: [], bytes: 0};
+    session.capture = capture;
+    const current = () => voice === session && session.capture === capture;
+    rec.ondataavailable = ({data}) => {
+      if (!current() || !data.size) return;
+      capture.bytes += data.size;
+      if (capture.bytes > state.config.speech.max_upload_bytes) {
+        recordingFailure(session, "oversized");
+        return;
+      }
+      capture.chunks.push(data);
+    };
+    rec.onerror = () => { if (current()) recordingFailure(session, "capture"); };
+    rec.onstop = () => {
+      if (!current()) return;
+      clearVoiceTimer(session);
+      stopVoiceClock(session);
+      releaseRecording(session);
+      if (!capture.bytes) { completeVoice("empty"); return; }
+      const mime = (capture.chunks[0].type || rec.mimeType || mimeType || "").split(";")[0].toLowerCase();
+      const audioMime = mime === "video/mp4" ? "audio/mp4" : mime === "video/webm" ? "audio/webm" : mime;
+      if (!RECORDING_MIMES.has(audioMime)) { recordingFailure(session, "unreadable"); return; }
+      session.clip = new Blob(capture.chunks, {type: audioMime});
+      if (session.limited) {
+        session.mode = "paused";
+        session.error = "clipFull";
+        syncVoiceControls();
+        $('[data-action="voice-finish"]')?.focus({preventScroll: true});
+      } else transcribeRecording(session);
+    };
+    rec.start(750);
+    startRecordingClock(session);
+    $('[data-action="voice-pause"]')?.focus({preventScroll: true});
+  } catch (error) {
+    if (!session.capture) stream?.getTracks().forEach(track => track.stop());
+    if (voice !== session) return;
+    recordingFailure(session, ["NotAllowedError", "SecurityError"].includes(error.name) ? "recordingDenied" : "capture");
+  }
+}
+
+function startRecordingClock(session) {
+  session.mode = "listening";
+  session.listeningSince = performance.now();
+  session.clock = setInterval(updateVoiceClock, 250);
+  const remaining = state.config.speech.max_seconds * 1000 - session.elapsed;
+  session.timer = setTimeout(() => {
+    if (voice !== session || session.mode !== "listening" || !session.capture) return;
+    session.limited = true;
+    finishRecording(session);
+  }, Math.max(0, remaining));
+  syncVoiceControls();
+}
+
+function pauseRecording(session) {
+  try {
+    session.capture.rec.pause();
+    session.capture.stream.getAudioTracks().forEach(track => { track.enabled = false; });
+    clearVoiceTimer(session);
+    stopVoiceClock(session);
+    session.mode = "paused";
+    syncVoiceControls();
+  } catch (_) { recordingFailure(session, "capture"); }
+}
+
+function resumeRecording(session) {
+  if (session.clip) { transcribeRecording(session); return; }
+  const composer = voiceComposer();
+  if (!composer) return;
+  session.selection = voiceSelection(composer);
+  if (!session.capture) { connectRecording(session); return; }
+  try {
+    session.capture.stream.getAudioTracks().forEach(track => { track.enabled = true; });
+    session.capture.rec.resume();
+    startRecordingClock(session);
+  } catch (_) { recordingFailure(session, "capture"); }
+}
+
+function finishRecording(session) {
+  clearVoiceTimer(session);
+  stopVoiceClock(session);
+  session.mode = "finishing";
+  // An inactive recorder can still have its final data and stop events queued.
+  if (session.capture.rec.state !== "inactive") {
+    try { session.capture.rec.stop(); } catch (_) { recordingFailure(session, "capture"); }
+  }
+  syncVoiceControls();
+}
+
+function recordingBase64(clip) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",", 2)[1]);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(clip);
+  });
+}
+
+async function transcribeRecording(session) {
+  const clip = session.clip;
+  const upload = new AbortController();
+  session.upload = upload;
+  session.mode = "finishing";
+  syncVoiceControls();
+  try {
+    const audio = await recordingBase64(clip);
+    if (voice !== session) return;
+    const result = await api("/api/speech/transcribe", {
+      business_id: state.businessId, audio, mime_type: clip.type, lang: session.lang,
+      cloud_consent: session.backend === "groq",
+    }, false, upload.signal);
+    if (voice !== session) return;
+    if (typeof result.text !== "string") throw new Error("Missing transcript.");
+    const transcript = result.text.trim();
+    if (transcript) applyVoiceText(session, state.chatDraft, session.selection, transcript);
+    completeVoice(!transcript ? "empty" : session.limited ? "limit" : undefined);
+  } catch (error) {
+    if (voice !== session) return;
+    const unreadable = error?.status === 400 || error?.status === 413;
+    if (unreadable) session.clip = null;
+    recordingFailure(session, unreadable ? "unreadable" : "upload");
+  } finally {
+    if (session.upload === upload) session.upload = null;
+  }
+}
+
 function startVoice() {
-  if (!SpeechRec || voice) return;
+  const backend = preferredVoiceBackend();
+  if (!backend || voice) return;
   const composer = voiceComposer();
   if (!composer) return;
   state.chatDraft = composer.value;
-  voice = {mode: "listening", rec: null, timer: null, error: "", fastEnds: 0,
+  voice = {backend, mode: "listening", rec: null, timer: null, error: "", fastEnds: 0,
     speaking: false, reconnecting: false, elapsed: 0, listeningSince: null, clock: null, startingDraft: composer.value, selection: voiceSelection(composer)};
-  connectVoice(voice);
-  $('[data-action="voice-pause"]')?.focus({preventScroll: true});
+  if (backend === "native") {
+    connectVoice(voice);
+    $('[data-action="voice-pause"]')?.focus({preventScroll: true});
+  } else if (backend === "groq") {
+    showRecordingConsent(voice);
+  } else {
+    connectRecording(voice);
+  }
 }
 
 function toggleVoicePause() {
   if (!voice || voice.mode === "finishing") return;
+  if (voice.backend !== "native") {
+    if (voice.mode === "listening") pauseRecording(voice);
+    else if (voice.mode === "paused") resumeRecording(voice);
+    return;
+  }
   if (voice.mode === "paused") {
     if (voice.rec) return;
     const composer = voiceComposer();
@@ -1691,11 +1952,11 @@ function toggleVoicePause() {
   syncVoiceControls();
 }
 
-function completeVoice() {
+function completeVoice(hintKey) {
   const {selection, startingDraft} = voice;
   const draftReady = state.chatDraft !== startingDraft;
   voice = null;
-  syncVoiceControls({draftReady});
+  syncVoiceControls({draftReady, hintKey});
   const composer = document.getElementById("chat-input");
   if (!composer) return;
   composer.focus({preventScroll: true});
@@ -1704,6 +1965,18 @@ function completeVoice() {
 }
 
 function finishVoice() {
+  if (voice && voice.backend !== "native") {
+    if (voice.mode === "paused" && voice.error === "clipFull") transcribeRecording(voice);
+    else if (voice.capture && voice.mode !== "finishing") finishRecording(voice);
+    else {
+      const selection = voice.selection;
+      cancelVoice();
+      const composer = $("#chat-input");
+      composer?.focus({preventScroll: true});
+      composer?.setSelectionRange(...selection);
+    }
+    return;
+  }
   if (!voice || voice.mode === "finishing") return;
   const stopping = voice.mode === "paused";
   voice.mode = "finishing";
@@ -1739,6 +2012,7 @@ function renderAssistant() {
   const aiSwitch = aiReady ? `<div class="ai-switch-row"><label class="ai-switch"><input id="ai-consent" type="checkbox" role="switch" ${state.aiConsent ? "checked" : ""}><span class="ai-switch-track" aria-hidden="true"></span><span class="ai-switch-label">AI answers</span></label><span class="small muted">${state.aiConsent ? "On for this question and recent chat history. Known counterparty names are hidden." : "Off: the offline assistant answers. Turn on to share this question and recent chat history."}</span><button type="button" class="button small ghost" data-action="privacy-preview-chat">See what is sent</button></div>` : "";
   const consent = on || aiReady ? "" : `<p class="hint">Local agent mode: answers come from deterministic tools, no network. An optional LLM mode is available when a key is configured.</p>`;
   const mode = on ? `<div class="row chat-mode"><span class="pill teal">${icon("spark")}${esc(tidelmLabel())}</span></div>` : "";
+  const canDictate = Boolean(preferredVoiceBackend());
   return `<section class="assistant-layout"><div class="card chat ${on ? "with-mode" : ""}">${mode}<div class="chat-log" id="chat-log" aria-live="polite">${state.chat.map((item, index) => item.pending
       ? `<div class="msg agent pending" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>${esc(item.role === "user" ? item.text : moneyProse(item.text))}</div>`
       : `<div class="msg ${item.role === "user" ? "user" : "agent"} ${item.unverified?.length || item.rejected ? "warn" : ""}">${esc(item.role === "user" ? item.text : moneyProse(item.text))}${item.trace?.length ? `<div class="trace">${item.trace.map((t) => `<span>${esc(t.tool)} · ${esc(t.permission)}</span>`).join("")}</div>` : ""}${item.copilot ? copilotHtml(item.copilot) : ""}${item.aiNudge && state.config.ai_configured && !state.aiConsent ? `<div class="ai-nudge"><button type="button" class="button small primary" data-action="ai-retry" data-prompt="${esc(item.question)}">${icon("spark")}${state.lang === "bn" ? "AI চালু করে আবার জিজ্ঞেস করুন" : "Turn on AI and ask again"}</button></div>` : ""}${item.question && !item.rejected ? feedbackHtml(item, index) : ""}${index === state.chat.length - 1 && item.role !== "user" ? suggestionsHtml(item.suggestions || (index === 0 ? prompts.slice(0, 3) : [])) : ""}</div>`).join("")}</div>
@@ -1747,7 +2021,7 @@ function renderAssistant() {
       <label class="sr-only" for="chat-input">Your question</label>
       <textarea id="chat-input" rows="1" maxlength="${CHAT_MAX_LENGTH}" placeholder="${on ? "Ask in any language…" : "Ask about payroll, risk, a what-if or a plan…"}" autocomplete="off" required>
 ${esc(state.chatDraft)}</textarea>
-      ${SpeechRec ? `<div class="voice-controls" id="chat-voice-controls" role="group">
+      ${canDictate ? `<div class="voice-controls" id="chat-voice-controls" role="group">
         <button type="button" class="button ghost voice-button" data-action="voice">${icon("mic")}</button>
         <div class="voice-panel" hidden>
           <div class="voice-status">
@@ -1755,6 +2029,7 @@ ${esc(state.chatDraft)}</textarea>
             <div><span class="voice-label" id="chat-voice-note" role="status"></span><span class="voice-clock" id="chat-voice-clock" aria-hidden="true">00:00</span></div>
           </div>
           <div class="voice-actions">
+            <button type="button" class="button ghost small" data-action="voice-record" hidden></button>
             <button type="button" class="button ghost small" data-action="voice-pause">${icon("pause")}<span></span></button>
             <button type="button" class="button teal small" data-action="voice-finish">${icon("check")}<span></span></button>
           </div>
@@ -1762,7 +2037,7 @@ ${esc(state.chatDraft)}</textarea>
       </div>` : ""}
       <button class="button primary" type="submit">${icon("send")}Ask</button>
     </form>
-    <p id="chat-voice-help" class="hint voice-note" role="status">${SpeechRec ? "" : esc(VOICE_COPY[state.lang].unsupported)}</p></div>
+    <p id="chat-voice-help" class="hint voice-note" role="status">${canDictate ? "" : esc(VOICE_COPY[state.lang][window.isSecureContext ? "unsupported" : "https"])}</p></div>
     ${disclosure("assistant-prompts", "More example questions", `<div class="chips">${prompts.map((prompt) => `<button class="chip" data-action="prompt" data-prompt="${esc(prompt)}">${esc(prompt)}</button>`).join("")}</div>`)}
     ${disclosure("assistant-details", "How Tideway answers", `${on ? "" : tidelmStatusCard("Ask Tideway still works with the local tool agent.")}
     ${consent ? `<div class="section-gap">${consent}</div>` : ""}
@@ -2414,6 +2689,7 @@ document.addEventListener("click", async (event) => {
       case "prompt": await ask(data.prompt); break;
       case "ai-retry": setAi(true); await ask(data.prompt); break;
       case "voice": startVoice(); break;
+      case "voice-record": chooseRecording(); break;
       case "voice-pause": toggleVoicePause(); break;
       case "voice-finish": finishVoice(); break;
       case "copy-message": copyText(data.text || ""); break;

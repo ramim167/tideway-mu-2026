@@ -1735,9 +1735,11 @@ th { background: var(--accent-soft); border-bottom-color: var(--accent-line); }
 .voice-panel[data-status="speaking"] .voice-wave i { animation: dictation-wave .72s ease-in-out infinite alternate; }
 .voice-panel[data-status="speaking"] .voice-wave i:nth-child(2n) { animation-delay: -.34s; }
 .voice-panel[data-status="speaking"] .voice-wave i:nth-child(3) { animation-delay: -.17s; }
+.voice-panel[data-status="recording"] .voice-wave i { animation: dictation-wave .95s ease-in-out infinite alternate; }
+.voice-panel[data-status="recording"] .voice-wave i:nth-child(2n) { animation-delay: -.35s; }
 @keyframes dictation-wave { from { transform: scaleY(.35); } to { transform: scaleY(1.25); } }
 @media (prefers-reduced-motion: reduce) {
-  .voice-panel[data-status="speaking"] .voice-wave i { animation: none; transform: scaleY(.75); }
+  .voice-panel:is([data-status="speaking"], [data-status="recording"]) .voice-wave i { animation: none; transform: scaleY(.75); }
 }
 .voice-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-inline-start: auto; }
 .voice-actions .button.small { min-height: 44px; padding-inline: 10px; }
