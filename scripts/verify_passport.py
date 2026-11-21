@@ -26,7 +26,7 @@ def check(document, expected_public_key=None, now=None):
     if error:
         return False, error["message"]
     fingerprint = key_fingerprint(bytes.fromhex(expected_public_key))
-    return True, f"Genuine and unaltered. Issuer key {fingerprint}; valid until {document['expires_at']}."
+    return True, f"Signed passport claims verified against the supplied issuer key {fingerprint}. Valid until {document['expires_at']}."
 
 
 def main(argv=None):

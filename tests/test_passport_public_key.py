@@ -87,6 +87,7 @@ class PassportPublicKey(unittest.TestCase):
         self.assertTrue(ok, message)
         self.assertIn(hashlib.sha256(bytes.fromhex(self.public_key)).hexdigest()[:16], message)
         self.assertNotIn("unsigned display label", message)
+        self.assertIn("Signed passport claims verified", message)
         self.assertFalse(offline.check(document)[0])
 
     def test_shared_schema_dates_and_clock_skew(self):
@@ -101,6 +102,10 @@ class PassportPublicKey(unittest.TestCase):
             ({"issued_at": (now - timedelta(days=2)).isoformat(), "expires_at": now.isoformat()}, "expired"),
             ({"type": "Unknown"}, "malformed"), ({"additional": "field"}, "malformed"),
             ({"business": []}, "malformed"), ({"version": "unsupported"}, "malformed"),
+            ({"as_of": "2026-02-29"}, "malformed"),
+            ({"twcf": {}}, "malformed"),
+            ({"breach_risk": {**self.document["breach_risk"], "runs": True}}, "malformed"),
+            ({"health": {**self.document["health"], "components": [{}]}}, "malformed"),
             ({"limitations": "X" * treasury.PASSPORT_MAX_BYTES}, "malformed"),
         ]
         for fields, expected in cases:
