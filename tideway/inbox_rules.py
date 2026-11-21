@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 from datetime import date, timedelta
+from decimal import Decimal
 
 from .domain import CURRENCIES
 
@@ -26,7 +27,7 @@ _WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday",
 _SYMBOLS = (
     (r"R\$", ("BRL",)), (r"S\$", ("SGD",)), (r"HK\$", ("HKD",)), (r"A\$", ("AUD",)), (r"C\$", ("CAD",)),
     (r"NZ\$", ("NZD",)), (r"US\$", ("USD",)), (r"\$", ("USD", "SGD", "AUD", "CAD", "HKD", "NZD", "MXN")),
-    (r"£", ("GBP",)), (r"€", ("EUR",)), (r"₹", ("INR",)), (r"৳", ("BDT",)), (r"₱", ("PHP",)), (r"₦", ("NGN",)),
+    (r"£", ("GBP",)), (r"€", ("EUR",)), (r"₹", ("INR",)), (r"৳|টাকা", ("BDT",)), (r"₱", ("PHP",)), (r"₦", ("NGN",)),
     (r"[¥￥]", ("CNY",)), (r"(?<![A-Za-z])K[Ss]h\.?", ("KES",)),
     (r"(?<![A-Za-z])(?:Rs\.?|rs\.?|INR|[Rr]upees?)", ("INR", "PKR", "LKR", "NPR")),
     (r"(?<![A-Za-z])(?:Tk\.?|tk\.?|[Tt]aka)(?![a-z])", ("BDT",)), (r"(?<![A-Za-z])Rp\.?", ("IDR",)),
@@ -37,12 +38,18 @@ _CURRENCY = "|".join([rf"(?<![A-Za-z])(?:{_CODES})(?![A-Za-z])"] + [pattern for 
 _NUMBER = (r"(?:\d{1,2}(?:,\d{2})+,\d{3}|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?|"
            r"\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d{1,3}(?:[  ]\d{3})+(?:[.,]\d{1,2})?|"
            r"\d+(?:[.,]\d{1,2})?")
-_AMOUNT = re.compile(rf"(?P<pre>{_CURRENCY})\s?(?P<num>{_NUMBER})(?!\d|[.,]\d)|(?<![\d.,])(?P<num2>{_NUMBER})\s?(?P<post>{_CURRENCY})")
+_SCALES = {"k": 1000, "thousand": 1000, "lakh": 100_000, "lac": 100_000, "লাখ": 100_000, "লক্ষ": 100_000,
+           "million": 1_000_000, "crore": 10_000_000, "কোটি": 10_000_000, "billion": 1_000_000_000}
+_SCALE = r"(?i:thousands?|lakhs?|lacs?|crores?|millions?|billions?|k|লাখ|লক্ষ|কোটি)(?!\w)"
+_UNKNOWN_SCALE = re.compile(r"\s*(?:[a-z]illions?|trillions?|quadrillions?|arab|kharab|lakhhs?|croresh)(?!\w)", re.I)
+_AMOUNT = re.compile(rf"(?P<pre>{_CURRENCY})\s?(?P<num>{_NUMBER})(?!\d|[.,]\d)(?:\s*(?P<scale>{_SCALE}))?"
+                     rf"|(?<![\d.,])(?P<num2>{_NUMBER})(?:\s*(?P<scale2>{_SCALE}))?\s?(?P<post>{_CURRENCY})")
 _BARE_AMOUNT = re.compile(rf"\b(?:pay|pays|paying|paid|send|sending|transfer|owes?|owed|for|amount(?: due)?|total|of)\s+"
-                          rf"(?:me\s+|you\s+|us\s+|the\s+)?(?P<num>{_NUMBER})\s?(?P<k>k\b)?(?![\d/.-]|,\d)", re.I)
+                          rf"(?:me\s+|you\s+|us\s+|the\s+)?(?P<num>{_NUMBER})(?![\d/.-]|,\d)(?:\s*(?P<scale>{_SCALE}))?", re.I)
 
 _IN = re.compile(r"\breceived\b|\bcredited\b|\bcredit\b|\bcash\s+in\b|recebid[oa]|收款|\bdeposit(?:ed)?\b|\bditerima\b|\brecibid[oa]\b|"
                  r"\breçu\b", re.I)
+_PAID_TO = re.compile(r"\bpaid\s+to\b", re.I)
 _OUT = re.compile(r"\bdebited\b|\bsent\b|\bspent\b|\bpaid to\b|\bcash\s+out\b|向.{1,40}?付款|\bwithdrawn?\b|\bpurchase\b|\bdebit\b|"
                   r"\benviad[oa]\b|\bdibayar\b", re.I)
 # Balances and fees describe an account or the cost of a transfer, not the amount transferred.
@@ -58,7 +65,7 @@ _UNSETTLED = re.compile(
     r"\b(?:failed|unsuccessful|declined|cancelled|canceled|reversed)\s+(?:payment|transaction|transfer|deposit)\b|"
     r"(?<!no )\bpending\s+(?:payment|transaction|transfer|deposit)\b", re.I)
 _INVOICE = re.compile(r"\binvoice\b|\bfactura\b|发票|\bnota fiscal\b|\bfacture\b(?!\s+fournisseur)", re.I)
-_BILL = re.compile(r"\bbill\b|\btagihan\b|facture fournisseur|amount due|please pay|账单|\bfactura de proveedor\b", re.I)
+_BILL = re.compile(r"\bbill\b|\bsupplier\s+invoice\b|\binvoice\s+from\b|\btagihan\b|facture fournisseur|amount due|please pay|账单|\bfactura de proveedor\b", re.I)
 _PROMISE = re.compile(r"will pay|i'?ll pay|\bte pago\b|\bpagar[ée]\b|saya bayar|akan bayar|de dunga|de denge|\bdibo\b|"
                       r"\d\s*日前付|\bpaierai\b|vou pagar", re.I)
 _DUE_BEFORE = re.compile(r"(?:\bdue(?:\s+date)?|\bvence(?:\s+el)?|\bvencimiento|échéance(?:\s+le)?|jatuh tempo|\bpay(?:ment)?\s+by|"
@@ -69,7 +76,7 @@ _INJECTION = re.compile(r"ignore (?:all |any )?(?:previous|prior|earlier) (?:ins
                         r"transfer all|changed? (?:our |the )?bank|new (?:bank )?account|mark every invoice|without asking|"
                         r"忽略|ignora las instrucciones|abaikan instruksi|ignorez les consignes|ignore as instru", re.I)
 
-_NAME_STOP = (r"(?=\s+(?:on|em|via|for|el|le|pada|tanggal|at\s+\d|will|bill|has|have|is|sent|paid|pays?)\b|\s*[,(:：，。;]|\.\s|\.$|\s*$|"
+_NAME_STOP = (r"(?=\s+(?:on|today|tomorrow|due|em|via|for|el|le|pada|tanggal|at\s+\d|will|bill|has|have|is|sent|paid|pays?)\b|\s*[,(:：，。;]|\.\s|\.$|\s*$|"
               r"\s+\d)")
 _NAME = r"(?P<who>[A-Z一-鿿][^\n]{0,79}?)"
 _PARTY_PATTERNS = [re.compile(pattern, re.I if flags else 0) for pattern, flags in (
@@ -102,8 +109,15 @@ def _parse_number(raw):
             else text.replace(",", ".")
     elif text.count(".") > 1 or re.fullmatch(r"\d{1,3}\.\d{3}", text):
         text = text.replace(".", "")
-    value = float(text)
-    return int(value) if value == int(value) else round(value, 2)
+    return Decimal(text)
+
+
+def _scaled_amount(number, scale, tail, checks):
+    if not scale and _UNKNOWN_SCALE.match(tail):
+        checks.append("unrecognized amount scale: enter the amount before saving")
+        return None
+    amount = _parse_number(number) * _SCALES.get((scale or "").casefold().removesuffix("s"), 1)
+    return int(amount) if amount == int(amount) else float(amount)
 
 
 def _currency(token, business_currency):
@@ -147,17 +161,27 @@ def _dates(text, today):
     # Masking retains offsets used below to identify issue and due dates.
     for start, end in taken:
         text = text[:start] + " " * (end - start) + text[end:]
+    def add_yearless(match, month, day, note="year assumed"):
+        if any(match.start() < end and start < match.end() for start, end in taken):
+            return
+        try:
+            value = _year_for(month, day, today).isoformat()
+        except ValueError:
+            add(match, None, f"{match.group(0)} needs a valid day and year")
+        else:
+            add(match, value, note)
+
     for match in re.finditer(r"(?<!\d)(\d{1,2})月(\d{1,2})日", text):
-        add(match, _year_for(int(match[1]), int(match[2]), today).isoformat(), "year assumed")
+        add_yearless(match, int(match[1]), int(match[2]))
     for match in re.finditer(rf"(?<!\d)(\d{{1,2}})\s+({_MONTH_RE})(?![a-z])", text, re.I):
-        add(match, _year_for(_MONTHS[match[2][:3].lower()], int(match[1]), today).isoformat(), "year assumed")
+        add_yearless(match, _MONTHS[match[2][:3].lower()], int(match[1]))
     for match in re.finditer(rf"\b({_MONTH_RE})\s+(\d{{1,2}})(?![\d,])", text, re.I):
-        add(match, _year_for(_MONTHS[match[1][:3].lower()], int(match[2]), today).isoformat(), "year assumed")
+        add_yearless(match, _MONTHS[match[1][:3].lower()], int(match[2]))
     for match in re.finditer(r"(?<![\d.,/])(\d{1,2})/(\d{1,2})(?![\d/])", text):
         first, second = int(match[1]), int(match[2])
         if 1 <= second <= 12 and 1 <= first <= 31:
             note = "year assumed" + ("; day/month order assumed" if first <= 12 and first != second else "")
-            add(match, _year_for(second, first, today).isoformat(), note)
+            add_yearless(match, second, first, note)
     lowered = text.casefold()
     for words, offset in (((r"today", r"hoy", r"aujourd'hui", r"hoje", r"hari ini", r"今天", r"aaj", r"aj"), 0),
                           ((r"tomorrow", r"mañana", r"demain", r"amanhã", r"besok", r"明天", r"kal", r"kalke"), 1)):
@@ -204,19 +228,19 @@ def _record(segment, business_currency, today, known):
         candidates = [match for match in amounts
                       if not _ANCILLARY_BEFORE.search(segment[max(0, match.start() - 60):match.start()])]
         # Multiple different amounts without a clear ancillary label are ambiguous. Do not guess.
-        values = {(_parse_number(match["num"] or match["num2"]),
+        values = {(_scaled_amount(match["num"] or match["num2"], match["scale"] or match["scale2"],
+                                  segment[match.end():], checks),
                    _currency(match["pre"] or match["post"], business_currency)) for match in candidates}
         if len(values) != 1:
             return None
-        first = candidates[0]
-        number, token = (first["num"], first["pre"]) if first["num"] else (first["num2"], first["post"])
-        amount, currency, spans = _parse_number(number), _currency(token, business_currency), [first.span()]
+        amount, currency = values.pop()
+        spans = [match.span() for match in candidates]
     else:
         bare = _BARE_AMOUNT.search(segment)
         if not bare:
             return None
-        amount = _parse_number(bare["num"]) * (1000 if bare["k"] else 1)
-        currency, spans = business_currency, [bare.span("num")]
+        amount = _scaled_amount(bare["num"], bare["scale"], segment[bare.end():], checks)
+        currency, spans = business_currency, [(bare.start("num"), bare.end())]
         checks.append(f"no currency in the message: {business_currency} assumed")
     masked = segment
     for start, end in [m.span() for m in amounts] + spans:
@@ -227,6 +251,8 @@ def _record(segment, business_currency, today, known):
                    (_BILL, "bill", "out"), (_INVOICE, "invoice", "in"), (_PROMISE, "invoice", "in"),
                    (_IN, "transaction", "in"), (_OUT, "transaction", "out")))
                if (match := pattern.search(segment))]
+    if paid := _PAID_TO.search(masked):
+        signals.append((paid.start(), 4, "transaction", "out"))
     if not signals:
         return None  # An amount alone does not establish that cash came in or went out.
     _, _, kind, direction = min(signals)
@@ -236,7 +262,7 @@ def _record(segment, business_currency, today, known):
     for start, end, value, note in _dates(masked, today):
         before, after = masked[max(0, start - 30):start], masked[end:end + 12]
         if note:
-            checks.append(f"date {value}: {note}")
+            checks.append(f"date {value}: {note}" if value else note)
         if _ISSUE_BEFORE.search(before):
             issue = issue or value
         elif _DUE_BEFORE.search(before) or _DUE_AFTER.search(after):

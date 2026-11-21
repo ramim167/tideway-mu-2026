@@ -30,6 +30,26 @@ class InboxSemantics(unittest.TestCase):
         self.assertEqual((bill["record_type"], bill["direction"], bill["due_date"]),
                          ("bill", "out", "2028-02-29"))
 
+    def test_english_payables_and_explicit_paid_to(self):
+        bill, = self.read("Supplier invoice from Rahman Supplies for Tk 1,00,000 due 2026-11-30")
+        self.assertEqual((bill["record_type"], bill["direction"], bill["amount"]), ("bill", "out", 100000))
+        paid, = self.read("I paid Tk 500 to Mina today")
+        self.assertEqual((paid["record_type"], paid["direction"], paid["counterparty"]), ("transaction", "out", "Mina"))
+        self.assertEqual(self.read("I did not pay Tk 500 to Mina today"), [])
+
+    def test_amount_scale_and_unsupported_scale(self):
+        for amount, expected in (("Tk 1 lakh", 100000), ("Tk 2.5 crore", 25000000), ("১ লাখ টাকা", 100000)):
+            self.assertEqual(self.read(f"Received {amount} from Bay Logistics today")[0]["amount"], expected)
+        unknown, = self.read("Received Tk 2 trillion from Bay Logistics today")
+        self.assertIsNone(unknown["amount"])
+        self.assertIn("unrecognized amount scale", " ".join(unknown["_checks"]))
+
+    def test_yearless_invalid_date_keeps_other_drafts(self):
+        receipt, bill = self.read("Received Tk 100 today\nBill for Tk 300 due 29 Feb")
+        self.assertEqual(receipt["date"], "2026-10-02")
+        self.assertIsNone(bill["due_date"])
+        self.assertIn("29 Feb needs a valid day and year", bill["_checks"])
+
     def test_malformed_grouping_never_becomes_a_smaller_payment(self):
         for value in ("1,000,00", "12,34,56", "1,00,0000"):
             with self.subTest(value=value):
