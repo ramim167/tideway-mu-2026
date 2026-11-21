@@ -3,6 +3,18 @@
 // dates and ledger names, which are passed through unchanged. Regenerate the missing list with
 // node scripts/bangla_coverage.mjs --out missing.json
 window.TIDEWAY_BN = {
+ "All tools": "সব টুল",
+ "Options": "সেটিংস",
+ "Forecast": "পূর্বাভাস",
+ "Refresh data": "তথ্য আবার দেখুন",
+ "Compare plan options, reminders and financing": "পরিকল্পনা, তাগাদা ও অর্থায়নের বিকল্প দেখুন",
+ "See how Tideway built the plan": "পরিকল্পনাটি কীভাবে তৈরি হয়েছে দেখুন",
+ "More example questions": "আরও নমুনা প্রশ্ন",
+ "How Tideway answers": "টাইডওয়ে কীভাবে উত্তর দেয়",
+ "Agent paused": "সহকারী বিরতিতে",
+ "See when your business might run short, find ways to cover the gap and check suspicious messages. Use Tideway in English or বাংলা.": "ব্যবসায় কখন টাকার ঘাটতি হতে পারে দেখুন, সমাধান খুঁজুন এবং সন্দেহজনক মেসেজ যাচাই করুন। বাংলা বা ইংরেজিতে টাইডওয়ে ব্যবহার করুন।",
+ "Choose Nadia (Owner) to try every workflow. Choose Imran to practise as an accountant, or Guest to look around.": "সব কাজ অনুশীলন করতে Nadia (মালিক) বেছে নিন। হিসাবরক্ষকের কাজ দেখতে Imran, আর শুধু দেখতে Guest বেছে নিন।",
+ "Practice accounts use fictional businesses. No real money moves.": "অনুশীলনের অ্যাকাউন্টে কাল্পনিক ব্যবসা আছে। কোনো আসল টাকা লেনদেন হয় না।",
  "e.g. Invoice{0} to Nila Traders,{1} due {2}": "যেমন: Nila Traders-এর চালান{0}, পরিমাণ{1} শেষ তারিখ {2}",
  "e.g. Invoice{0} to {1},{2} due {3}": "যেমন: {1}-এর চালান{0}, পরিমাণ{2} শেষ তারিখ {3}",
  "e.g. You have received Tk 5,000.00 from 017… Please send back by mistake…": "যেমন: 017… নম্বর থেকে আপনি 5,000.00 টাকা পেয়েছেন। ভুল করে পাঠিয়েছি, দয়া করে ফেরত দিন…",

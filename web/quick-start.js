@@ -10,16 +10,18 @@ window.TidewayQuickStart = (() => {
 
   function collapsed(key) {
     if (memory.has(key)) return memory.get(key);
-    try { return localStorage.getItem(key) === "collapsed"; }
-    catch { return false; } // Guidance remains usable when browser storage is unavailable.
+    try { return localStorage.getItem(key) !== "expanded"; }
+    catch { return true; }
   }
 
   function render(next) {
     const host = document.getElementById("quick-start");
     if (!host) return;
     context = next;
-    // Home already shows the four everyday tasks, so the quick start would only repeat them there.
-    if (!next?.businessId || !next?.operatorId || next.view === "home") { host.hidden = true; return; }
+    if (!next?.businessId || !next?.operatorId || !["overview", "rescue", "evidence"].includes(next.view)) {
+      host.hidden = true;
+      return;
+    }
     contextKey = `tideway.quick-start.v1:${encodeURIComponent(next.operatorId)}:${encodeURIComponent(next.businessId)}`;
     const isCollapsed = collapsed(contextKey);
     const viewer = !["owner", "accountant"].includes(next.role);
@@ -36,9 +38,9 @@ window.TidewayQuickStart = (() => {
     const active = next.view === "overview" ? "forecast" : next.view === "evidence" ? "evidence"
       : next.view === "rescue" ? (next.hasProposal ? "review" : "rescue") : "";
     host.hidden = false;
-    host.innerHTML = `<div class="quick-start-head"><div><span class="eyebrow">Quick start</span><h2 id="quick-start-title">Your first cash-flow review</h2><p>Follow four steps at your own pace. ${next.synthetic ? "This demo uses fictional records." : "Start with your business records."} No real money moves.</p></div>
-      <button type="button" class="button small ghost" data-quick-start-toggle aria-expanded="${!isCollapsed}" aria-controls="quick-start-steps">${isCollapsed ? "Show quick start" : "Hide quick start"}</button></div>
-      <div id="quick-start-steps" ${isCollapsed ? "hidden" : ""}><ol class="quick-start-steps">${steps.map((step, index) => `<li${active === step.id ? ' class="current"' : ""}><span class="quick-start-number" aria-hidden="true">${index + 1}</span><div><h3>${escape(step.title)}</h3><p>${escape(step.text)}</p><button type="button" class="button small ghost" data-view="${step.view}" data-quick-start-link${active === step.id ? ' aria-current="step"' : ""}>${escape(step.label)}</button></div></li>`).join("")}</ol>
+    host.innerHTML = `<button type="button" class="guidance-toggle" data-quick-start-toggle aria-expanded="${!isCollapsed}" aria-controls="quick-start-steps">Quick start</button>
+      <div id="quick-start-steps" class="guidance-body" ${isCollapsed ? "hidden" : ""}><h2>Your first cash-flow review</h2><p>${next.synthetic ? "This demo uses fictional records." : "Start with your business records."} No real money moves.</p>
+      <ol class="quick-start-steps">${steps.map((step, index) => `<li${active === step.id ? ' class="current"' : ""}><span class="quick-start-number" aria-hidden="true">${index + 1}</span><div><h3>${escape(step.title)}</h3><p>${escape(step.text)}</p><button type="button" class="button small ghost" data-view="${step.view}" data-quick-start-link${active === step.id ? ' aria-current="step"' : ""}>${escape(step.label)}</button></div></li>`).join("")}</ol>
       <p class="quick-start-help">These shortcuts open pages; they never approve or execute a plan.</p></div>`;
   }
 

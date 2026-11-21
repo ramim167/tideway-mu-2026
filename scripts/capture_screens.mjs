@@ -145,7 +145,17 @@ async function reload() {
   if (await evaluate("state.view === 'home' && !!state.dashboard")) { await click('[data-view="overview"]'); await sleep(200); }
   if (await evaluate("!!document.querySelector('[data-action=owner-detailed]')")) await click('[data-action=owner-detailed]');
 }
-async function view(name) { await click(`[data-view="${name}"]`); await sleep(300); }
+async function view(name) {
+  const visibleShortcut = (target) => `[...document.querySelectorAll('#main-nav [data-view], .tabbar [data-view]')]
+    .find(item => item.dataset.view === ${JSON.stringify(target)} && item.getClientRects().length)`;
+  if (!await evaluate(`!!(${visibleShortcut(name)})`)) {
+    await evaluate(`(${visibleShortcut("tools")}).click()`);
+    await click(`.tool-link[data-view="${name}"]`);
+  } else {
+    await evaluate(`(${visibleShortcut(name)}).click()`);
+  }
+  await sleep(300);
+}
 async function confirmRisk() {
   // Exercise the visible human consent control, rather than bypassing it.
   const required = await evaluate("!document.querySelector('#approve-risk-label').hidden");
@@ -214,8 +224,35 @@ try {
   if (await evaluate("!!document.querySelector('#view [data-action=approve], #view [data-action=execute]')")) throw new Error("Home exposes an approval or execution control");
   if (!await evaluate("document.querySelector('.home-hero').classList.contains('storm') && document.querySelector('.home-hero h2').textContent.includes('Salary money will run short')")) throw new Error("Home does not warn that Shapla's salary money runs short");
   await shot("00b-home");
+  await viewport(375, 812, true);
+  await phoneCheck("Home", "#view");
+  await shot("00b-home-mobile", false);
+  if (!await evaluate("!document.querySelector('#workspace-options').open && !document.querySelector('[data-section=home-activity]').open"))
+    throw new Error("Home options and activity should start collapsed");
+  await click('#workspace-options summary');
+  if (!await evaluate("['#target-date', '#display-currency', '[data-help-tool=tour]', '[data-help-tool=text]', '[data-action=logout]'].every(selector => document.querySelector(selector)?.getClientRects().length)"))
+    throw new Error("Options did not reveal the workspace controls on mobile");
+  await phoneCheck("Workspace options", "#workspace-options");
+  await view("tools");
+  if (!await evaluate(`(() => {
+    const tools = [...document.querySelectorAll('.tool-link')].filter(item => item.getClientRects().length);
+    const expected = ['overview', 'rescue', 'whatif', 'lab', 'inbox', 'records', 'team', 'assistant', 'shield', 'learn', 'treasury', 'portfolio', 'security', 'evidence'];
+    return tools.length === expected.length && expected.every(name => tools.some(item => item.dataset.view === name))
+      && document.querySelector('.tabbar [data-view=tools]').getAttribute('aria-current') === 'page'
+      && document.activeElement.id === 'page-title' && !document.querySelector('#workspace-options').open;
+  })()`)) throw new Error("The mobile tools directory does not expose every feature");
+  await phoneCheck("All tools", "#view");
+  await shot("00b-tools-mobile", false);
+  await click('.tool-link[data-view=records]');
+  await until("state.view === 'records' && !!document.querySelector('#record-filter')", "open Records from mobile All tools");
+  await viewport(1440, 900);
+  await view("tools");
+  await shot("00b-all-tools");
+  await view("home");
+  await click('[data-section=home-activity] > summary');
   await click('.topbar [data-action="lang"][data-lang="bn"]');
   await until("state.lang === 'bn' && document.querySelector('.home-hero h2').textContent.includes('বেতনের টাকা কম পড়বে') && document.querySelector('#page-title').textContent === 'হোম'", "Home in Bangla");
+  if (!await evaluate("document.querySelector('[data-section=home-activity]').open")) throw new Error("Language switch closed the activity section");
   await shot("00c-home-bangla");
   await click('[data-view="shield"]');
   await until("state.view === 'shield' && document.querySelector('#page-title').textContent === 'প্রতারণা যাচাই'", "Scam check title in Bangla");
@@ -224,7 +261,7 @@ try {
   await shot("00d-scam-check-bangla");
   // Money lessons: six lessons in Bangla, each with the business's own numbers and a one-question check.
   await evaluate("localStorage.removeItem('tideway:lessons'), true");
-  await click('[data-view="learn"]');
+  await view("learn");
   await until("state.view === 'learn' && document.querySelector('#page-title').textContent === 'টাকার পাঠ' && document.querySelectorAll('.learn-item').length === 6", "Money lessons in Bangla");
   if (!await evaluate("document.querySelector('.learn-yours').textContent.includes('20,000') && document.querySelector('.learn-yours').textContent.includes('নিরাপত্তার টাকা')")) throw new Error("Money lessons do not use the business's own safety money");
   await click('[data-action="learn-answer"][data-id="safety"][data-i="0"]');
@@ -249,7 +286,9 @@ try {
   if (await evaluate("!!document.querySelector('a[href*=\"guide\"],a[href*=\"personal-prep\"]')")) throw new Error("Personal prep is linked from the signed-in product");
   await until("!document.querySelector('#quick-start').hidden && document.querySelectorAll('#quick-start [data-quick-start-link]').length === 4", "quick start available");
   const guidanceSnapshot = await evaluate("state.dashboard.snapshot_hash");
-  if (!await evaluate("document.querySelector('#quick-start').textContent.includes('fictional records') && document.querySelector('[data-quick-start-toggle]').getAttribute('aria-expanded') === 'true'")) throw new Error("first-use quick start is not expanded and demo aware");
+  if (!await evaluate("document.querySelector('#quick-start-steps').hidden")) throw new Error("Quick start should start collapsed");
+  await click('[data-quick-start-toggle]');
+  if (!await evaluate("document.querySelector('#quick-start').textContent.includes('fictional records') && document.querySelector('[data-quick-start-toggle]').getAttribute('aria-expanded') === 'true'")) throw new Error("Quick start did not open with the demo guidance");
   await click('[data-quick-start-toggle]');
   if (!await evaluate("document.querySelector('#quick-start-steps').hidden && document.activeElement.hasAttribute('data-quick-start-toggle')")) throw new Error("quick start did not collapse with keyboard focus retained");
   await reload();
@@ -312,6 +351,10 @@ try {
   await click('[data-action="run-agent"]');
   await until("!!document.querySelector('.timeline') && !!document.querySelector('[data-action=approve]')", "agent run");
   if (!await evaluate("(() => { const plan = state.dashboard.plan; const sample = {...plan.bundles[0], feasible:true, probability_breach_after:0.185, risk_target_met:false}; const warning = residualRiskHtml({...plan, risk_target:0.1}, sample); return warning.includes('18.5%') && warning.includes('Target not met') && warning.includes('above the 10% target') && residualRiskHtml({...plan, risk_target:0.1}, {...sample, risk_target_met:true}).includes('18.5%') && residualRiskHtml({...plan, risk_target:0.1}, {...sample, probability_breach_after:0.1}) === ''; })()")) throw new Error("residual-risk disclosure is missing or misleading");
+  await click('[data-section=rescue-timeline] > summary');
+  await click('[data-section=rescue-options] > summary');
+  if (!await evaluate("document.querySelector('.timeline').getClientRects().length && document.querySelector('[data-section=rescue-options] table').getClientRects().length"))
+    throw new Error("Rescue details did not open");
   await sleep(1300);
   await shot("02-rescue-agent-and-plan");
   if (!await evaluate("document.querySelector('#view').textContent.includes('Total repayment') && document.querySelector('#view').textContent.includes('unverified')")) throw new Error("Funding comparison omits repayment or unverified eligibility");
@@ -467,6 +510,7 @@ try {
   await sleep(400);
   await shot("31-portfolio-radar", false);
   await view("overview");
+  await click('#workspace-options > summary');
   await click('[data-help-tool="tour"]');
   await until("!!document.querySelector('#tw-tour')", "help tour");
   await shot("32-plain-language-help", false);
@@ -571,6 +615,7 @@ try {
   if (await evaluate("document.querySelector('#business-select').options.length") !== 1) throw new Error("joiner sees other businesses");
   if (!await evaluate("state.view === 'home' && !!document.querySelector('.home-hero') && !document.querySelector('.home-hero [data-view=inbox]')")) throw new Error("viewer Home offers an action the viewer cannot take");
   await view("overview");
+  await click('[data-quick-start-toggle]');
   if (!await evaluate("!document.querySelector('#quick-start-steps').hidden && document.querySelector('#quick-start').textContent.includes('You have read-only access') && document.querySelector('#quick-start').textContent.includes('opening cash')")) throw new Error("new viewer does not receive role-aware empty-ledger guidance");
   await click('#quick-start [data-view="rescue"]');
   await until("state.view === 'rescue'", "viewer follows quick start");

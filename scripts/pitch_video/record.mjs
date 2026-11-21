@@ -133,7 +133,17 @@ async function runStep(step, ctx) {
       await until("document.readyState==='complete'", "navigation", 30000); if (step.ready) await until(step.ready, `ready ${step.ready}`, 30000); break;
     case "login": await apiLogin(step.id, step.pin); await reloadPage(); break;
     case "reload": await reloadPage(); break;
-    case "view": await evaluate(`(()=>{const el=document.querySelector('[data-view=${step.name}]');if(!el)throw new Error('missing view ${step.name}');el.click();return true;})()`);
+    case "view": await evaluate(`(() => {
+      const name = ${js(step.name)};
+      const shortcut = [...document.querySelectorAll('#main-nav [data-view], .tabbar [data-view]')]
+        .find(item => item.dataset.view === name && item.getClientRects().length);
+      if (shortcut) { shortcut.click(); return true; }
+      document.querySelector('#main-nav [data-view=tools]').click();
+      const tool = [...document.querySelectorAll('.tool-link')].find(item => item.dataset.view === name);
+      if (!tool) throw new Error('Missing view ' + name);
+      tool.click();
+      return true;
+    })()`);
       await until(`state.view===${js(step.name)} && !state.busy`, `view ${step.name}`, 30000); await evaluate("window.scrollTo(0,0),true"); break;
     case "click": if (step.optional && !await exists(step.selector)) break;
       if (step.highlight !== false) await highlight(step.selector, step.highlight_ms ?? 700);

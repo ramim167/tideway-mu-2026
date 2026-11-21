@@ -15,9 +15,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class JudgeTourTests(unittest.TestCase):
     def test_every_tour_page_uses_the_visible_navigation_label(self):
-        tour = next(line for line in (ROOT / "README.md").read_text().splitlines() if line.startswith("**Judge tour**"))
-        shell = (ROOT / "web/index.html").read_text()
-        labels = re.findall(r'class="nav-item".*?<span class="nav-text"><span>([^<]+)', shell)
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        tour = next(line for line in readme.splitlines() if line.startswith("**Judge tour**"))
+        app = (ROOT / "web/app.js").read_text(encoding="utf-8")
+        english_views = app.split("const VIEWS = {", 1)[1].split("\n};", 1)[0]
+        labels = re.findall(r'^  \w+: \["([^"]+)"', english_views, re.MULTILINE)
         pages = re.findall(r"\*\*([^*]+)\*\*", tour)[1:]
         self.assertGreaterEqual(len(pages), 9)
         self.assertFalse(set(pages) - set(labels))

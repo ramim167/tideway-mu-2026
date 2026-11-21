@@ -6,7 +6,7 @@
 window.TidewayHome = (() => {
   const T = {
     en: {
-      hello: "Hello", today: "Today is", practice: "Practice mode: these are example businesses. No real money moves.",
+      hello: "Hello", today: "Today is",
       cashToday: "Cash today", cashTodayNote: "Money in the business now",
       lowest: "Lowest point coming", lowestNote: "on {date}",
       owedToYou: "Customers owe you", owedNote: "{n} unpaid bill(s)",
@@ -18,17 +18,17 @@ window.TidewayHome = (() => {
       likely_path_holds: ["You can pay salaries", "Your cash stays above your safety money ({safety}) through {end}. Keep checking as customers pay."],
       no_payroll_identified: ["Cash looks fine, but no salary payment is recorded", "Add your salary date and amount so Tideway can check payday for you."],
       no_records: ["Add your first records", "Paste a bank or bKash SMS, or import a spreadsheet, and Tideway will start checking your cash."],
-      historical_horizon: ["Pick a future date", "The date you chose is already in the past. Choose a later date at the top of the page."],
+      historical_horizon: ["Pick a future date", "The date you chose is already in the past. Open Options and choose a later date under Plan up to."],
       fix: "Show me how to fix it", ask: "Ask in বাংলা or English", askPrompt: "Can I pay salaries this month?",
       seeForecast: "See the full forecast", addRecord: "Add your first record",
-      chartTitle: "Your cash, day by day", chartNote: "Green: safe. Amber: below your safety money. Red: not enough money.",
+      chartTitle: "Your cash, day by day", activityTitle: "Customer payments and supplier bills",
       chartPayday: "Salary day", chartSafety: "Safety money",
       tasksTitle: "What do you want to do?",
       tasks: {
-        rescue: ["Fix a cash gap", "Tideway finds the cheapest way: ask a supplier for more time or offer a small discount for early payment. You decide."],
-        shield: ["Check a suspicious SMS", "Got a “you received money” SMS, or a call asking for your PIN? Check it here before you act."],
-        assistant: ["Ask a question", "Type in বাংলা or English, for example “এই মাসে কি বেতন দিতে পারব?”"],
-        inbox: ["Add from SMS", "Paste a bKash, Nagad or bank SMS. Tideway writes the record; you check and save it."],
+        rescue: ["Fix a cash gap", "Compare ways to cover a shortfall."],
+        shield: ["Check a suspicious SMS", "Spot warning signs before you act."],
+        assistant: ["Ask a question", "Get an answer in বাংলা or English."],
+        inbox: ["Add from SMS", "Turn a message into a draft record."],
       },
       owedTitle: "Who owes you money", owedEmpty: "Nobody owes you money right now.",
       expected: "Expected {date}", afterPayday: "Arrives after salary day",
@@ -45,7 +45,7 @@ window.TidewayHome = (() => {
       viewerNote: "You can look, but only the owner or accountant can make a plan.",
     },
     bn: {
-      hello: "আসসালামু আলাইকুম", today: "আজ", practice: "অনুশীলন মোড: এগুলো উদাহরণ ব্যবসা। কোনো আসল টাকা লেনদেন হয় না।",
+      hello: "আসসালামু আলাইকুম", today: "আজ",
       cashToday: "আজকের নগদ টাকা", cashTodayNote: "এখন ব্যবসায় যে টাকা আছে",
       lowest: "সামনে সবচেয়ে কম টাকা", lowestNote: "{date} তারিখে",
       owedToYou: "ক্রেতাদের কাছে পাওনা", owedNote: "{n}টি বিল বাকি",
@@ -57,17 +57,17 @@ window.TidewayHome = (() => {
       likely_path_holds: ["বেতন দিতে পারবেন", "{end} পর্যন্ত নগদ টাকা নিরাপত্তার টাকার ({safety}) উপরে থাকবে। ক্রেতারা টাকা দিলে আবার দেখে নিন।"],
       no_payroll_identified: ["নগদ ঠিক আছে, কিন্তু বেতনের কোনো রেকর্ড নেই", "বেতনের তারিখ ও পরিমাণ যোগ করুন, তাহলে টাইডওয়ে বেতনের দিন যাচাই করতে পারবে।"],
       no_records: ["প্রথম হিসাব যোগ করুন", "ব্যাংক বা বিকাশের এসএমএস পেস্ট করুন বা স্প্রেডশিট আনুন, টাইডওয়ে নগদ যাচাই শুরু করবে।"],
-      historical_horizon: ["সামনের একটি তারিখ বেছে নিন", "আপনার বাছাই করা তারিখ পার হয়ে গেছে। উপরে পরের একটি তারিখ বেছে নিন।"],
+      historical_horizon: ["সামনের একটি তারিখ বেছে নিন", "আপনার বাছাই করা তারিখ পার হয়ে গেছে। সেটিংস খুলে পরের একটি তারিখ বেছে নিন।"],
       fix: "কীভাবে ঠিক করব দেখান", ask: "বাংলায় প্রশ্ন করুন", askPrompt: "এই মাসে কি বেতন দিতে পারব?",
       seeForecast: "পুরো পূর্বাভাস দেখুন", addRecord: "প্রথম হিসাব যোগ করুন",
-      chartTitle: "দিন অনুযায়ী আপনার নগদ টাকা", chartNote: "সবুজ: নিরাপদ। হলুদ: নিরাপত্তার টাকার নিচে। লাল: টাকা যথেষ্ট নয়।",
+      chartTitle: "দিন অনুযায়ী আপনার নগদ টাকা", activityTitle: "ক্রেতাদের পাওনা ও সরবরাহকারীদের বিল",
       chartPayday: "বেতনের দিন", chartSafety: "নিরাপত্তার টাকা",
       tasksTitle: "আপনি কী করতে চান?",
       tasks: {
-        rescue: ["টাকার ঘাটতি মেটান", "সবচেয়ে কম খরচের উপায় খুঁজে দেয়: সরবরাহকারীর কাছে সময় চাওয়া বা আগে টাকা দিলে ক্রেতাকে ছোট ছাড়। সিদ্ধান্ত আপনার।"],
-        shield: ["সন্দেহজনক এসএমএস যাচাই", "“টাকা পেয়েছেন” এসএমএস বা পিন চেয়ে ফোন? কিছু করার আগে এখানে যাচাই করুন।"],
-        assistant: ["প্রশ্ন করুন", "বাংলা বা ইংরেজিতে লিখুন, যেমন “এই মাসে কি বেতন দিতে পারব?”"],
-        inbox: ["এসএমএস থেকে হিসাব", "বিকাশ, নগদ বা ব্যাংকের এসএমএস পেস্ট করুন। টাইডওয়ে হিসাব লিখে দেবে; আপনি দেখে সংরক্ষণ করবেন।"],
+        rescue: ["টাকার ঘাটতি মেটান", "ঘাটতি মেটানোর উপায়গুলো তুলনা করুন।"],
+        shield: ["সন্দেহজনক এসএমএস যাচাই", "কিছু করার আগে সতর্কতার লক্ষণ দেখুন।"],
+        assistant: ["প্রশ্ন করুন", "বাংলা বা ইংরেজিতে উত্তর পান।"],
+        inbox: ["এসএমএস থেকে হিসাব", "মেসেজ থেকে হিসাবের খসড়া বানান।"],
       },
       owedTitle: "কে আপনার কাছে টাকা বাকি রেখেছে", owedEmpty: "এখন কারো কাছে কোনো পাওনা নেই।",
       expected: "আশা করা যায় {date}", afterPayday: "বেতনের দিনের পরে আসবে",
@@ -88,8 +88,6 @@ window.TidewayHome = (() => {
   const TONE = {payroll_unfunded: "storm", buffer_shortfall: "unsettled", buffer_shortfall_unknown_payroll: "unsettled", likely_path_holds: "clear", no_payroll_identified: "info", no_records: "info", historical_horizon: "info"};
   const ICON = {storm: "alert", unsettled: "alert", clear: "check", info: "spark"};
   const TASK_ICON = {rescue: "rescue", shield: "shield", assistant: "chat", inbox: "inbox"};
-  const CHIP = {en: {storm: "Act now", unsettled: "Watch out", clear: "All good", info: "Next step"},
-    bn: {storm: "এখনই ব্যবস্থা নিন", unsettled: "সাবধান", clear: "সব ঠিক আছে", info: "পরের ধাপ"}};
 
   const lang = () => (state.lang === "bn" ? "bn" : "en");
   const words = () => T[lang()];
@@ -124,7 +122,7 @@ window.TidewayHome = (() => {
         : `<button class="button primary home-cta" type="button" data-view="overview">${icon("gauge")}${esc(w.seeForecast)}</button>`;
     return `<section class="home-hero ${tone}" aria-labelledby="home-hero-title">
       <span class="home-hero-icon" aria-hidden="true">${icon(ICON[tone])}</span>
-      <div class="home-hero-text"><span class="home-status ${tone}">${esc(CHIP[lang()][tone])}</span><h2 id="home-hero-title">${esc(title)}</h2><p>${esc(fill(body, values))}</p>
+      <div class="home-hero-text"><h2 id="home-hero-title">${esc(title)}</h2><p>${esc(fill(body, values))}</p>
         ${needsFix && !canApprove() ? `<p class="hint">${esc(w.viewerNote)}</p>` : ""}</div>
       <div class="home-hero-actions">${fixButton}
         <button class="button ghost" type="button" data-action="home-ask" data-prompt="${esc(w.askPrompt)}">${icon("chat")}${esc(w.ask)}</button></div>
@@ -166,7 +164,7 @@ window.TidewayHome = (() => {
     const lowest = values.indexOf(Math.min(...values));
     const summary = `${w.chartTitle}: ${date(days[0].date)} ${cash(values[0])}; ${w.lowest} ${cash(values[lowest])} (${date(days[lowest].date)}); ${date(days.at(-1).date)} ${cash(values.at(-1))}.`;
     return `<section class="card home-chart-card" aria-labelledby="home-chart-title">
-      <div class="card-head"><div><h3 id="home-chart-title">${esc(w.chartTitle)}</h3><p>${esc(w.chartNote)}</p></div>
+      <div class="card-head"><h3 id="home-chart-title">${esc(w.chartTitle)}</h3>
         <button class="button small ghost" type="button" data-view="overview">${esc(w.seeForecast)}</button></div>
       <svg class="home-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(summary)}">
         <line class="home-zero" x1="0" x2="${W}" y1="${zero.toFixed(1)}" y2="${zero.toFixed(1)}"></line>
@@ -249,15 +247,18 @@ window.TidewayHome = (() => {
     if (!d) return `<div class="loading">Loading…</div>`;
     const name = String(state.operator?.name || "").split(" ")[0];
     return `<div class="home" lang="${lang()}">
-      <div class="home-greeting"><p><strong>${esc(w.hello)}${name ? `, ${esc(name)}` : ""}</strong> · ${esc(d.business?.name || "")}</p>
-        <p class="muted">${esc(w.today)} ${esc(date(d.state?.current_date))} · ${esc(w.practice)}</p></div>
+      <div class="home-greeting"><p><strong>${esc(w.hello)}${name ? `, ${esc(name)}` : ""}</strong></p>
+        <p class="muted">${esc(w.today)} ${esc(date(d.state?.current_date))}</p></div>
       ${hero(d, w)}
       ${typeof onboardingHtml === "function" ? onboardingHtml(d) : ""}
       ${tiles(d, w)}
+      ${watch(d, w)}
       ${tasks(w)}
       ${chart(d, w)}
-      <div class="grid cols-2 home-pair">${owed(d, w)}${bills(d, w)}</div>
-      ${watch(d, w)}
+      <details class="card content-disclosure" data-section="home-activity">
+        <summary>${esc(w.activityTitle)}</summary>
+        <div class="disclosure-content grid cols-2 home-pair">${owed(d, w)}${bills(d, w)}</div>
+      </details>
     </div>`;
   }
 
@@ -266,7 +267,13 @@ window.TidewayHome = (() => {
       if (canApprove() && !state.dashboard?.plan) { await runAgent(); return; }
       state.view = "rescue"; render_(); window.scrollTo(0, 0); return;
     }
-    if (name === "ask") { state.view = "assistant"; render_(); await ask(data.prompt); }
+    if (name === "ask") {
+      state.view = "assistant";
+      render_();
+      window.scrollTo(0, 0);
+      document.getElementById("page-title")?.focus({preventScroll: true});
+      await ask(data.prompt);
+    }
   }
   let render_ = () => {};
   return {render, action, bind(renderer) { render_ = renderer; }};

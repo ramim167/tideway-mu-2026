@@ -100,6 +100,7 @@
         {"do":"pause","ms":600},
         {"do":"click","selector":"[data-action=run-agent]"},
         {"do":"wait","for":"!!document.querySelector('.timeline') && !!document.querySelector('[data-action=approve]')","timeout":60000},
+        {"do":"click","selector":"[data-section=rescue-timeline] > summary","highlight":false},
         {"do":"pause","ms":800},
         {"do":"scroll","selector":".timeline","block":"start","offset":20,"at":0.35},
         {"do":"scroll","selector":"[data-action=approve]","block":"center","at":0.7}
@@ -181,6 +182,7 @@
       "narration": "Every page also explains itself in plain words. A short tour walks through the app, and financial terms carry a plain-English explanation, so anyone in the company can use it.",
       "steps": [
         {"do":"highlight","selector":"#tw-page-help","ms":1600},
+        {"do":"click","selector":"#workspace-options > summary","highlight":false},
         {"do":"click","selector":"[data-help-tool=tour]","at":0.2},
         {"do":"wait","for":"!!document.querySelector('#tw-tour')"},
         {"do":"pause","ms":1600},
@@ -242,7 +244,7 @@
       "id": "treasury",
       "kind": "app",
       "optional": true,
-      "requires": "[data-view=treasury]",
+      "requires": "[data-view=tools]",
       "setup": [
         {"do":"view","name":"treasury"},
         {"do":"wait","for":"!state.busy && !!document.querySelector(\"[data-action=treasury-tab]\") && !document.querySelector(\"[data-action=treasury-tab]:disabled\")","timeout":60000}
@@ -263,7 +265,7 @@
       "id": "portfolio",
       "kind": "app",
       "optional": true,
-      "requires": "[data-view=portfolio]",
+      "requires": "[data-view=tools]",
       "setup": [
         {"do":"view","name":"portfolio"},
         {"do":"wait","for":"!!document.querySelector(\"[data-action=portfolio-apply]\") && !document.querySelector(\"[data-action=portfolio-apply]:disabled\")","timeout":90000}

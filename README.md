@@ -172,6 +172,8 @@ python run.py
 
 Open <http://127.0.0.1:8787> and click **Nadia (Owner)**. Demo PINs: Nadia `2468` (owner), Imran `1357` (accountant), Guest `0000` (viewer).
 
+Start on **Home** for the next payday, cash figures and common tasks. Open **All tools** for records, planning, lessons, reports and safety features. **Options** holds the forecast date, display currency, guided tour, larger text and sign-out.
+
 **Judge tour** — Start on **Home** and open **Cash forecast**. In **Scam check**, try *Fake cash-in SMS*. In **Ask Tideway**, ask `এই মাসে কি বেতন দিতে পারব?` Open **Fix a cash gap** to propose a rescue and follow its approval instructions. In **Add from SMS**, select *Sample: injection attempt* and extract the draft. Run the self-test in **Safety settings**, explore **Bank reports** and **Lender radar**, then try the tamper drill in **Audit trail**.
 
 ```bash

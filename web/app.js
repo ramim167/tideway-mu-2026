@@ -29,21 +29,22 @@ function setAi(on) {
 function savedLang() { try { return localStorage.getItem("tideway:lang") === "bn" ? "bn" : "en"; } catch (_) { return "en"; } }
 // Plain page names first; the technical detail stays in the subtitle for accountants and judges.
 const VIEWS = {
-  home: ["Home", "Your cash, your next payday and what to do, at a glance"],
-  overview: ["Cash forecast", "Where your cash is heading, how likely a shortfall is, and why"],
-  rescue: ["Fix a cash gap", "Tideway suggests the cheapest safe fix; people approve; nothing moves without a PIN"],
-  assistant: ["Ask Tideway", "Ask in বাংলা or English; answers come from your own numbers, never guesses"],
-  shield: ["Scam check", "Check a bKash, Nagad or Rocket message for fraud before you act on it"],
-  inbox: ["Add from SMS", "Paste a message; Tideway drafts the record; nothing is saved until you confirm"],
-  learn: ["Money lessons", "Six one-minute lessons on running your business's money, with your own numbers"],
-  whatif: ["What if…?", "Try a late payment or a big expense and see the effect; nothing is saved"],
-  records: ["Records", "Every invoice, bill and payment behind the numbers"],
-  team: ["Team", "Who can see and act for this business, pending invites and your plan"],
-  lab: ["Decision lab", "Stress-test a plan, compare recovery options and check privacy before acting"],
-  treasury: ["Bank reports", "13-week cash flow, business health score, payment checks and a credit passport for lenders"],
-  portfolio: ["Lender radar", "For banks and MFIs: early warning across a synthetic SME portfolio"],
-  security: ["Safety settings", "Who can do what, spending limits, the emergency stop and the attack self-test"],
-  evidence: ["Audit trail", "Tamper-evident record of every step, signed approvals and exports"]
+  home: ["Home", "See your cash and what to do next"],
+  overview: ["Cash forecast", "See when cash could run short"],
+  rescue: ["Fix a cash gap", "Compare plans, review terms and approve with your PIN"],
+  assistant: ["Ask Tideway", "Ask about your business in বাংলা or English"],
+  shield: ["Scam check", "Check a message for signs of fraud"],
+  inbox: ["Add from SMS", "Turn a message into a record you can review and save"],
+  learn: ["Money lessons", "Learn six ways to manage business cash"],
+  whatif: ["What if…?", "Preview the effect of a delay or a new expense"],
+  records: ["Records", "Find, import and export ledger records"],
+  team: ["Team", "See who has access and invite teammates"],
+  lab: ["Decision lab", "Test a plan and compare recovery options"],
+  treasury: ["Bank reports", "Cash flow, payment checks and credit passport"],
+  portfolio: ["Lender radar", "Compare cash risk across demo businesses"],
+  security: ["Safety settings", "Review limits, payee checks and agent controls"],
+  evidence: ["Audit trail", "Review what happened and export the evidence"],
+  tools: ["All tools", "Find a tool by the task you want to do"]
 };
 const VIEWS_BN = {
   home: ["হোম", "এক নজরে আপনার নগদ টাকা, বেতনের দিন আর করণীয়"],
@@ -60,9 +61,34 @@ const VIEWS_BN = {
   treasury: ["ব্যাংকের রিপোর্ট", "১৩ সপ্তাহের নগদ প্রবাহ, ব্যবসার স্বাস্থ্য ও ক্রেডিট পাসপোর্ট"],
   portfolio: ["ঋণদাতার রাডার", "ব্যাংক ও এমএফআই-এর জন্য আগাম সতর্কতা"],
   security: ["নিরাপত্তা", "কে কী করতে পারে, খরচের সীমা ও জরুরি বন্ধের সুইচ"],
-  evidence: ["প্রমাণের রেকর্ড", "প্রতিটি ধাপের নিরাপদ রেকর্ড"]
+  evidence: ["প্রমাণের রেকর্ড", "প্রতিটি ধাপের নিরাপদ রেকর্ড"],
+  tools: ["সব টুল", "কাজ অনুযায়ী টুল খুঁজুন"]
 };
-const MORE_TOOLS = ["lab", "treasury", "portfolio", "security", "evidence"];
+const TOOL_GROUPS = [
+  {title: "Cash and planning", bn: "নগদ ও পরিকল্পনা", tools: [["overview", "gauge"], ["rescue", "rescue"], ["whatif", "sliders"], ["lab", "sliders"]]},
+  {title: "Records and team", bn: "হিসাব ও টিম", tools: [["inbox", "inbox"], ["records", "records"], ["team", "user"]]},
+  {title: "Help and fraud checks", bn: "সহায়তা ও প্রতারণা যাচাই", tools: [["assistant", "chat"], ["shield", "shield"], ["learn", "book"]]},
+  {title: "Reports and safety", bn: "রিপোর্ট ও নিরাপত্তা", tools: [["treasury", "bank"], ["portfolio", "radar"], ["security", "lock"], ["evidence", "chain"]]},
+];
+
+function viewAvailable(view) {
+  return view !== "lab" || state.config?.features?.decision_lab !== false;
+}
+
+function renderTools() {
+  const bn = state.lang === "bn";
+  const labels = bn ? VIEWS_BN : VIEWS;
+  return `<div class="tools-directory">${TOOL_GROUPS.map(({title, bn: translated, tools}) => `
+    <section class="card tool-group">
+      <h2>${esc(bn ? translated : title)}</h2>
+      <div class="tool-list">${tools.filter(([view]) => viewAvailable(view)).map(([view, symbol]) => `
+        <button class="tool-link" type="button" data-view="${view}">
+          <span class="tool-icon" aria-hidden="true">${icon(symbol)}</span>
+          <span><strong>${esc(labels[view][0])}</strong><span class="tool-description">${esc(labels[view][1])}</span></span>
+          <span class="tool-arrow" aria-hidden="true">›</span>
+        </button>`).join("")}</div>
+    </section>`).join("")}</div>`;
+}
 
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
 const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
@@ -198,6 +224,8 @@ function clearError() { $("#app-error").hidden = true; }
 // ---------------------------------------------------------------------------- session
 
 function showLogin() {
+  const options = document.getElementById("workspace-options");
+  if (options) options.open = false;
   stopSpeaking();
   $("#shell").hidden = true;
   $("#login").hidden = false;
@@ -552,23 +580,28 @@ function actAndReload(label, request) {
 
 // ---------------------------------------------------------------------------- render
 
+let renderedContext = "";
 function render() {
-  const labNav = document.querySelector('.nav-item[data-view="lab"]');
-  if (labNav) labNav.hidden = state.config?.features?.decision_lab === false;
-  if (state.view === "lab" && labNav?.hidden) state.view = "overview";
+  if (!viewAvailable(state.view)) state.view = "overview";
   const [title, subtitle] = ((state.lang === "bn" ? VIEWS_BN : VIEWS)[state.view]) || VIEWS.home;
   document.body.dataset.page = state.view;  // each page carries its own jewel-tone colour scheme (not data-view: that attribute means "navigate")
-  const more = $("#nav-more");
-  if (more && MORE_TOOLS.includes(state.view)) more.open = true;
   const bnUi = state.lang === "bn";
   const currencyLabel = $("#label-currency"), planLabel = $("#label-plan");
-  if (currencyLabel) currencyLabel.textContent = bnUi ? "মুদ্রা" : "Currency";
+  if (currencyLabel) currencyLabel.textContent = bnUi ? "দেখানোর মুদ্রা" : "Display currency";
   if (planLabel) planLabel.textContent = bnUi ? "যে তারিখ পর্যন্ত" : "Plan up to";
   syncLanguage();
   $("#operator-role").textContent = role();
   $("#page-title").textContent = title;
-  $("#eyebrow").textContent = [state.dashboard?.business?.name, subtitle].filter(Boolean).join(" · ");
-  document.querySelectorAll(".nav-item, .tab-item[data-view]").forEach((item) => item.classList.toggle("active", item.dataset.view === state.view));
+  $("#eyebrow").textContent = state.dashboard?.business?.name || "";
+  $("#page-description").textContent = state.view === "home" ? "" : subtitle;
+  document.querySelectorAll("#main-nav, .tabbar").forEach((nav) => {
+    const current = nav.querySelector(`[data-view="${state.view}"]`);
+    nav.querySelectorAll("[data-view]").forEach((item) => {
+      item.classList.toggle("active", item === current || (!current && item.dataset.view === "tools"));
+      if (item === current) item.setAttribute("aria-current", "page");
+      else item.removeAttribute("aria-current");
+    });
+  });
   const policy = state.dashboard?.policy || {};
   const agent = $("#agent-state");
   agent.className = `agent-state ${policy.agent_paused ? "paused" : ""}`;
@@ -580,11 +613,21 @@ function render() {
   const renderers = {home: () => window.TidewayHome.render(), overview: renderOverview, rescue: renderRescue, assistant: renderAssistant, inbox: renderInbox, whatif: renderWhatIf,
     records: renderRecords, team: renderTeam, security: renderSecurity, evidence: renderEvidence,
     lab: () => window.TidewayLab.render(), treasury: () => window.TidewayTreasury.render(),
-    portfolio: () => window.TidewayPortfolio.render(), shield: () => window.TidewayShield.render(), learn: () => window.TidewayLearn.render()};
+    portfolio: () => window.TidewayPortfolio.render(), shield: () => window.TidewayShield.render(), learn: () => window.TidewayLearn.render(),
+    tools: renderTools};
   $("#fx-note").hidden = !state.displayCurrency || state.displayCurrency === currency();
   $("#fx-note").textContent=`You view and enter amounts in ${displayCurrency()}. Converted values (≈) use illustrative fixed rates. Entries are converted to the ${currency()} ledger; signed source documents retain their original units.`;
   const entering = playEntrance(lastScene.split("|")[1]);
-  $("#view").innerHTML = state.dashboard ? (renderers[state.view] || renderers.home)() : `<div class="loading">Loading…</div>`;
+  const view = $("#view");
+  const context = JSON.stringify([state.operator?.id, state.businessId, state.view]);
+  const openSections = renderedContext === context
+    ? new Set([...view.querySelectorAll("details[data-section][open]")].map((section) => section.dataset.section))
+    : new Set();
+  view.innerHTML = state.dashboard || state.view === "tools"
+    ? (renderers[state.view] || renderers.home)()
+    : `<div class="loading">Loading…</div>`;
+  view.querySelectorAll("details[data-section]").forEach((section) => { section.open = openSections.has(section.dataset.section); });
+  renderedContext = context;
   if(state.dashboard)localizeMoneyText($("#view"));
   if (entering) {
     $("#view").querySelectorAll(".dot-future").forEach((dot, index) => dot.style.setProperty("--i", String(index)));
@@ -597,6 +640,12 @@ function render() {
     role: role(), synthetic: state.dashboard.business.synthetic, view: state.view, hasProposal: !!plan,
     hasRecords: Object.values(state.dashboard.records || {}).some((rows) => Array.isArray(rows) && rows.length)} : null);
   if (state.view === "assistant") { const log = $("#chat-log"); if (log) log.scrollTop = log.scrollHeight; }
+}
+
+function disclosure(id, title, content) {
+  return `<details class="card content-disclosure" data-section="${id}">
+    <summary>${esc(title)}</summary><div class="disclosure-content">${content}</div>
+  </details>`;
 }
 
 function metric(label, value, note, cls = "") {
@@ -1087,10 +1136,10 @@ function rescueSummaryHtml(d) {
     if ((d.mandates || []).length || !canApprove()) return "";
     const short = d.owner_view?.likely?.reserve_shortfall_minor;
     if (!short) return "";
-    return `<section class="card rescue-summary"><span class="eyebrow">${L("Step 1", "ধাপ ১")}</span><h2>${L("Let Tideway find the cheapest safe fix", "টাইডওয়েকে সবচেয়ে কম খরচের নিরাপদ সমাধান খুঁজতে দিন")}</h2>
+    return `<section class="card rescue-summary"><h2>${L("Find a way to cover the shortfall", "ঘাটতি মেটানোর উপায় খুঁজুন")}</h2>
       <p>${esc(L(`You are about ${money(short)} short of your safety money. Tideway checks your suppliers and customers and suggests a fix. Nothing happens until you approve.`,
         `নিরাপত্তার টাকার চেয়ে প্রায় ${money(short)} কম আছে। টাইডওয়ে সরবরাহকারী ও ক্রেতাদের দেখে সমাধান প্রস্তাব করবে। আপনি অনুমোদন না করা পর্যন্ত কিছুই হবে না।`))}</p>
-      <div class="row section-gap"><button class="button primary home-cta" data-action="run-agent">${icon("rescue")}${L("Find a fix now", "এখনই সমাধান খুঁজুন")}</button></div></section>`;
+      </section>`;
   }
   if (!plan.action_needed) return `<section class="card rescue-summary clear"><h2>${L("No fix needed", "কোনো সমাধানের দরকার নেই")}</h2><p>${L("Your cash stays above your safety money. Nothing to approve.", "আপনার নগদ টাকা নিরাপত্তার টাকার উপরে থাকবে। অনুমোদনের কিছু নেই।")}</p></section>`;
   const best = (plan.bundles || [])[0];
@@ -1131,39 +1180,46 @@ function renderRescue() {
   const plan = d.plan;
   const policy = d.policy;
   const summary = rescueSummaryHtml(d);
-  const parts = [summary, `<section class="card${summary ? " section-gap" : ""}"><div class="card-head"><div><span class="eyebrow">AI as a financial participant</span><h3>Rescue agent</h3><p>Reads, projects, simulates, checks security and searches every bounded combination of actions. It cannot approve, execute or move money.</p></div>
-    <div class="row">${policy.agent_paused ? `<span class="pill storm">${icon("pause")}Paused</span>` : `<span class="pill info">Autonomy: ${esc(policy.autonomy_level)}</span>`}${canApprove() ? `<button class="button primary" data-action="run-agent">${icon("play")}${state.run ? "Run again" : "Run the rescue agent"}</button>` : ""}</div></div>
-    ${state.run ? timelineHtml(state.run.steps) : `<p class="muted small">Run the agent to watch each step: tool, permission tier, duration, output hash and audit receipt.</p>`}</section>`];
+  const parts = [summary];
   (d.mandates || []).forEach((view) => parts.push(mandateCard(view)));
   const latest = state.receipt || (d.executions || []).slice(-1)[0];
   if (latest && !(d.mandates || []).length) parts.push(receiptCard(latest, !state.receipt));
+  if (policy.agent_paused || canApprove()) {
+    parts.push(`<div class="row rescue-controls">
+      ${policy.agent_paused ? `<span class="pill storm">${icon("pause")}Agent paused</span>` : ""}
+      ${canApprove() ? `<button class="button ${plan || d.mandates?.length ? "ghost" : "primary"}" data-action="run-agent">${icon("play")}${state.run ? "Run again" : "Run the rescue agent"}</button>` : ""}
+    </div>`);
+  }
+  if (state.run) parts.push(disclosure("rescue-timeline", "See how Tideway built the plan", timelineHtml(state.run.steps)));
   if (plan) {
+    const details = [];
     const owner = plan.owner_constraints;
-    parts.push(`<div class="card owner-constraints section-gap"><strong>Owner instructions</strong><p>${owner && isNum(owner.max_discount_bps) ? `Maximum discount ${esc(owner.max_discount_bps / 100)}%; ranking ${esc(String(owner.prefer).replaceAll("_", " "))}.` : "Instructions are unavailable for this legacy proposal. Create a fresh owner-reviewed proposal."} Existing instructions remain binding when counter-offers or refusals require a new plan.</p></div>`);
-    parts.push(`<section class="card section-gap"><div class="card-head"><div><span class="eyebrow">Proposal ${esc(plan.plan_id.slice(0, 8))} · ${esc(plan.status.replaceAll("_", " "))}</span><h3>${plan.action_needed ? `Gap of ${money(plan.gap_minor)} on the likely path` : "No action needed"}</h3><p>${esc(moneyProse(plan.explanation))}</p></div><div class="row">${plan.action_needed && !plan.bundles.some((bundle) => bundle.feasible) ? `<span class="pill storm">No safe option found</span>` : ""}${isNum(plan.futures_short_of_20_before) ? `<span class="pill ${plan.futures_short_of_20_before > 2 ? "storm" : "ok"}">Before: ${esc(plan.futures_short_of_20_before)} of 20 futures short</span>` : ""}</div></div>
+    details.push(`<div class="card owner-constraints"><strong>Owner instructions</strong><p>${owner && isNum(owner.max_discount_bps) ? `Maximum discount ${esc(owner.max_discount_bps / 100)}%; ranking ${esc(String(owner.prefer).replaceAll("_", " "))}.` : "Instructions are unavailable for this legacy proposal. Create a fresh owner-reviewed proposal."} Existing instructions remain binding when counter-offers or refusals require a new plan.</p></div>`);
+    details.push(`<section class="card section-gap"><div class="card-head"><div><span class="eyebrow">Proposal ${esc(plan.plan_id.slice(0, 8))} · ${esc(plan.status.replaceAll("_", " "))}</span><h3>${plan.action_needed ? `Gap of ${money(plan.gap_minor)} on the likely path` : "No action needed"}</h3><p>${esc(moneyProse(plan.explanation))}</p></div><div class="row">${plan.action_needed && !plan.bundles.some((bundle) => bundle.feasible) ? `<span class="pill storm">No safe option found</span>` : ""}${isNum(plan.futures_short_of_20_before) ? `<span class="pill ${plan.futures_short_of_20_before > 2 ? "storm" : "ok"}">Before: ${esc(plan.futures_short_of_20_before)} of 20 futures short</span>` : ""}</div></div>
       ${searchSummary(plan.search) ? `<p class="small muted">${esc(searchSummary(plan.search))}</p>` : ""}</section>`);
-    parts.push(`<section class="stack section-gap">${plan.bundles.map((bundle, index) => bundleCard(plan, bundle, index)).join("")}</section>`);
+    details.push(`<section class="stack section-gap">${plan.bundles.map((bundle, index) => bundleCard(plan, bundle, index)).join("")}</section>`);
     const levers = plan.levers || [];
-    parts.push(`<section class="grid cols-2 section-gap">
+    details.push(`<section class="grid cols-2 section-gap">
       <div class="card"><div class="card-head"><div><h3>What would need to change</h3><p>Any one of these alone would hold the reserve floor.</p></div></div>${levers.length ? `<ul class="small">${levers.map((item) => `<li>${esc(item.role === "user" ? item.text : moneyProse(item.text))}${item.economic_cost_minor ? ` · ${money(item.economic_cost_minor)}` : ""}</li>`).join("")}</ul>` : `<p class="small muted">No single change is enough; that is why the plan combines actions.</p>`}</div>
       <div class="card"><div class="card-head"><div><h3>Blocked by policy or security</h3><p>Never proposed, whatever the agent concludes.</p></div></div>${(plan.rejected || []).length ? plan.rejected.map((item) => `<div class="alert ${item.code === "SECURITY_BLOCKED" ? "critical" : "info"}">${icon(item.code === "SECURITY_BLOCKED" ? "shield" : "lock")}<div><strong>${esc(item.code)} · ${esc(item.counterparty)}</strong><span>${esc(item.reason)}</span></div></div>`).join("") : `<p class="small muted">Nothing blocked for this business.</p>`}</div></section>`);
-    parts.push(`<section class="card section-gap"><div class="card-head"><div><h3>Financing options compared (mock catalogue)</h3><p>Financing-option matching: every option normalised to cost and annual rate. None is executable; no lender or credit decision is connected.</p></div><span class="pill mock">MOCK</span></div>
+    details.push(`<section class="card section-gap"><div class="card-head"><div><h3>Financing options compared (mock catalogue)</h3><p>Financing-option matching: every option normalised to cost and annual rate. None is executable; no lender or credit decision is connected.</p></div><span class="pill mock">MOCK</span></div>
       <div class="table-wrap"><table><thead><tr><th>Option</th><th class="num">Principal</th><th class="num">Fee</th><th class="num">Total repayment</th><th class="num">≈ APR</th><th>Timing</th><th>Assumptions and repayment pressure</th></tr></thead><tbody>
       ${plan.financing.map((item) => `<tr><td><strong>${esc(item.label)}</strong><p class="small">${esc(item.collateral)}</p></td><td class="num">${money(item.principal_minor)}</td><td class="num">${money(item.fee_minor)}</td><td class="num">${money(item.repayment_minor)}</td><td class="num">${isNum(item.apr_bps) ? `${(item.apr_bps / 100).toFixed(1)}%` : "—"}</td><td>${esc(item.days_to_cash)} days to cash${item.available_date ? `<p class="small">Illustrated arrival ${esc(day(item.available_date))}; repay ${esc(day(item.repayment_date, true))}</p>` : ""}</td><td class="small"><strong>Eligibility unverified</strong><p>${esc(moneyProse(item.eligibility))}</p>${item.repayment_projection ? `<p>Reserve shortfall through repayment: ${money(item.repayment_projection.reserve_shortfall_minor)}; payroll ${item.repayment_projection.payroll_at_risk ? "at risk" : "funded on the projected path"}.</p>` : ""}<details><summary>Review assumptions</summary><ul>${[...(item.reasons || []), ...(item.eligibility_unknowns || [])].map((reason) => `<li>${esc(moneyProse(reason))}</li>`).join("")}</ul><p>${esc(item.apr_convention || "")}</p></details></td></tr>`).join("")}
       ${plan.bundles[0]?.feasible ? `<tr><td><strong>${plan.bundles[0].bundle_id === "counter-offer" ? "Counter-offer bundle" : "Recommended bundle"}</strong> <span class="tag good">sandbox proposal</span></td><td class="num">—</td><td class="num">${money(plan.bundles[0].economic_cost_minor)}<p class="small">Economic comparison cost</p></td><td class="num">—</td><td class="num">—</td><td>On agreement</td><td class="small muted">Human approvals and exact counterparty consent are required before any sandbox execution.</td></tr>` : ""}
       </tbody></table></div></section>`);
     if ((plan.reminders || []).length) {
-      parts.push(`<section class="card section-gap"><div class="card-head"><div><h3>Collection reminders, ranked by risk to the plan</h3><p>Zero-cash messages. A reply is a promise to pay: tracked, never counted as cash.${policy.autonomy_level === "delegate" ? " Under delegated autonomy the agent may send these alone (5 a day)." : ""}</p></div></div>
+      details.push(`<section class="card section-gap"><div class="card-head"><div><h3>Collection reminders, ranked by risk to the plan</h3><p>Zero-cash messages. A reply is a promise to pay: tracked, never counted as cash.${policy.autonomy_level === "delegate" ? " Under delegated autonomy the agent may send these alone (5 a day)." : ""}</p></div></div>
         ${plan.reminders.map((item) => { const sent = (d.messages || []).find((message) => message.record_id === item.record_id); return `<div class="action-card"><div class="row between"><strong>${esc(item.counterparty)} · ${money(item.amount_minor)} · tone: ${esc(item.tone)}</strong>${sent ? `<span class="pill ok">sent ${sent.human_present ? "by a person" : "by the agent (standing mandate)"}</span>` : canApprove() ? `<button class="button small ghost" data-action="remind" data-id="${esc(item.action_id)}">${icon("send")}Send in sandbox</button>` : ""}</div>
           ${isNum(item.late_risk) ? `<span class="small muted">Arrives after the first breach in ${pct(item.late_risk)} of breaching futures.</span>` : ""}${messageHtml(item)}${sent?.reply ? `<div class="chat-bubble theirs">${esc(moneyProse(sent.reply.message))}<small>${esc(sent.reply.note || "")}</small></div>` : ""}</div>`; }).join("")}</section>`);
     }
-  } else if (!(d.mandates || []).length) {
+    parts.push(disclosure("rescue-options", "Compare plan options, reminders and financing", details.join("")));
+  } else if (!summary && !(d.mandates || []).length) {
     const message = !latest ? "No current proposal for this target date. Run the rescue agent to create one."
       : receiptInEffect(latest) ? "Nothing is pending. Run the agent again to re-check the month after the executed changes."
       : "Nothing is pending. The sandbox was reset after the last execution; run the agent to check the month again.";
     parts.push(`<section class="card section-gap"><p class="muted">${message}</p></section>`);
   }
-  return parts.join("");
+  return `<div class="rescue-layout">${parts.join("")}</div>`;
 }
 
 // ---------------------------------------------------------------------------- assistant
@@ -1320,24 +1376,23 @@ async function copyText(text) {
 
 function renderAssistant() {
   const on = tidelmOn();
-  if (!state.chat.length) state.chat.push({role: "agent", text: on
-    ? `Hi, I'm Tideway, using ${tidelmLabel()}. Ask in your own language (English, 中文, Español, Bahasa, Français, Português, Hinglish, Banglish): credit checks, late payers, a what-if, reminder drafts or a rescue plan. The model selects tool calls; Tideway's tools supply the figures. I can't approve or move money.`
-    : state.lang === "bn"
-      ? "আসসালামু আলাইকুম, আমি Tideway। জিজ্ঞেস করুন: বেতন দিতে পারবেন কি না, এই মাসে ঝুঁকি কতটা, কার কাছ থেকে আগে টাকা চাইবেন, কোনো ক্রেতা দেরিতে দিলে কী হবে, বা একটি উদ্ধার পরিকল্পনা। বাংলা, Banglish বা English, যেভাবে খুশি লিখুন। আমি ব্যাখ্যা ও প্রস্তাব দিতে পারি; টাকা অনুমোদন বা পাঠাতে পারি না।"
-      : "Hi, I'm Tideway. Ask me whether payroll is safe, how risky the month looks, who to chase, a what-if such as \"what if Nila Traders pays 10 days late\", or ask me for a rescue plan. I can explain and propose; I can't approve or move money."});
+  if (!state.chat.length) state.chat.push({role: "agent", text: state.lang === "bn"
+    ? "ব্যবসার টাকা নিয়ে কী জানতে চান? বেতন, দেরিতে পাওনা বা ঘাটতি মেটানোর পরিকল্পনা নিয়ে প্রশ্ন করুন।"
+    : "What would you like to know about your cash? Ask about payday, late payments or ways to cover a shortfall."});
   const prompts = on ? TIDELM_PROMPTS.map(p=>p.replace('on 50,000?',`on ${displayCurrency()} ${displayCurrency()===currency()?'50,000':'500'}?`)) : LOCAL_PROMPTS;
   const aiReady = !on && state.config.ai_configured;
   const aiSwitch = aiReady ? `<div class="ai-switch-row"><label class="ai-switch"><input id="ai-consent" type="checkbox" role="switch" ${state.aiConsent ? "checked" : ""}><span class="ai-switch-track" aria-hidden="true"></span><span class="ai-switch-label">AI answers</span></label><span class="small muted">${state.aiConsent ? "On for this question and recent chat history. Known counterparty names are hidden." : "Off: the offline assistant answers. Turn on to share this question and recent chat history."}</span><button type="button" class="button small ghost" data-action="privacy-preview-chat">See what is sent</button></div>` : "";
   const consent = on || aiReady ? "" : `<p class="hint">Local agent mode: answers come from deterministic tools, no network. An optional LLM mode is available when a key is configured.</p>`;
   const mode = on ? `<div class="row chat-mode"><span class="pill teal">${icon("spark")}${esc(tidelmLabel())}</span></div>` : "";
-  return `<section class="grid split"><div class="card chat ${on ? "with-mode" : ""}">${mode}<div class="chat-log" id="chat-log" aria-live="polite">${state.chat.map((item, index) => item.pending
+  return `<section class="assistant-layout"><div class="card chat ${on ? "with-mode" : ""}">${mode}<div class="chat-log" id="chat-log" aria-live="polite">${state.chat.map((item, index) => item.pending
       ? `<div class="msg agent pending" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>${esc(item.role === "user" ? item.text : moneyProse(item.text))}</div>`
       : `<div class="msg ${item.role === "user" ? "user" : "agent"} ${item.unverified?.length || item.rejected ? "warn" : ""}">${esc(item.role === "user" ? item.text : moneyProse(item.text))}${item.trace?.length ? `<div class="trace">${item.trace.map((t) => `<span>${esc(t.tool)} · ${esc(t.permission)}</span>`).join("")}</div>` : ""}${item.copilot ? copilotHtml(item.copilot) : ""}${item.aiNudge && state.config.ai_configured && !state.aiConsent ? `<div class="ai-nudge"><button type="button" class="button small primary" data-action="ai-retry" data-prompt="${esc(item.question)}">${icon("spark")}Turn on AI and ask again</button></div>` : ""}${item.question && !item.rejected ? feedbackHtml(item, index) : ""}${index === state.chat.length - 1 && item.role !== "user" ? suggestionsHtml(item.suggestions || (index === 0 ? prompts.slice(0, 3) : [])) : ""}</div>`).join("")}</div>
     ${aiSwitch}${aiReady ? window.TidewayLab.chatPreview() : ""}<p class="hint">Money in questions: include ${esc(displayCurrency())}, e.g. ${esc(displayCurrency())} 100. Dates, days and percentages keep their own units.</p><form id="chat-form" class="chat-form"><label class="sr-only" for="chat-input">Your question</label><input id="chat-input" value="${esc(state.chatDraft)}" maxlength="2000" placeholder="${on ? "Ask in any language…" : "Ask about payroll, risk, a what-if or a plan…"}" autocomplete="off" required>${voiceButtonHtml()}<button class="button primary" type="submit">${icon("send")}Ask</button></form>${voiceNoteHtml()}</div>
-    <div class="card">${on ? "" : `${tidelmStatusCard("Ask Tideway still works with the local tool agent.")}<div class="section-gap"></div>`}<h3>Try asking</h3><div class="chips">${prompts.map((prompt) => `<button class="chip" data-action="prompt" data-prompt="${esc(prompt)}">${esc(prompt)}</button>`).join("")}</div>
+    ${disclosure("assistant-prompts", "More example questions", `<div class="chips">${prompts.map((prompt) => `<button class="chip" data-action="prompt" data-prompt="${esc(prompt)}">${esc(prompt)}</button>`).join("")}</div>`)}
+    ${disclosure("assistant-details", "How Tideway answers", `${on ? "" : tidelmStatusCard("Ask Tideway still works with the local tool agent.")}
     ${consent ? `<div class="section-gap">${consent}</div>` : ""}
     ${feedbackSummaryHtml()}
-    <h3 class="section-gap">Guardrails</h3><ul class="small">${on ? `<li>TideLM writes a typed plan; Tideway validates every call (known tool, typed arguments, real counterparty names) before anything runs.</li><li>Tools are read or propose only. There is no approve, pay or transfer tool.</li><li>Replies are composed by code from tool output, so the model cannot invent a figure.</li><li>Runs on this computer: no text leaves it.</li>` : `<li>Every number comes from a tool; LLM answers are checked and invented figures are flagged.</li><li>Only scoped read or propose tools exist. There is no approve, pay or transfer tool.</li><li>Record free text and real names are never sent to a model.</li><li>Each tool call is written to the audit trail with an output hash.</li>`}</ul></div></section>`;
+    <h3 class="section-gap">Guardrails</h3><ul class="small">${on ? `<li>TideLM writes a typed plan; Tideway validates every call (known tool, typed arguments, real counterparty names) before anything runs.</li><li>Tools are read or propose only. There is no approve, pay or transfer tool.</li><li>Replies are composed by code from tool output, so the model cannot invent a figure.</li><li>Runs on this computer: no text leaves it.</li>` : `<li>Every number comes from a tool; LLM answers are checked and invented figures are flagged.</li><li>Only scoped read or propose tools exist. There is no approve, pay or transfer tool.</li><li>Record free text and real names are never sent to a model.</li><li>Each tool call is written to the audit trail with an output hash.</li>`}</ul>`)}</section>`;
 }
 
 // TideLM first; a 503 falls back to the local agent, and a rejected plan is shown, not hidden.
@@ -1901,22 +1956,30 @@ async function importCsv(event) {
   }
 }
 
+document.addEventListener("keydown", (event) => {
+  const options = document.getElementById("workspace-options");
+  if (event.key === "Escape" && options?.open && options.contains(document.activeElement)) {
+    options.open = false;
+    options.querySelector("summary").focus();
+  }
+});
+
 document.addEventListener("click", async (event) => {
   const target = event.target instanceof Element ? event.target : null;
   if (!target) return;
   const close = target.closest("[data-close]");
   if (close) { document.getElementById(close.dataset.close)?.close(); return; }
   const nav = target.closest("[data-view]");
+  const options = document.getElementById("workspace-options");
+  if (options?.open && !options.contains(target)) options.open = false;
   if (nav) {
-    document.body.classList.remove("menu-open");
-    $(".tab-item[data-action=menu]")?.setAttribute("aria-expanded", "false");
     if (state.view === "team" && nav.dataset.view !== "team") state.invite = null;  // the code is shown once
     state.view = nav.dataset.view;
     render();
     if (state.view === "evidence" && state.dashboard) loadAudit();
     if (state.view === "team" && state.businessId) loadTeam();
     window.scrollTo(0, 0);
-    if (nav.hasAttribute("data-quick-start-link")) $("#page-title").focus({preventScroll: true});
+    $("#page-title").focus({preventScroll: true});
     return;
   }
   const button = target.closest("[data-action]");
@@ -1932,7 +1995,6 @@ document.addEventListener("click", async (event) => {
     if (data.action.startsWith("shield-")) { await window.TidewayShield.action(data.action.slice(7), data); return; }
     switch (data.action) {
       case "lang": setLanguage(data.lang || (state.lang === "bn" ? "en" : "bn")); break;
-      case "menu": { const open = document.body.classList.toggle("menu-open"); button.setAttribute("aria-expanded", String(open)); if (open) window.scrollTo(0, 0); break; }
       case "logout": await logout(); break;
       case "demo-login": await demoLogin(data.id); break;
       case "speak-brief": toggleSpeak(); break;

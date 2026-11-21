@@ -245,33 +245,31 @@ window.TidewayHelp = (() => {
   function pageCard() {
     const view = currentView();
     let host = document.getElementById("tw-page-help");
-    const anchor = document.getElementById("view");
+    const anchor = document.querySelector(".page-guidance");
     if (!anchor) return;
     if (!host) {
       host = document.createElement("section");
       host.id = "tw-page-help";
       host.className = "tw-page-help";
       host.setAttribute("aria-label", "About this page");
-      anchor.parentNode.insertBefore(host, anchor);
+      anchor.append(host);
     }
     const page = PAGES[view];
     if (!enabled() || !page) { host.hidden = true; host.dataset.view = ""; return; }
-    const folded = store.get(`tideway.help.fold.${view}`, "open") === "folded";
-    const key = `${view}|${folded}|${currentRole()}`;
+    const folded = store.get(`tideway.help.fold.${view}`, "folded") === "folded";
+    const key = `${view}|${folded}|${currentRole()}|${state.lang}`;
     if (host.dataset.key === key && !host.hidden) return;
     host.dataset.key = key;
     host.hidden = false;
     const r = currentRole();
     const bn = typeof state !== "undefined" && state.lang === "bn" && PAGES_BN[view];
     const p = bn ? {...page, ...PAGES_BN[view]} : page;
-    const L = bn ? {what: "এই পাতাটি কী?", show: "কীভাবে ব্যবহার করবেন দেখুন", hide: "লুকান", for: "কার জন্য", as: "আপনি সাইন ইন করেছেন"}
-      : {what: "What is this page?", show: "Show how to use it", hide: "Hide", for: "For", as: "You are signed in as"};
+    const L = bn ? {for: "কার জন্য", as: "আপনি সাইন ইন করেছেন"}
+      : {for: "For", as: "You are signed in as"};
     host.lang = bn ? "bn" : "en";
-    host.innerHTML = `<div class="tw-help-head"><span class="tw-help-badge" aria-hidden="true">?</span>
-      <div class="tw-help-lead"><strong>${L.what}</strong> <span>${escape(p.what)}</span></div>
-      <button type="button" class="button small ghost" data-help-fold="${escape(view)}" aria-expanded="${!folded}">${folded ? L.show : L.hide}</button></div>
-      ${folded ? "" : `<div class="tw-help-body"><ol>${p.steps.map((s) => `<li>${escape(s)}</li>`).join("")}</ol>
-      <div class="tw-help-meta"><span class="tw-chip">${L.for}: ${escape(p.who)}</span>${r ? `<span class="tw-chip">${L.as}: ${escape(r)}</span>` : ""}<span class="tw-chip tw-safe">${escape(p.safe)}</span></div></div>`}`;
+    host.innerHTML = `<button type="button" class="guidance-toggle" data-help-fold="${escape(view)}" aria-controls="page-help-body" aria-expanded="${!folded}">${bn ? "এই পাতার সাহায্য" : "Page help"}</button>
+      <div id="page-help-body" class="guidance-body" ${folded ? "hidden" : ""}><p>${escape(p.what)}</p><ol>${p.steps.map((s) => `<li>${escape(s)}</li>`).join("")}</ol>
+      <div class="tw-help-meta"><span class="tw-chip">${L.for}: ${escape(p.who)}</span>${r ? `<span class="tw-chip">${L.as}: ${escape(r)}</span>` : ""}<span class="tw-chip tw-safe">${escape(p.safe)}</span></div></div>`;
   }
 
   // ---- Glossary popover ----------------------------------------------------
@@ -327,7 +325,8 @@ window.TidewayHelp = (() => {
     let card = document.getElementById("tw-tour");
     if (tourIndex < 0 || tourIndex >= tourSteps.length) { card?.remove(); tourIndex = -1; return; }
     const [view, title, text] = tourSteps[tourIndex];
-    const target = document.querySelector(`.sidebar .nav-item[data-view="${view}"]`);
+    const target = [...document.querySelectorAll(`.nav-item[data-view="${view}"], .tab-item[data-view="${view}"], .tool-link[data-view="${view}"]`)]
+      .find((item) => item.getClientRects().length);
     target?.classList.add("tw-tour-target");
     target?.scrollIntoView({block: "nearest"});
     if (!card) {
@@ -345,25 +344,25 @@ window.TidewayHelp = (() => {
       <button type="button" class="button small primary" data-tour="next">${tourIndex === tourSteps.length - 1 ? "Finish" : "Next"}</button></span></div>`;
     const box = target?.getBoundingClientRect();
     card.style.top = `${Math.max(12, Math.min(window.innerHeight - 220, box ? box.top - 10 : 80))}px`;
-    card.style.left = `${box ? Math.min(window.innerWidth - 340, box.right + 14) : 24}px`;
+    card.style.left = `${Math.max(12, Math.min(window.innerWidth - card.offsetWidth - 12, box ? box.right + 14 : 24))}px`;
     card.querySelector('[data-tour="next"]')?.focus({preventScroll: true});
   }
   function startTour() {
-    tourSteps = TOUR.filter(([view]) => document.querySelector(`.sidebar .nav-item[data-view="${view}"]`));
+    tourSteps = TOUR.filter(([view]) => viewAvailable(view));
     tourIndex = 0;
     tourShow();
   }
 
   // ---- Toolbar controls ----------------------------------------------------
   function toolbar() {
-    const controls = document.querySelector(".topbar-controls");
+    const controls = document.getElementById("workspace-help");
     if (!controls || document.getElementById("tw-help-tools")) return;
     const tools = document.createElement("div");
     tools.id = "tw-help-tools";
     tools.className = "tw-help-tools";
-    tools.innerHTML = `<button type="button" class="button ghost small" data-help-tool="tour" title="A one-minute tour of every page">Tour</button>
+    tools.innerHTML = `<button type="button" class="button ghost small" data-help-tool="tour" title="A one-minute tour of every page">Guided tour</button>
       <button type="button" class="button ghost small" data-help-tool="toggle" aria-pressed="${enabled()}" title="Show plain-language help on every page">Help ${enabled() ? "on" : "off"}</button>
-      <button type="button" class="button ghost small" data-help-tool="text" aria-pressed="${document.documentElement.classList.contains("tw-large")}" title="Larger text">A+</button>`;
+      <button type="button" class="button ghost small" data-help-tool="text" aria-pressed="${document.documentElement.classList.contains("tw-large")}">Larger text</button>`;
     controls.prepend(tools);
   }
   function syncToolbar() {
@@ -403,14 +402,17 @@ window.TidewayHelp = (() => {
     const fold = target.closest("[data-help-fold]");
     if (fold) {
       const key = `tideway.help.fold.${fold.dataset.helpFold}`;
-      store.set(key, store.get(key, "open") === "folded" ? "open" : "folded");
+      store.set(key, store.get(key, "folded") === "folded" ? "open" : "folded");
       pageCard();
       document.querySelector("[data-help-fold]")?.focus({preventScroll: true});
       return;
     }
     const tool = target.closest("[data-help-tool]");
     if (tool) {
-      if (tool.dataset.helpTool === "tour") startTour();
+      if (tool.dataset.helpTool === "tour") {
+        document.getElementById("workspace-options").open = false;
+        startTour();
+      }
       if (tool.dataset.helpTool === "toggle") {
         store.set("tideway.help.v1", enabled() ? "off" : "on");
         if (!enabled()) document.querySelectorAll(".tw-term").forEach((el) => el.replaceWith(document.createTextNode(el.textContent)));

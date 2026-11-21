@@ -66,30 +66,24 @@
     <main class="land-main" id="top">
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <span class="eyebrow light">AI copilot for Bangladesh's small businesses</span>
           <h1 id="hero-title">Plan ahead for <span class="sticker">payroll.</span></h1>
-          <p class="hero-sub">On-device AI predicts late payers, plans a cash rescue before the gap hits, catches bKash and Nagad scams, and answers in বাংলা. It acts only with your approval.</p>
+          <p class="hero-sub">See when your business might run short, find ways to cover the gap and check suspicious messages. Use Tideway in English or বাংলা.</p>
           <div class="hero-ctas">
+            <a class="button primary" href="#demo" data-demo-only hidden>Try the live demo</a>
             <a class="button primary" href="#signup">Start free</a>
-            <a class="button light" href="#demo" data-demo-only hidden>Try the live demo</a>
+            <a class="button light" href="#signin">Sign in</a>
           </div>
+          <a class="hero-join" href="#join">Join your team</a>
         </div>
         <figure class="hero-art" aria-hidden="true"><img src="/img/hero.webp" alt="" width="980" height="720" decoding="async"></figure>
       </section>
-
-      <div class="marquee" aria-label="What Tideway guarantees">
-        <div class="marquee-track">
-          <span>Approval-gated by design</span><span>AI runs on your computer</span><span>Ask in বাংলা or English</span><span>Scam Shield for bKash, Nagad, Rocket</span><span>Two people approve big amounts</span><span>Signed, single-use mandates</span><span>No real money moves</span>
-          <span aria-hidden="true">Approval-gated by design</span><span aria-hidden="true">AI runs on your computer</span><span aria-hidden="true">Ask in বাংলা or English</span><span aria-hidden="true">Scam Shield for bKash, Nagad, Rocket</span><span aria-hidden="true">Two people approve big amounts</span><span aria-hidden="true">Signed, single-use mandates</span><span aria-hidden="true">No real money moves</span>
-        </div>
-      </div>
 
       <section class="land-section demo-band" data-demo-only hidden aria-labelledby="demo-title">
         <section class="demo-card" id="demo" tabindex="-1">
           <div class="demo-intro">
             <h2 id="demo-title">Try the live demo</h2>
-            <p>One click signs you in to three fictional businesses. Each account sees the same data with a different role.</p>
-            <p class="tag-note"><span class="pill mock">Synthetic demo data</span> No card needed. Everything runs in a local sandbox: no real money, bank or counterparty.</p>
+            <p>Choose Nadia (Owner) to try every workflow. Choose Imran to practise as an accountant, or Guest to look around.</p>
+            <p class="tag-note">Practice accounts use fictional businesses. No real money moves.</p>
           </div>
           <div class="demo-pick">
             <div id="demo-accounts" class="demo-accounts"></div>
@@ -185,38 +179,34 @@
         <button class="nav-item" data-view="assistant"><svg class="icon"><use href="#i-chat"/></svg><span class="nav-text"><span>Ask Tideway</span><span class="nav-sub" lang="bn">প্রশ্ন করুন</span></span></button>
         <button class="nav-item" data-view="shield"><svg class="icon"><use href="#i-shield"/></svg><span class="nav-text"><span>Scam check</span><span class="nav-sub" lang="bn">প্রতারণা যাচাই</span></span></button>
         <button class="nav-item" data-view="inbox"><svg class="icon"><use href="#i-inbox"/></svg><span class="nav-text"><span>Add from SMS</span><span class="nav-sub" lang="bn">এসএমএস থেকে হিসাব</span></span></button>
-        <button class="nav-item" data-view="learn"><svg class="icon"><use href="#i-book"/></svg><span class="nav-text"><span>Money lessons</span><span class="nav-sub" lang="bn">টাকার পাঠ</span></span></button>
-        <p class="nav-group-label">Plan and records</p>
-        <button class="nav-item" data-view="whatif"><svg class="icon"><use href="#i-sliders"/></svg><span class="nav-text"><span>What if…?</span><span class="nav-sub" lang="bn">যদি এমন হয়?</span></span></button>
-        <button class="nav-item" data-view="records"><svg class="icon"><use href="#i-records"/></svg><span class="nav-text"><span>Records</span><span class="nav-sub" lang="bn">হিসাবের খাতা</span></span></button>
-        <button class="nav-item" data-view="team"><svg class="icon"><use href="#i-user"/></svg><span class="nav-text"><span>Team</span><span class="nav-sub" lang="bn">টিম</span></span></button>
-        <details class="nav-more" id="nav-more">
-          <summary>More tools <span class="nav-sub" lang="bn">আরও টুল</span></summary>
-        <button class="nav-item" data-view="lab"><svg class="icon"><use href="#i-sliders"/></svg><span class="nav-text"><span>Decision lab</span><span class="nav-sub" lang="bn">সিদ্ধান্ত ল্যাব</span></span></button>
-        <button class="nav-item" data-view="treasury"><svg class="icon"><use href="#i-bank"/></svg><span class="nav-text"><span>Bank reports</span><span class="nav-sub" lang="bn">ব্যাংকের রিপোর্ট</span></span></button>
-        <button class="nav-item" data-view="portfolio"><svg class="icon"><use href="#i-radar"/></svg><span class="nav-text"><span>Lender radar</span><span class="nav-sub" lang="bn">ঋণদাতার রাডার</span></span></button>
-        <button class="nav-item" data-view="security"><svg class="icon"><use href="#i-lock"/></svg><span class="nav-text"><span>Safety settings</span><span class="nav-sub" lang="bn">নিরাপত্তা</span></span></button>
-        <button class="nav-item" data-view="evidence"><svg class="icon"><use href="#i-chain"/></svg><span class="nav-text"><span>Audit trail</span><span class="nav-sub" lang="bn">প্রমাণের রেকর্ড</span></span></button>
-        </details>
+        <button class="nav-item tools-link" data-view="tools"><svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg><span>All tools</span></button>
       </nav>
       <div class="sidebar-foot">
         <div class="agent-state" id="agent-state"></div>
-        <div class="operator-card"><span class="avatar"><svg class="icon"><use href="#i-user"/></svg></span><div><strong id="operator-name">—</strong><span id="operator-role">—</span></div>
-          <button class="icon-button" data-action="logout" aria-label="Sign out" title="Sign out"><svg class="icon"><use href="#i-x"/></svg></button></div>
         <p class="sandbox-note">Synthetic sandbox · no real money moves</p>
       </div>
     </aside>
     <main>
       <header class="topbar">
-        <div class="title-block"><span class="eyebrow" id="eyebrow">Tideway</span><h1 id="page-title" tabindex="-1">Home</h1></div>
+        <div class="title-block"><span id="eyebrow" class="workspace-name"></span><h1 id="page-title" tabindex="-1">Home</h1><p id="page-description"></p></div>
         <div class="topbar-controls">
-          <label class="control-field"><span id="label-currency">Currency</span><select id="display-currency" aria-label="Display currency"></select></label>
-          <label class="control-field"><span id="label-plan">Plan up to</span><input id="target-date" type="date" aria-label="Target date"></label>
           <div class="lang-switch" role="group" aria-label="Language / ভাষা"><button type="button" class="lang-option" data-action="lang" data-lang="en" lang="en" aria-pressed="true">English</button><button type="button" class="lang-option" data-action="lang" data-lang="bn" lang="bn" aria-pressed="false">বাংলা</button></div>
-          <button class="button ghost" data-action="refresh" title="Reload"><svg class="icon"><use href="#i-refresh"/></svg></button>
+          <details id="workspace-options" class="workspace-options">
+            <summary><svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg><span>Options</span></summary>
+            <div class="workspace-options-panel">
+              <label class="control-field"><span id="label-currency">Display currency</span><select id="display-currency" aria-label="Display currency"></select></label>
+              <label class="control-field"><span id="label-plan">Plan up to</span><input id="target-date" type="date" aria-label="Target date"></label>
+              <button class="button ghost" data-action="refresh"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg>Refresh data</button>
+              <div id="workspace-help"></div>
+              <div class="workspace-account"><div><strong id="operator-name">—</strong><span id="operator-role">—</span></div>
+                <button class="button ghost small" data-action="logout">Sign out</button></div>
+            </div>
+          </details>
         </div>
       </header>
-      <section id="quick-start" class="quick-start" aria-labelledby="quick-start-title" hidden></section>
+      <div class="page-guidance">
+        <section id="quick-start" class="quick-start" aria-label="Quick start" hidden></section>
+      </div>
       <div id="fx-note" class="error-banner fx-note" hidden>Amounts marked ≈ are converted for display with illustrative fixed rates, not live exchange rates. Every calculation, approval and mandate stays in the business's own currency.</div>
       <div id="app-error" class="error-banner" role="alert" hidden></div>
       <div id="view" class="view" aria-live="polite"><div class="loading">Loading…</div></div>
@@ -224,10 +214,10 @@
     </main>
     <nav class="tabbar" aria-label="Quick actions">
       <button class="tab-item" data-view="home"><svg class="icon"><use href="#i-home"/></svg><span>Home</span><span class="tab-sub" lang="bn">হোম</span></button>
-      <button class="tab-item" data-view="rescue"><svg class="icon"><use href="#i-rescue"/></svg><span>Fix gap</span><span class="tab-sub" lang="bn">ঘাটতি</span></button>
+      <button class="tab-item" data-view="overview"><svg class="icon"><use href="#i-gauge"/></svg><span>Forecast</span></button>
       <button class="tab-item" data-view="assistant"><svg class="icon"><use href="#i-chat"/></svg><span>Ask</span><span class="tab-sub" lang="bn">প্রশ্ন</span></button>
       <button class="tab-item" data-view="shield"><svg class="icon"><use href="#i-shield"/></svg><span>Scam check</span><span class="tab-sub" lang="bn">যাচাই</span></button>
-      <button class="tab-item" data-action="menu" aria-expanded="false" aria-controls="main-nav"><svg class="icon"><use href="#i-sliders"/></svg><span>Menu</span><span class="tab-sub" lang="bn">মেনু</span></button>
+      <button class="tab-item" data-view="tools"><svg class="icon"><use href="#i-sliders"/></svg><span>All tools</span></button>
     </nav>
   </div>
 
