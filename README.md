@@ -11,9 +11,10 @@
 ![License](https://img.shields.io/badge/license-MIT-0b2a45)
 
 **MU CSE Fest 2026 · Inter-University AI Builders Hackathon · Track 04: FinTech & Financial Intelligence**<br>
-Built by **The Last BrainCell** · Bangladesh University of Engineering and Technology (BUET)
+Built by **The Last BrainCell** · Bangladesh University of Engineering and Technology (BUET)<br>
+**Live demo: [moneyguard-95cx.onrender.com](https://moneyguard-95cx.onrender.com)** · sign in with one click as Nadia (owner), Imran (accountant) or the guest viewer. Free hosting: the first visit can take about a minute to wake up, and the synthetic demo data resets on each restart.<br>
 
-[Quick start](#quick-start) · [For the judges](#how-tideway-answers-the-fintech-track) · [Scam Shield](#scam-shield-mobile-money-fraud-check) · [বাংলা](#ask-in-বাংলা) · [Our AI](#tideways-own-ai) · [Security](#security-by-design) · [Docs](#documentation)
+[Quick start](#quick-start) · [For the judges](#how-moneyguard-answers-the-fintech-track) · [Scam Shield](#scam-shield-mobile-money-fraud-check) · [বাংলা](#ask-in-বাংলা) · [Our AI](#moneyguards-own-ai) · [Security](#security-by-design) · [Docs](#documentation)
 
 </div>
 
