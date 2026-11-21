@@ -725,7 +725,7 @@ def _validate(raw, business):
     return validator(record, business["id"], business["currency"])
 
 
-def confirm(app, business_id, records, actor):
+def confirm(app, business_id, records, actor, operator=None):
     """Save drafts a person reviewed (and may have edited).  Every field is validated again."""
     if not isinstance(records, list) or not 0 < len(records) <= 20:
         raise ValidationError("Confirm 1-20 records at a time.")
@@ -739,4 +739,5 @@ def confirm(app, business_id, records, actor):
         except ValidationError as exc:
             raise ValidationError(f"{raw.get('id', 'record')}: {exc}") from None
         parsed[{"invoice": "invoices", "bill": "bills", "transaction": "transactions"}[raw["record_type"]]].append(record)
-    return app.store.import_records(business_id, parsed, actor, "inbox")
+    # screened=True keeps the flags found on the text as typed (hidden characters are stripped by validation).
+    return app.store.import_records(business_id, parsed, actor, "inbox", screened=True, operator=operator)

@@ -47,6 +47,10 @@ BINARY = {"woff2", "webp"}
 COOKIE = "tideway_session"
 BODY_TIMEOUT_SECONDS = 2.0
 SPEECH_UPLOAD_TIMEOUT_SECONDS = 10.0
+# Larger bodies (receipt photos, CSV ledgers) get extra time at a slow-mobile rate, so a hosted upload over a weak
+# connection is not cut off after two seconds; the total stays bounded.
+MIN_BODY_BYTES_PER_SECOND = 32_000
+MAX_BODY_EXTRA_SECONDS = 60.0
 
 
 def csv_cell(value):
@@ -446,7 +450,7 @@ class Application:
         if path == "/api/inbox/confirm":
             self.fields(body, ("business_id", "records"), ("business_id", "records"))
             self.require(operator, "owner", "accountant")
-            return confirm_inbox(self.tideway, business_id, body["records"], actor)
+            return confirm_inbox(self.tideway, business_id, body["records"], actor, operator)
         if path == "/api/plan/propose":
             self.fields(body, ("business_id", "target_date"), ("business_id",))
             self.require(operator, "owner", "accountant")
@@ -503,7 +507,7 @@ class Application:
             self.require(operator, "owner", "accountant")
             if not isinstance(body.get("replace_demo", False), bool):
                 raise ValidationError("replace_demo must be true or false.")
-            return self.tideway.import_csv(business_id, body["csv"], actor, body.get("replace_demo", False))
+            return self.tideway.import_csv(business_id, body["csv"], actor, body.get("replace_demo", False), operator)
         if path == "/api/whatif":
             self.fields(body, ("business_id", "target_date", "changes"), ("business_id", "changes"))
             return self.tideway.what_if(business_id, body.get("target_date"), body["changes"])
@@ -583,7 +587,7 @@ def make_handler(app):
 
         def read_body(self, length, timeout=BODY_TIMEOUT_SECONDS):
             """Read an exact bounded body with a total, not per-byte, deadline."""
-            deadline = time.monotonic() + timeout
+            deadline = time.monotonic() + timeout + min(length / MIN_BODY_BYTES_PER_SECOND, MAX_BODY_EXTRA_SECONDS)
             previous = self.connection.gettimeout()
             chunks, remaining = [], length
             try:
@@ -788,6 +792,7 @@ class TidewayHTTPServer(ThreadingHTTPServer):
 
 def serve(db_path, port=8787, key="", model="gpt-5-mini", seed=True, host="127.0.0.1", transport=None):
     app = Application(db_path, key, model, seed, transport)
+    app.store.public_demo = bool(public_hosts())
     server = TidewayHTTPServer((host, port), make_handler(app))
     model_status = app.tidelm.status()
     if model_status["available"] and model_status.get("backend") != "local-compatible":

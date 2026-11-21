@@ -728,7 +728,10 @@ class Agent:
             report = copilot.customer_report(self.app, business_id, named)
             trace.append({"tool": "customer_report", "permission": "agent_read"})
             answer = copilot.reply_from_results([{"tool": "customer_report", "result": report}], currency)
-        elif re.search(r"chase|remind|collect|who owes|pay late|paying late|late payers?|slow(est)? (payers?|customers?)", text):
+        elif re.search(r"\bbills?\b.{0,30}\b(?:due|pay|owe|upcoming|next)\b|\b(?:due|upcoming|unpaid|open)\b.{0,20}\bbills?\b|\bpayables?\b", text):
+            answer, topic = self._bills_text(snapshot, currency, "en", trace), "bills"
+        elif re.search(r"chase|remind|collect|who owes|owes? (?:me|us)|pay late|paying late|late payers?|slow(est)? (payers?|customers?)|"
+                       r"\b(?:unpaid|outstanding|open) invoices?\b|\breceivables?\b", text):
             profiles = self.tool("profile_customers", business_id, target, actor, trace)
             ranked = sorted(profiles["customers"], key=lambda item: -item["open_exposure_minor"])
             topic = "receivables"
@@ -751,7 +754,7 @@ class Agent:
                           " No safe proposal is available for approval." if plan["action_needed"] else
                           " No recovery action is needed.")
                 answer, topic = plan["explanation"] + suffix, "plan"
-        elif re.search(r"forecast|balance|cash (flow|position)|projection|lowest cash", text):
+        elif re.search(r"forecast|balance|cash (flow|position)|projection|lowest cash|(?:low|short|run out).{0,20}\bcash\b|cash.{0,20}\b(?:low|short|run out)\b", text):
             projections = self.tool("project_cash", business_id, target, actor, trace)
             likely = projections["likely"]
             topic = "forecast"
@@ -766,11 +769,38 @@ class Agent:
                 "model_called": False, "trace": trace, "unverified_numbers": [], "suggestions": follow, "lang": lang,
                 "understood": not (topic is None and not trace)}
 
+    def _bills_text(self, snapshot, currency, lang, trace):
+        """Open supplier bills by due date, with any bank-detail block, straight from the ledger."""
+        derived = self.store.derived(snapshot)
+        trace.append({"tool": "open_bills", "permission": "agent_read"})
+        today = snapshot["state"]["current_date"]
+        bills = sorted((row for row in snapshot["records"]["bills"] if row["status"] in ("open", "scheduled", "rescheduled")),
+                       key=lambda row: (row.get("rescheduled_date") or row["due_date"], row["id"]))
+        bn = lang == "bn"
+        if not bills:
+            return "\u0995\u09cb\u09a8\u09cb \u0996\u09cb\u09b2\u09be \u09ac\u09bf\u09b2 \u09a8\u09c7\u0987\u0964" if bn else "No open bills."
+        parts = []
+        for row in bills[:6]:
+            due = row.get("rescheduled_date") or row["due_date"]
+            late = due < today
+            line = (f"{row['payee']}: {money_text(row['amount_minor'], currency)}, {'\u09ac\u09be\u0995\u09bf \u09aa\u09a1\u09bc\u09c7\u099b\u09c7' if late else '\u09a6\u09bf\u09a4\u09c7 \u09b9\u09ac\u09c7'} {i18n.day('bn', due)}"
+                    if bn else f"{row['payee']} {money_text(row['amount_minor'], currency)} {'overdue since' if late else 'due'} {i18n.day('en', due)}")
+            if row["id"] in derived["blocked"]:
+                line += " (\u0986\u099f\u0995\u09be\u09a8\u09cb: \u09ac\u09cd\u09af\u09be\u0982\u0995 \u09a4\u09a5\u09cd\u09af \u09af\u09be\u099a\u09be\u0987 \u0995\u09b0\u09c1\u09a8)" if bn else " (blocked: verify bank details first)"
+            parts.append(line)
+        more = len(bills) - len(parts)
+        total = money_text(sum(row["amount_minor"] for row in bills), currency)
+        if bn:
+            return "\u0996\u09cb\u09b2\u09be \u09ac\u09bf\u09b2: " + "; ".join(parts) + (f"; \u0986\u09b0\u0993 {more}\u099f\u09bf" if more else "") + f"\u0964 \u09ae\u09cb\u099f {total}\u0964 \u0986\u09ae\u09bf \u0995\u09cb\u09a8\u09cb \u099f\u09be\u0995\u09be \u09aa\u09be\u09a0\u09be\u0987 \u09a8\u09be\u0964"
+        return "Open bills: " + "; ".join(parts) + (f"; and {more} more" if more else "") + f". Total {total}. I never pay anything myself."
+
     def _localized(self, kind, details, business_id, target_date, target, snapshot, lang, role, actor, trace):
         """(answer, topic, focus) for a recognised non-English question, from the tools the English rules use."""
         currency, t = snapshot["business"]["currency"], i18n.t
         customers = sorted({row["customer"] for row in snapshot["records"]["invoices"]})
         joiner, stop = ("\uff1b", "\u3002") if lang == "zh" else ("; ", ".")
+        if kind == "bills":
+            return self._bills_text(snapshot, currency, lang, trace), "bills", None
         if kind == "unknown_customer":
             return t(lang, "no_customer", names=", ".join(customers[:20]) or "-"), None, None
         if kind == "ambiguous_delay":

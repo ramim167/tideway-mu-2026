@@ -695,7 +695,7 @@ class Tideway:
         comment = "<!-- MoneyGuard sandbox draft. Generated, never transmitted. Not schema-validated; modelled on pain.001.001.09. -->"
         return '<?xml version="1.0" encoding="UTF-8"?>\n' + comment + "\n" + body + "\n"
 
-    def import_csv(self, business_id, text, actor, replace_demo=False):
+    def import_csv(self, business_id, text, actor, replace_demo=False, operator=None):
         business = self.store.get_business(business_id)
         parsed = parse_combined_csv(text, business_id, business["currency"])
-        return self.store.import_records(business_id, parsed, actor, "csv", replace_demo, screened=True)
+        return self.store.import_records(business_id, parsed, actor, "csv", replace_demo, screened=True, operator=operator)

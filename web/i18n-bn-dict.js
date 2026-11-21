@@ -908,6 +908,7 @@ window.TIDEWAY_BN = {
  "Review assumptions": "ধরে নেওয়া বিষয়গুলো দেখুন",
  "Review before approving": "অনুমোদনের আগে দেখে নিন",
  "Review every draft": "প্রতিটি খসড়া দেখুন",
+ "Review required before saving": "সংরক্ষণের আগে যাচাই করুন",
  "Review recovery options": "উদ্ধারের উপায়গুলো দেখুন",
  "Review the workflow": "কাজের ধাপগুলো দেখুন",
  "Risk score {0} of {1} · {2} signal(s)": "ঝুঁকি স্কোর {1}-এর মধ্যে {0} · {2}টি সংকেত",

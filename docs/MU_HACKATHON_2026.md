@@ -29,7 +29,7 @@ quality and team preparedness.
 |---|---|
 | **Problem relevance** | Bangladeshi SMEs run on mobile money with no finance team: late customer payments break payroll, and MFS scams (fake cash-in SMS, PIN/OTP theft, "sent by mistake" refunds) hit shopkeepers directly. Demo businesses are three Sylhet firms keeping BDT books. |
 | **Innovation** | One copilot joins cash-flow forecasting, rescue planning, MFS fraud checking and a verifiable credit passport. The AI can only propose; a signed, single-use mandate approved by people is the only path to money moving. |
-| **Feasibility** | A working local prototype exists: standard-library Python, no paid API, runs offline on a laptop. 698 automated tests and a 30-case attack self-test (25/25 attacks blocked). |
+| **Feasibility** | A working local prototype exists: standard-library Python, no paid API, runs offline on a laptop. 714 automated tests and a 30-case attack self-test (25/25 attacks blocked). |
 | **AI approach** | TidePay (lateness prediction, federated training), TideLM (fine-tuned small LLM that turns questions and alerts into typed tool plans), the Scam Shield text model (naive Bayes over words and character n-grams) and Monte Carlo cash simulation. Every model output is checked by validators. |
 | **Expected impact** | Earlier warning of payroll gaps, cheaper rescue than informal borrowing, fewer MFS fraud losses, and a path to formal credit through the credit passport. Claims stay honest: no pilot users or field accuracy are claimed yet. |
 | **Presentation quality** | README with a judge-facing feature map, every page of the UI self-explains, answers in বাংলা. |

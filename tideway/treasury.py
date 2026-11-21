@@ -126,6 +126,10 @@ def _weekly(snapshot, projection):
                 disbursements != sum(day["outflow_minor"] for day in days):
             raise ValidationError("13-week buckets do not reconcile with the daily projection.")
         low_day = min(days, key=lambda day: (day["closing_cash_minor"], day["date"]))
+        lowest, lowest_date = low_day["closing_cash_minor"], low_day["date"]
+        if index == 0 and days[0]["opening_cash_minor"] < lowest:
+            # Week 1 starts from the opening balance; the projection engine counts it (first_breach_date), so must this.
+            lowest, lowest_date = days[0]["opening_cash_minor"], days[0]["date"]
         for name, amount in receipts.items():
             by_customer_total[name] += amount
         weeks.append({
@@ -137,8 +141,8 @@ def _weekly(snapshot, projection):
             "supplier_bills_minor": supplier, "payroll_minor": payroll, "other_disbursements_minor": other_out,
             "disbursements_minor": disbursements, "net_flow_minor": receipts_total - disbursements,
             "closing_cash_minor": days[-1]["closing_cash_minor"],
-            "lowest_cash_minor": low_day["closing_cash_minor"], "lowest_cash_date": low_day["date"],
-            "reserve_floor_minor": reserve, "below_reserve": low_day["closing_cash_minor"] < reserve,
+            "lowest_cash_minor": lowest, "lowest_cash_date": lowest_date,
+            "reserve_floor_minor": reserve, "below_reserve": lowest < reserve,
         })
     return weeks, by_customer_total
 

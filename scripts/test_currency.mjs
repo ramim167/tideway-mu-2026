@@ -40,8 +40,9 @@ assert.throws(()=>m.parse('1,23'));
 assert.throws(()=>m.convert(1,'USD','INVALID'));
 assert.throws(()=>m.read(m.capture('9999999999999999','USD','BDT')));
 assert.equal(before,digest(),'Source changed during currency checks');
+// Write evidence only when asked (prepare_release.py passes --out); a plain check run must not dirty committed files.
 const outIndex=process.argv.indexOf('--out');
-const path=resolve(root,outIndex>=0?process.argv[outIndex+1]:'evidence/currency-v13/currency-checks.json');
-mkdirSync(dirname(path),{recursive:true});
-writeFileSync(path,JSON.stringify({passed:true,run_at:new Date().toISOString(),source_tree_sha256:before,currencies:Object.keys(rates).length,currency_pairs:Object.keys(rates).length**2,canonical_roundtrip_cases:Object.keys(rates).length**2*6,scope:'Exact illustrative arithmetic, draft preservation and presentation checks; no live FX quote, trade, model-quality score or human study.'},null,2)+'\n');
+const path=outIndex>=0?resolve(root,process.argv[outIndex+1]):null;
+if(path)mkdirSync(dirname(path),{recursive:true});
+if(path)writeFileSync(path,JSON.stringify({passed:true,run_at:new Date().toISOString(),source_tree_sha256:before,currencies:Object.keys(rates).length,currency_pairs:Object.keys(rates).length**2,canonical_roundtrip_cases:Object.keys(rates).length**2*6,scope:'Exact illustrative arithmetic, draft preservation and presentation checks; no live FX quote, trade, model-quality score or human study.'},null,2)+'\n');
 console.log(`Currency checks passed: ${Object.keys(rates).length**2*6} unchanged-value currency round-trips plus exact conversions, prose, invalid input and large-value checks.`);

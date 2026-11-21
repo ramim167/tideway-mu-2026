@@ -43,15 +43,19 @@ _SCALES = {"k": 1000, "thousand": 1000, "lakh": 100_000, "lac": 100_000, "লা
 _SCALE = r"(?i:thousands?|lakhs?|lacs?|crores?|millions?|billions?|k|লাখ|লক্ষ|কোটি)(?!\w)"
 _UNKNOWN_SCALE = re.compile(r"\s*(?:[a-z]illions?|trillions?|quadrillions?|arab|kharab|lakhhs?|croresh)(?!\w)", re.I)
 _AMOUNT = re.compile(rf"(?P<pre>{_CURRENCY})\s?(?P<num>{_NUMBER})(?!\d|[.,]\d)(?:\s*(?P<scale>{_SCALE}))?"
-                     rf"|(?<![\d.,])(?P<num2>{_NUMBER})(?:\s*(?P<scale2>{_SCALE}))?\s?(?P<post>{_CURRENCY})")
+                     rf"|(?<![\d.,A-Za-z#/])(?<![A-Za-z0-9]-)(?P<num2>{_NUMBER})(?:\s*(?P<scale2>{_SCALE}))?\s?(?P<post>{_CURRENCY})")
+_NUMBER_NEXT = re.compile(rf"\s?(?:{_NUMBER})(?![/-]\d)")  # an amount, not the start of a date such as 15/11
+_REFERENCE_BEFORE = re.compile(r"(?:\binvoice|\bbill|\binv|\bno\.?|\bref(?:erence)?|\border|#)\s*[:#]?\s*$", re.I)
 _BARE_AMOUNT = re.compile(rf"\b(?:pay|pays|paying|paid|send|sending|transfer|owes?|owed|for|amount(?: due)?|total|of)\s+"
                           rf"(?:me\s+|you\s+|us\s+|the\s+)?(?P<num>{_NUMBER})(?![\d/.-]|,\d)(?:\s*(?P<scale>{_SCALE}))?", re.I)
 
 _IN = re.compile(r"\breceived\b|\bcredited\b|\bcredit\b|\bcash\s+in\b|recebid[oa]|收款|\bdeposit(?:ed)?\b|\bditerima\b|\brecibid[oa]\b|"
-                 r"\breçu\b", re.I)
+                 r"\breçu\b|পেয়েছেন|জমা হয়েছে|ক্যাশ ইন", re.I)
 _PAID_TO = re.compile(r"\bpaid\s+to\b", re.I)
+# bKash/Nagad outgoing alerts start "Send Money Tk 500.00 to ..." and "Payment Tk 1,500.00 to <merchant> ...".
 _OUT = re.compile(r"\bdebited\b|\bsent\b|\bspent\b|\bpaid to\b|\bcash\s+out\b|向.{1,40}?付款|\bwithdrawn?\b|\bpurchase\b|\bdebit\b|"
-                  r"\benviad[oa]\b|\bdibayar\b", re.I)
+                  r"\benviad[oa]\b|\bdibayar\b|\bsend\s+money\b|\bpayment\s+(?:of\s+)?(?:tk\.?|bdt|৳)\s?[\d,.]+\s+to\b|"
+                  r"পাঠিয়েছেন|ক্যাশ আউট|পেমেন্ট করেছেন", re.I)
 # Balances and fees describe an account or the cost of a transfer, not the amount transferred.
 _ANCILLARY_BEFORE = re.compile(
     r"(?:\b(?:bal(?:ance)?\.?|fees?|charges?)|余额|餘額|手续费|手續費|ব্যালেন্স|চার্জ|ফি)"
@@ -76,8 +80,11 @@ _INJECTION = re.compile(r"ignore (?:all |any )?(?:previous|prior|earlier) (?:ins
                         r"transfer all|changed? (?:our |the )?bank|new (?:bank )?account|mark every invoice|without asking|"
                         r"忽略|ignora las instrucciones|abaikan instruksi|ignorez les consignes|ignore as instru", re.I)
 
+# A name ends before a currency, a reference or a transaction id ("from Dhaka Paper Tk 12,500", "Karim Traders ref KT-77").
 _NAME_STOP = (r"(?=\s+(?:on|today|tomorrow|due|em|via|for|el|le|pada|tanggal|at\s+\d|will|bill|has|have|is|sent|paid|pays?)\b|\s*[,(:：，。;]|\.\s|\.$|\s*$|"
-              r"\s+\d)")
+              r"\s+\d|\s+(?:ref(?:erence)?|trx\s?id|txn\s?id)\b|" + rf"\s*(?:{_CURRENCY}))")
+# A known name counts only as a whole word: "Ali" is not inside "Alif Store" or "quality".
+_WORD_EDGE = r"\wঀ-৿"
 _NAME = r"(?P<who>[A-Z一-鿿][^\n]{0,79}?)"
 _PARTY_PATTERNS = [re.compile(pattern, re.I if flags else 0) for pattern, flags in (
     (r"付款方[：:]\s*(?P<who>[^，,。\n]{1,40})", 0),
@@ -85,12 +92,14 @@ _PARTY_PATTERNS = [re.compile(pattern, re.I if flags else 0) for pattern, flags 
     (r"给(?P<who>[^，,。\n]{1,40}?)[，,。]", 0),
     (r"^\s*\[(?:whatsapp|微信|wechat|sms|telegram|signal)\]\s*(?P<who>[^:：\n]{1,80})[:：]", 1),
     (r"^\s*(?P<who>[A-Z一-鿿][^:：\n]{0,79})[:：]\s*(?:bill|invoice|factura|tagihan)\b", 0),
-    (r"^\s*(?P<who>[A-Z][^\n]{0,79}?)\s+(?:bill|invoice)\s+[A-Z]{1,5}-?\d", 0),
+    (r"^\s*(?P<who>[A-Z][^\n]{0,79}?)\s+(?:bill|invoice)\s+(?:no\.?\s*)?(?:[A-Z]{1,5}-?)?\d", 0),
     (r"^\s*(?P<who>[A-Z][^\n]{0,79}?)\s+(?:will|is going to|promised to)\s+pay\b", 0),
     (r"\b(?:from|by|dari)\s+" + _NAME + _NAME_STOP, 0),
     (r"\bspent\s+at\s+" + _NAME + _NAME_STOP, 0),
     (r"(?<![A-Za-z])(?:de)\s+" + _NAME + _NAME_STOP, 0),
     (r"\b(?:to|para|a)\s+" + _NAME + _NAME_STOP, 0),
+    # Bangla alerts: "৳৫,০০০ পেয়েছেন করিম ট্রেডার্স থেকে" / "পাঠিয়েছেন রহিম স্টোরকে"
+    (r"(?:পেয়েছেন|পাঠিয়েছেন|পেমেন্ট করেছেন)\s+(?P<who>[ঀ-৿][ঀ-৿ ]{0,40}?)\s*(?:থেকে|কে)(?![ঀ-৿])", 0),
 )]
 _NOT_A_PARTY = re.compile(r"^(?:a/?c\b|acct|account|iban|me|you|us|your|my|our|the|this|pay|payment|ref|upi)\b", re.I)
 _REFERENCE = re.compile(r"(?:\bref(?:erence)?\.?\s*(?:no\.?)?\s*[:#]?\s*|\bupi\s*ref\s*no\.?\s*|\bupi\s*:\s*|\bid\s+|transfer\s*#\s*|"
@@ -198,8 +207,7 @@ def _dates(text, today):
 
 
 def _party(segment, known):
-    folded = segment.casefold()
-    hits = [name for name in known if name and name.casefold() in folded]
+    hits = [name for name in known if name and re.search(rf"(?<![{_WORD_EDGE}]){re.escape(name)}(?![{_WORD_EDGE}])", segment, re.I)]
     if hits:
         return max(hits, key=len)
     for pattern in _PARTY_PATTERNS:
@@ -221,8 +229,20 @@ def _reference(segment):
     return match.group(0) if match else None
 
 
+def _amounts(segment):
+    """Every amount in the text.  In "INV-204 Tk 45,000" the currency prefixes 45,000, so 204 is a reference, not money."""
+    found, position = [], 0
+    while match := _AMOUNT.search(segment, position):
+        if (match["post"] and _REFERENCE_BEFORE.search(segment[max(0, match.start() - 20):match.start()])
+                and _NUMBER_NEXT.match(segment, match.end("post"))):
+            match = _AMOUNT.match(segment, match.start("post")) or match
+        found.append(match)
+        position = match.end()
+    return found
+
+
 def _record(segment, business_currency, today, known):
-    amounts = list(_AMOUNT.finditer(segment))
+    amounts = _amounts(segment)
     checks = []
     if amounts:
         candidates = [match for match in amounts

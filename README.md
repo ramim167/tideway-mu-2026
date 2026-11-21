@@ -6,7 +6,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.11%2B-0b2a45?logo=python&logoColor=white)
 ![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-none-1f8a96)
-![Tests](https://img.shields.io/badge/tests-698%20passing-1f8a96)
+![Tests](https://img.shields.io/badge/tests-714%20passing-1f8a96)
 ![Self-test](https://img.shields.io/badge/attacks%20blocked-25%2F25-d4a72c)
 ![License](https://img.shields.io/badge/license-MIT-0b2a45)
 

@@ -89,7 +89,8 @@ def _early_payment_options(business, policy, invoice, expected, breach_date, end
     if invoice["amount_minor"] > policy["action_limit_minor"]:
         return []
     anchor = breach_date or end
-    pay_by = max(add_days(business["opening_date"], 2), add_days(anchor, -1))
+    # A customer cannot pay an invoice before it is issued.
+    pay_by = max(add_days(business["opening_date"], 2), add_days(anchor, -1), invoice.get("issue_date") or business["opening_date"])
     if pay_by >= expected or not as_of <= pay_by <= end:
         return []
     accelerated = days_between(pay_by, expected)

@@ -59,17 +59,18 @@ _RULES = (
      r"please return",
      "It is the 'sent by mistake, please send it back' trick. The first SMS is often fake, or the sender reverses the payment later.",
      "এটি 'ভুল করে টাকা পাঠিয়েছি, ফেরত দিন' প্রতারণা। প্রথম এসএমএসটি প্রায়ই ভুয়া হয়।"),
+    # The shape of a pay-to-receive demand: something the reader is promised (a prize, an approved loan, a job offer)
+    # and a fee or deposit. check() also requires a demand to pay, so a receipt for an advance already paid, a salary
+    # advance notice or a supplier's deposit request for a print job is not an advance-fee scam.
     ("fee_to_receive", 60,
-     r"(?:won|winner|prize|lottery|lucky draw|gift|bonus|cashback|stipend|loan|job|parcel|offer|anudan|অনুদান|পুরস্কার|লটারি|"
-     r"জিতেছেন|উপহার|লোন|চাকরি|পার্সেল|lottery).{0,120}(?:\bfee\b|charge|registration|processing|clearance|deposit|ফি\b|চার্জ)|"
+     r"(?:won|winner|prize|lottery|lucky draw|gift|bonus|cashback|stipend|anudan|অনুদান|পুরস্কার|লটারি|জিতেছেন|উপহার|"
+     r"\bloan\b(?:\s+\S+){0,4}?\s+(?:approved|sanctioned|pass(?:ed)?|ready|disbursed?)|লোন.{0,20}(?:অনুমোদ|পাস|পাবেন)|"
+     r"job offer|got the .{0,20}\bjob\b|\bselected\b|\bhiring\b|vacancy|salary|income|\bbeton\b|চাকরি|বেতন)"
+     r".{0,120}(?:\bfee\b|charge|registration|processing|clearance|deposit|জামানত|ফি\b|চার্জ)|"
      r"(?:to (?:receive|claim|get|unlock|release)|nite|পেতে).{0,60}(?:send|pay|deposit|pathan|পাঠান|বিকাশ করুন|নগদ করুন)|"
-     # parcel / courier "delivery charge first" (a real cash-on-delivery charge is paid on arrival)
-     r"(?:delivery|courier|parcel|shipping|ডেলিভারি|কুরিয়ার|পার্সেল)\s*(?:charge|fee|cost|চার্জ|ফি|খরচ)"
-     r".{0,60}(?:\bfirst\b|\bage\b|\badvance\b|\bagrim\b|before|আগে|অগ্রিম)|"
-     r"(?:\bfirst\b|\bage\b|\badvance\b|আগে|অগ্রিম).{0,30}(?:delivery|courier|ডেলিভারি|কুরিয়ার)\s*(?:charge|fee|চার্জ|ফি)|"
      # job / salary offers that need an advance or deposit first
-     r"(?:\bjob\b|\bkaj\b|\bchakri\b|salary|income|চাকরি|কাজ|বেতন).{0,80}(?:\badvance\b|\bdeposit\b|\bagrim\b|জামানত|অগ্রিম)|"
-     r"(?:\badvance\b|\bagrim\b|অগ্রিম).{0,60}(?:\bjob\b|\bkaj\b|\bchakri\b|salary|চাকরি|কাজ|বেতন)",
+     r"(?:\bchakri\b|salary|income|\bbeton\b|চাকরি|বেতন).{0,80}(?:\badvance\b|\bdeposit\b|\bagrim\b|জামানত|অগ্রিম)|"
+     r"(?:\badvance\b|\bagrim\b|অগ্রিম).{0,60}(?:\bchakri\b|salary|income|\bbeton\b|চাকরি|বেতন)",
      "It asks you to pay a fee to receive a prize, loan, job, gift or parcel. Real prizes never need a fee.",
      "পুরস্কার, লোন, চাকরি বা পার্সেল পেতে আগে টাকা চাওয়া হয়েছে। আসল পুরস্কারে কোনো ফি লাগে না।"),
     ("account_threat", 30,
@@ -122,9 +123,25 @@ _SECRET_OBJECT_PUNCTUATION = re.compile(
     r"(?=(?:(?:your|the|a|আপনার)\s+)?(?:\b(?:pin|otp|verification code|code|password)\b|পিন|ওটিপি|কোড|পাসওয়ার্ড))",
     re.I,
 )
-# "No fee is charged" is the opposite of an advance-fee demand.
-_NO_FEE = re.compile(r"\bno (?:fee|charge)s?\b|without (?:any )?(?:fee|charge)|free of (?:charge|cost)|"
-                     r"\b(?:fee|charge) (?:is|will be) not\b|ফি লাগে না|কোনো ফি নেই|কোনো চার্জ নেই|চার্জ লাগে না", re.I)
+# "No fee is charged" is the opposite of an advance-fee demand. These phrases are blanked out before the fee rule runs,
+# so they cancel only themselves: "No charge for home delivery. Pay the clearance fee to receive it" is still caught.
+_NO_FEE = re.compile(r"\bno (?:extra |additional |hidden |registration |processing )?(?:fee|charge)s?"
+                     r"(?: (?:is|are|will be))?(?: (?:charged|required|needed|taken|payable))?\b|"
+                     r"without (?:any )?(?:fee|charge)s?\b|free of (?:charge|cost)|"
+                     r"\b(?:fee|charge)s? (?:is|are|will be) not (?:charged|required|needed|taken)?\b|"
+                     r"(?:কোনো )?(?:ফি|চার্জ) (?:লাগে|লাগবে) না|কোনো (?:ফি|চার্জ) নেই|\b(?:kono )?(?:fee|charge) (?:lage|lagbe) na\b", re.I)
+# A demand that the reader pay now (not "paid", "pathabo" or a cash-on-delivery note).
+_PAY_DEMAND = re.compile(r"\b(?:pay|send|deposit|transfer)\b(?!\s+(?:with|soho))|\bpathan\b|\bpathiye\s+(?:din|den)\b|"
+                         r"\b(?:korte|dite)\s+hobe\b|\blagbe\b|(?:bkash|nagad|rocket)\s+(?:korun|koren|kore\s+din)\b|"
+                         r"পাঠান|পাঠিয়ে দিন|জমা দিন|দিতে হবে|করতে হবে|লাগবে|(?:বিকাশ|নগদ|রকেট) (?:করুন|করেন)", re.I)
+# Parcel / courier "delivery charge first", sent by bKash or to a phone number (a real COD charge is paid on arrival).
+_DELIVERY_FIRST = re.compile(
+    r"(?:delivery|courier|parcel|shipping|ডেলিভারি|কুরিয়ার|পার্সেল)\s*(?:charge|fee|cost|চার্জ|ফি|খরচ)"
+    r".{0,60}(?:\bfirst\b|\bage\b|\badvance\b|\bagrim\b|before|আগে|অগ্রিম)|"
+    r"(?:\bfirst\b|\bage\b|\badvance\b|আগে|অগ্রিম).{0,30}(?:delivery|courier|ডেলিভারি|কুরিয়ার)\s*(?:charge|fee|চার্জ|ফি)", re.I)
+_PAY_CHANNEL = re.compile(r"bkash|nagad|rocket|বিকাশ|নগদ|রকেট|send money|(?<!\d)(?:\+?88)?01[3-9]\d{8}(?!\d)", re.I)
+# A genuine one-time-code notice carries the code itself ("your code is 482910, never share it").
+_CODE_NOTICE = re.compile(r"(?:\bcode\b|\botp\b|\bpin\b|কোড|ওটিপি)\D{0,25}\b\d{4,8}\b|\b\d{4,8}\b\D{0,25}(?:is your|\bcode\b|\botp\b|কোড|ওটিপি)", re.I)
 _RECEIVED = re.compile(r"received|cash\s?in|joma|জমা|পেয়েছেন|credited|deposited", re.I)
 _TXN_NOTICE = re.compile(r"(?:received|cash\s?in|payment|send money|cash out).{0,80}(?:balance|trx\s?id|txn\s?id)", re.I)
 
@@ -279,7 +296,9 @@ def check(text, sender="", _model=None):
             matched = any(pattern.search(clause) and not _ADVICE.search(clause)
                           for clause in _CLAUSE_BREAK.split(_SECRET_OBJECT_PUNCTUATION.sub(r"\g<1> ", normal)))
         elif code == "fee_to_receive":
-            matched = pattern.search(normal) and not _NO_FEE.search(normal)
+            masked = _NO_FEE.sub(" ", normal)
+            matched = _PAY_DEMAND.search(masked) and (
+                pattern.search(masked) or (_DELIVERY_FIRST.search(masked) and _PAY_CHANNEL.search(masked)))
         else:
             matched = pattern.search(normal)
         if matched:
@@ -303,8 +322,9 @@ def check(text, sender="", _model=None):
     learned = _model or model()
     probability, top_words = learned.probability(normal)
     # A genuine provider notice ("your code is 482910, never share it") uses the same words as scams; with no rule
-    # signal, a safety reminder in the message means the model alone does not raise an alarm.
-    if not signals and _ADVICE.search(normal):
+    # signal, such a notice does not raise an alarm on the model alone. A bare "never share your PIN" line is not
+    # enough, or any scam could switch the model off by adding one.
+    if not signals and _ADVICE.search(normal) and _CODE_NOTICE.search(normal):
         probability_signal = 0.0
     else:
         probability_signal = probability

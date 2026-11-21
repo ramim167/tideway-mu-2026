@@ -154,7 +154,8 @@ def _decimal(value, field):
         raise ValidationError(f"{field} must be a number.") from None
     if not amount.is_finite():
         raise ValidationError(f"{field} must be a finite number.")
-    if abs(amount) > MAX_UNITS:
+    # Check the exponent before any arithmetic: abs() of "1e9999999999" raises decimal.Overflow (a 500, not a 400).
+    if amount and amount.adjusted() > MAX_UNITS.adjusted() or abs(amount) > MAX_UNITS:
         raise ValidationError(f"{field} must be at most {MAX_UNITS:,}.")
     if amount != amount.quantize(Decimal("0.01")):
         raise ValidationError(f"{field} may have at most two decimal places.")
@@ -193,7 +194,8 @@ def minor_value(raw: dict, field: str, label=None, allow_zero=False, default=Non
     result = None
     if has_minor:
         value = raw[minor_key]
-        if isinstance(value, str) and re.fullmatch(r"\d{1,12}", value.strip()):
+        # Up to 15 digits: MAX_AMOUNT_MINOR is 10**14, and an exported IDR or NGN ledger must re-import unchanged.
+        if isinstance(value, str) and re.fullmatch(r"\d{1,15}", value.strip()):
             value = int(value.strip())
         if isinstance(value, bool) or not isinstance(value, int):
             raise ValidationError(f"{minor_key} must be an integer number of minor units.")

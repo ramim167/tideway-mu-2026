@@ -220,6 +220,11 @@ CREATE INDEX IF NOT EXISTS mandate_business ON mandates(business_id,status,creat
 
 
 class Store(EventStoreMixin):
+    # True on a public deployment (Render), where every visitor shares the demo accounts and their PINs are printed on
+    # the sign-in page. Then a wrong step-up PIN must not lock the shared account for everyone, and the shared demo
+    # team cannot be dismantled by one visitor. A local copy keeps the strict behaviour (selftest AT-AUTH-04).
+    public_demo = False
+
     def __init__(self, path, key_path=None, witness_path=None):
         self._memory = str(path) == ":memory:"
         self.path = None if self._memory else Path(path)
@@ -616,9 +621,12 @@ class Store(EventStoreMixin):
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT * FROM operators WHERE id=?", (operator_id,)).fetchone()
+            shared_step_up = key is None and self.public_demo and self._is_demo_operator(db, operator_id)
             if key is not None:
                 counter = db.execute("SELECT failures,locked_until FROM login_failures WHERE key=?", (key,)).fetchone()
                 failures, locked_until = (counter[0], counter[1]) if counter else (0, None)
+            elif shared_step_up:
+                failures, locked_until = 0, None  # a public PIN gains nothing from a lockout; it would only let one visitor block all
             else:
                 failures, locked_until = (row["failed_attempts"], row["locked_until"]) if row else (0, None)
             if locked_until and not _expired(locked_until):
@@ -635,7 +643,7 @@ class Store(EventStoreMixin):
                 db.execute("INSERT INTO login_failures(key,failures,locked_until) VALUES (?,?,?) "
                            "ON CONFLICT(key) DO UPDATE SET failures=excluded.failures,locked_until=excluded.locked_until",
                            (key, failures, locked))
-            elif row:
+            elif row and not shared_step_up:
                 db.execute("UPDATE operators SET failed_attempts=?,locked_until=? WHERE id=?", (failures, locked, operator_id))
         if ok is None:
             raise ValidationError("Unknown operator or wrong PIN.")
@@ -837,6 +845,10 @@ class Store(EventStoreMixin):
                              (business_id, operator_id)).fetchone()
             if not row:
                 raise ValidationError("That person is not a member of this business.")
+            if (self.public_demo and self._is_demo_operator(db, operator_id)
+                    and self._business_row(db, business_id)["synthetic"]):
+                raise ValidationError("Demo team members are shared by everyone trying this demo, so they cannot be removed here. "
+                                      "Invite a new person, then practise removing them.")
             owners = db.execute("SELECT COUNT(*) FROM memberships WHERE business_id=? AND role='owner'", (business_id,)).fetchone()[0]
             if row["role"] == "owner" and owners <= 1:
                 raise ValidationError("A business must keep at least one owner.")
@@ -1001,9 +1013,13 @@ class Store(EventStoreMixin):
             self._business_row(db, business_id)
             return self._records(db, business_id)
 
-    def import_records(self, business_id, parsed, actor, source="csv", replace_demo=False, *, screened=False):
+    def import_records(self, business_id, parsed, actor, source="csv", replace_demo=False, *, screened=False, operator=None):
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            if operator is not None:
+                # Membership can be revoked between the HTTP check and this write; the row is authoritative here.
+                if self._member_operator(db, business_id, operator)["role"] not in APPROVER_ROLES:
+                    raise ValidationError("Only an owner or accountant can add records.")
             business = self._business_row(db, business_id)
             currency = business["currency"]
             def validated(kind, validator):
@@ -1625,9 +1641,16 @@ class Store(EventStoreMixin):
             satisfied = (len(people) >= 2 and any(item["role"] == "owner" for item in approvals)) if dual else True
             # Separation of duties: whoever verified a payee's bank details cannot be the only approver
             # of actions for that payee; someone else must also approve.
+            # Payees are one identity regardless of capitalisation (as in the changed-bank-account check), so a
+            # verification of "Rahman Supplies" also binds a bill to "RAHMAN SUPPLIES".
             bills = {bill["id"]: bill for bill in snapshot["records"]["bills"]}
-            verifiers = {snapshot["counterparties"].get(f"supplier:{bills[action['record_id']]['payee']}", {}).get("verified_by")
-                         for action in bundle["actions"] if action["type"] == "supplier_deferral"} - {None}
+            verified_by = {}
+            for key, item in snapshot["counterparties"].items():
+                kind, _, name = key.partition(":")
+                if kind == "supplier" and item.get("verified_by"):
+                    verified_by.setdefault(name.casefold(), set()).add(item["verified_by"])
+            verifiers = {who for action in bundle["actions"] if action["type"] == "supplier_deferral"
+                         for who in verified_by.get(bills[action["record_id"]]["payee"].casefold(), ())}
             sod = bool(verifiers & people) and not (people - verifiers)
             satisfied = satisfied and not sod
             fast = review is not None and review < FAST_APPROVAL_MS

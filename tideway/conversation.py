@@ -100,10 +100,13 @@ _INTENTS = {
         ("network", r"সবচেয়ে বড় ঝুঁকি|কার উপর নির্ভর|নির্ভরশীল"),
         ("customer", r"সাধারণত|সময়মতো|অভ্যাস"),
         ("stress", r"সবচেয়ে খারাপ|সবাই দেরি"),
-        ("late", r"দেরিতে টাকা দেয়|কারা দেরি|কোন ক্রেতা.{0,20}দেরি|বাকি রেখেছে|মনে করিয়ে|রিমাইন্ডার|তাগাদা|কাকে আগে|কার কাছে আগে|কার কাছ থেকে আগে|আগে টাকা চা"),
+        ("late", r"দেরিতে টাকা দেয়|কারা দেরি|কোন ক্রেতা.{0,20}দেরি|বাকি রেখেছে|মনে করিয়ে|রিমাইন্ডার|তাগাদা|কাকে আগে|কার কাছে আগে|কার কাছ থেকে আগে|আগে টাকা চা|"
+                 r"বকেয়া|পাওনা|টাকা দেয়নি|টাকা দেননি|কে কত টাকা দেবে|বাকি টাকা"),
+        ("bills", r"বিল(?!ম্ব)|দেনা|সাপ্লায়ারকে.{0,20}(?:দিতে|পরিশোধ)"),
         ("payroll", r"বেতন|মজুরি|স্যালারি"),
         ("risk", r"ঝুঁকি|সম্ভাবনা|ঘাটতি"),
-        ("forecast", r"পূর্বাভাস|নগদ টাকার অবস্থা|ক্যাশ ফ্লো|ব্যালেন্স"),
+        ("forecast", r"পূর্বাভাস|নগদ টাকার অবস্থা|ক্যাশ ফ্লো|ব্যালেন্স|সবচেয়ে কম|সর্বনিম্ন|কম নগদ|(?:নগদ|ক্যাশ|টাকা).{0,12}(?:কবে|কত)|"
+                     r"(?:কবে|কত).{0,12}(?:নগদ|ক্যাশ)|টাকা ফুরিয়ে|টাকা শেষ"),
         ("explain", r"কেন"),
         ("plan", r"পরিকল্পনা|কী করব|কি করব|উপায়|প্ল্যান"),
     ),
@@ -132,9 +135,12 @@ _INTENTS = {
         ("network", r"(?:sabse bada|shobcheye boro) risk|depend hoon|nirbhor"),
         ("customer", r"time pe pay|payment record|shomoymoto|obhyash|shadharonoto"),
         ("stress", r"worst case (?:mein|e)\b|\bsab late\b|shobai deri"),
-        ("late", r"\b(?:kaun|kon)\b[^?]*\b(?:late|der|deri)\b|shobcheye deri|sabse late|\bkake age\b|\bkar kache age\b|age taka chai"),
+        ("late", r"\b(?:kaun|kon)\b[^?]*\b(?:late|der|deri)\b|shobcheye deri|sabse late|\bkake age\b|\bkar kache age\b|age taka chai|"
+                 r"\bbaki taka\b|\bpaona\b|\bpawna\b|taka dey ?ni"),
+        ("bills", r"\bkon bill\b|\bbill\b.{0,20}\b(?:kobe|dite hobe|porishodh|pay korte)\b"),
         ("payroll", r"\bbeton\b|tankha"),
-        ("forecast", r"cash er obostha|obostha ki hobe"),
+        ("forecast", r"cash er obostha|obostha ki hobe|\b(?:cash|taka)\b.{0,12}\bkobe\b|\bkobe\b.{0,20}\bkom\b|"
+                     r"\b(?:shobcheye|sobcheye|sabse)\s+kom\b|\bsorbonimno\b|\btaka\s+(?:kobe\s+)?(?:sesh|shesh|furabe)"),
         ("explain", r"\bkyun\b|\bkeno\b"),
         ("plan", r"plan banao|kaise bhar"),
     ),
