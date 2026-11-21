@@ -119,7 +119,8 @@ def validate_username(value) -> str:
 
 def check_new_pin(pin) -> str:
     """New accounts need a 6-12 digit PIN that is not a repeated digit or a simple sequence."""
-    if not isinstance(pin, str) or not pin.isdigit() or not 6 <= len(pin) <= 12:
+    # ASCII digits only: superscript or Bangla digits pass isdigit() but cannot be typed at the PIN prompt.
+    if not isinstance(pin, str) or not re.fullmatch(r"[0-9]{6,12}", pin):
         raise ValidationError("Choose a PIN of 6-12 digits.")
     steps = {int(b) - int(a) for a, b in zip(pin, pin[1:])}
     if len(set(pin)) == 1 or steps in ({1}, {-1}):

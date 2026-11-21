@@ -1,6 +1,6 @@
 # Tideway decision lab
 
-Topic E: SME Finance Copilot, FinTechathon 2026 International Track. These additions strengthen the existing payroll and cash-flow decision, security boundary and judge interaction. They do not add real banking, financing or real counterparty access. Open the running app, sign in, and select **Decision lab**.
+MU CSE Fest 2026 AI Builders Hackathon, FinTech & Financial Intelligence track. These additions strengthen the existing payroll and cash-flow decision, security boundary and judge interaction. They do not add real banking, financing or real counterparty access. Open the running app, sign in, and select **Decision lab**.
 
 ## What each tool does
 
@@ -57,4 +57,4 @@ Set `TIDEWAY_DECISION_LAB=0` in `.env` and restart to hide the workspace and dis
 
 ## Contest sources
 
-The official [International Track Appendix 2](https://www.pol.cmu.ac.th/public/blog/attachment/download/7a51866a-4cee-42b5-9187-fa4e1f4df411) describes Topic E and the 40/30/30 task, security/compliance, innovation/interaction rubric. These are optional project enhancements; the rules do not mandate these seven tools or a ten-percent model-risk cutoff. See also [the IEEE CIS Singapore contest page](https://www.ieee-cis-singapore.org/2026-fintechathon). No global uniqueness or winning guarantee is claimed.
+The decision lab was first built for an earlier contest entry (see [the archive](archive/fintechathon-2026/)). For the MU hackathon's rules and judging criteria see [MU_HACKATHON_2026.md](MU_HACKATHON_2026.md). These are optional project enhancements; the rules do not mandate these seven tools or a ten-percent model-risk cutoff. No global uniqueness or winning guarantee is claimed.

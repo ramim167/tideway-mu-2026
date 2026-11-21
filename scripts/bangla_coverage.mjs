@@ -64,7 +64,12 @@ async function loginAs(id, pin) {
   await until("document.readyState === 'complete' && typeof state !== 'undefined' && !!state.dashboard && !!document.querySelector('#view .metric')", `signed in as ${id}`);
 }
 async function view(name, ready = "true") {
-  await click(`.nav-item[data-view="${name}"]`);
+  // Pages not in the sidebar are opened from the "All tools" directory, as a user would.
+  if (await evaluate(`!!document.querySelector('.nav-item[data-view="${name}"]')`)) await click(`.nav-item[data-view="${name}"]`);
+  else {
+    await click('.nav-item[data-view="tools"]'); await until("state.view === 'tools'", "all tools");
+    await click(`.tool-link[data-view="${name}"]`);
+  }
   await until(`state.view === '${name}' && !state.busy && (${ready})`, `view ${name}`);
 }
 async function business(id) {
@@ -111,9 +116,28 @@ try {
   await collect("rescue (plan)");
   await click('[data-action="approve"]'); await until("document.querySelector('#approve-dialog').open", "approve dialog"); await collect("approve dialog");
   await evaluate("document.querySelector('#approve-dialog').close(), true");
+  // The rest of the money flow in Bangla: two approvals -> signed mandate -> counterparty replies -> one execution -> receipt.
+  const approveAs = async (id, pin) => {
+    await loginAs(id, pin);
+    await evaluate(`(async () => { const plan = state.dashboard.plan; const bundle = plan.bundles.find((b) => b.feasible);
+      const ack = bundle.probability_breach_after > plan.risk_target ? {risk_acknowledgement: {acknowledged: true, plan_id: plan.plan_id,
+        plan_hash: plan.plan_hash, bundle_id: bundle.bundle_id, probability_breach_after: bundle.probability_breach_after, risk_target: plan.risk_target}} : {};
+      const r = await fetch('/api/plan/approve', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-Tideway-Token': state.config.csrf_token},
+        body: JSON.stringify({business_id: state.businessId, plan_id: plan.plan_id, bundle_id: bundle.bundle_id, pin: '${pin}',
+          confirm_amount_minor: bundle.exposure_minor, review_ms: 9000, ...ack})});
+      const answer = await r.json(); if (!r.ok) throw new Error(answer.error); return answer.status; })()`).then((status) => console.log(`approved as ${id}: ${status}`));
+    await evaluate("loadDashboard().then(() => true)");
+  };
+  await approveAs("imran", "1357"); await view("rescue"); await collect("rescue (one approval)");
+  await approveAs("nadia", "2468"); await view("rescue", "!!document.querySelector('[data-action=negotiate]')"); await collect("rescue (signed mandate)");
+  await click('[data-action="negotiate"]'); await until("!!document.querySelector('[data-action=execute]') && !state.busy", "counterparties replied", 200);
+  await collect("rescue (replies)");
+  await click('[data-action="execute"]'); await until("!!document.querySelector('.receipt') && !state.busy", "receipt", 200);
+  await collect("rescue (receipt)");
+  await view("shield"); await collect("scam check (empty)");
   await view("assistant"); await collect("assistant");
   await view("shield"); await click('[data-action="shield-sample"][data-sample="fakeCashIn"]'); await until("!!document.querySelector('.shield-result')", "shield result"); await collect("scam check (result)");
-  await view("learn"); await evaluate("localStorage.removeItem('tideway:lessons'), true");
+  await view("learn"); await evaluate("localStorage.removeItem('tideway:lessons:' + state.operator.id), true");
   await click('[data-action="learn-answer"][data-id="safety"][data-i="0"]'); await sleep(300); await collect("money lessons (wrong answer)");
   await click('[data-action="learn-answer"][data-id="safety"][data-i="1"]'); await sleep(300); await collect("money lessons (right answer)");
   await view("inbox"); await click('[data-action="inbox-sample"][data-sample="injection"]'); await evaluate("document.querySelector('#inbox-form').requestSubmit(), true");

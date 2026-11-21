@@ -63,15 +63,29 @@ INVITE_DAYS = 7
 # Illustrative SaaS plans priced for Bangladeshi SMEs: the sandbox enforces seats; prices are shown, never charged.
 # Free Starter for micro shops (Scam Shield, Bangla assistant, cash weather); Growth adds seats and businesses.
 PLANS = {
-    "demo": {"label": "Demo", "price_bdt_month": 0, "price_usd_month": 0, "seats": 10, "businesses": 3},
-    "starter": {"label": "Starter", "price_bdt_month": 0, "price_usd_month": 0, "seats": 3, "businesses": 1},
-    "growth": {"label": "Growth", "price_bdt_month": 990, "price_usd_month": 8, "seats": 10, "businesses": 5},
+    "demo": {"label": "Demo", "price_bdt_month": 0, "price_usd_month": 0, "seats": 10, "businesses": 3,
+             "features": "Every feature, for trying Tideway with sample businesses"},
+    "starter": {"label": "Starter", "price_bdt_month": 0, "price_usd_month": 0, "seats": 3, "businesses": 1,
+                "features": "Scam check, বাংলা assistant, cash forecast and money lessons"},
+    "growth": {"label": "Growth", "price_bdt_month": 990, "price_usd_month": 8, "seats": 10, "businesses": 5,
+               "features": "Everything in Starter, plus rescue plans, exports and a credit passport for lenders"},
 }
 BUNDLE_LIVE = ("active", "ready", "countered", "rejected")
 
 
 def utc_now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def dhaka_day_utc_bounds():
+    """[start, end) of today's Bangladesh calendar day as UTC timestamps in utc_now()'s format.
+
+    Daily caps follow the owner's day in Dhaka, not the UTC day that flips at 06:00 local time."""
+    from .domain import DHAKA_TIME
+    local = datetime.now(DHAKA_TIME)
+    start = local.replace(hour=0, minute=0, second=0, microsecond=0)
+    return (start.astimezone(timezone.utc).isoformat(timespec="seconds"),
+            (start + timedelta(days=1)).astimezone(timezone.utc).isoformat(timespec="seconds"))
 
 
 def _later(**delta):
@@ -1029,6 +1043,13 @@ class Store(EventStoreMixin):
                 for row in collection:
                     planned.append((kind, row, db.execute(f"SELECT * FROM {kind} WHERE business_id=? AND id=?",
                                                           (business_id, row["id"])).fetchone()))
+            # The same record twice in one batch would hit a database constraint halfway through: refuse it cleanly.
+            seen = set()
+            for kind, row, _existing in planned:
+                keys = [(kind, "id", row["id"])] + ([(kind, "fingerprint", row["fingerprint"])] if kind == "transactions" else [])
+                if any(key in seen for key in keys):
+                    raise ValidationError(f"{kind[:-1].title()} {row['id']} appears twice in this import; nothing was imported.")
+                seen.update(keys)
             keep = []
             skipped = {"transactions": 0, "invoices": 0, "bills": 0}
             for kind, row, existing in planned:
@@ -1501,10 +1522,11 @@ class Store(EventStoreMixin):
         return exposure
 
     def _exposure_today(self, business_id):
-        """Exposure executed on the real UTC day.  Receipts survive sandbox resets, so a reset cannot lift the cap."""
+        """Exposure executed on the real Bangladesh day.  Receipts survive sandbox resets, so a reset cannot lift the cap."""
+        start, end = dhaka_day_utc_bounds()
         with self.connect() as db:
-            rows = db.execute("SELECT receipt_json FROM executions WHERE business_id=? AND created_at LIKE ?",
-                              (business_id, utc_now()[:10] + "%")).fetchall()
+            rows = db.execute("SELECT receipt_json FROM executions WHERE business_id=? AND created_at >= ? AND created_at < ?",
+                              (business_id, start, end)).fetchall()
         return sum(json.loads(row["receipt_json"]).get("exposure_minor", 0) for row in rows)
 
     @staticmethod
@@ -1907,9 +1929,10 @@ class Store(EventStoreMixin):
                     raise ValidationError("The standing mandate is invalid or expired.")
                 if "collection_reminder" not in document["constraints"]["action.types"]:
                     raise ValidationError("The standing mandate does not cover reminders.")
-                # Per business and real UTC day, across re-issued standing mandates and sandbox resets.
-                sent_today = db.execute("SELECT COUNT(*) FROM messages WHERE business_id=? AND human_present=0 AND created_at LIKE ?",
-                                        (business_id, utc_now()[:10] + "%")).fetchone()[0]
+                # Per business and real Bangladesh day, across re-issued standing mandates and sandbox resets.
+                start, end = dhaka_day_utc_bounds()
+                sent_today = db.execute("SELECT COUNT(*) FROM messages WHERE business_id=? AND human_present=0 "
+                                        "AND created_at >= ? AND created_at < ?", (business_id, start, end)).fetchone()[0]
                 if sent_today >= document["constraints"]["action.max_per_day"]:
                     raise ValidationError("The standing mandate's daily reminder limit is reached; escalating to a human.")
             if db.execute("SELECT 1 FROM messages WHERE business_id=? AND record_id=? AND kind='reminder' AND status<>'reset'",

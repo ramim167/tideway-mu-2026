@@ -1,4 +1,4 @@
-> Historical report for an earlier source version. See [READINESS_CURRENT.md](READINESS_CURRENT.md) for current evidence and remaining gaps.
+> Historical report from the team's earlier FinTechathon 2026 (Topic E) entry, kept as evidence. See [READINESS_CURRENT.md](READINESS_CURRENT.md) for current evidence and remaining gaps.
 
 # Competition readiness follow-up - 16 October 2026
 

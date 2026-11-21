@@ -6,7 +6,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.11%2B-0b2a45?logo=python&logoColor=white)
 ![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-none-1f8a96)
-![Tests](https://img.shields.io/badge/tests-579%20passing-1f8a96)
+![Tests](https://img.shields.io/badge/tests-679%20passing-1f8a96)
 ![Self-test](https://img.shields.io/badge/attacks%20blocked-25%2F25-d4a72c)
 ![License](https://img.shields.io/badge/license-MIT-0b2a45)
 
@@ -101,7 +101,7 @@ The assistant detects Bangla script and answers in Bangla, routing the question 
 - **TidePay predictions.** Every open invoice gets a probability for each lateness band, learned from payment histories.
 - **Rescue plan.** The optimiser compares preset supplier deferrals and early-payment discounts across up to six eligible records, and proposes zero-cash reminders. Plans disclose when the search omits records. Simulated counterparties accept, counter-offer or refuse; a counter becomes a new proposal that needs fresh approval.
 - **Ask Tideway.** Plain-language questions in বাংলা, English, Banglish and five more languages, with the tool plan shown under every answer. Works with or without a language model installed.
-- **Zero-entry inbox.** Paste bank, card and mobile-money alerts (bKash, M-Pesa, UPI, Alipay, WeChat Pay, PayNow, GCash, Pix, Wise, SEPA and more); get draft records. Nothing is saved until a person confirms.
+- **Zero-entry inbox.** Paste bKash, Nagad, Rocket, bank and card alerts (international formats work too); get draft records. Nothing is saved until a person confirms.
 - **What-if and Decision lab.** Find a plan's breaking point, stress accepted agreements, compare recovery options, replay a private capsule, inspect exactly what an optional cloud model would see, and negotiate terms that protect two businesses at once.
 - **Treasury hub.** A 13-week cash flow that reconciles exactly with the daily projection; a 0-100 working-capital health score with every formula and weight shown; a payment-integrity scan for duplicates, split bills, outliers and changed payees; a credit passport with an Ed25519 public-key signature.
 

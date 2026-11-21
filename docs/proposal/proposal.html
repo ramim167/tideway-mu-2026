@@ -75,7 +75,7 @@ footer { margin-top: 6px; padding-top: 5px; border-top: 1px solid #dde3ec; font-
 <table>
   <tr><th style="width:22%">Model</th><th>Role</th><th style="width:31%">Data and status</th></tr>
   <tr><td><strong>TidePay</strong></td><td>Predicts how many days late each open invoice will be paid (probability per lateness band); drives the "likely" forecast and credit checks.</td><td>Federated training across 40 simulated SMEs; mean error 8.56 days vs 10.23 for a history rule on 7,427 unseen synthetic invoices.</td></tr>
-  <tr><td><strong>TideLM</strong></td><td>A small open LLM (Qwen3, LoRA fine-tuned) that turns questions and pasted alerts into typed tool plans and draft records. It only proposes; validators check every call and figure.</td><td>Runs on a laptop GPU, no cloud. Exact plans 21% → 93% after fine-tuning on held-out synthetic tests. Rule-based fallback when no model is installed.</td></tr>
+  <tr><td><strong>TideLM</strong></td><td>A small open LLM (Qwen3, LoRA fine-tuned) that turns questions and pasted alerts into typed tool plans and draft records. It only proposes; validators check every call and figure.</td><td>Runs on the owner's own computer (Apple Silicon today), no cloud. Exact plans 21% → 93% after fine-tuning on held-out synthetic tests. Elsewhere a rule-based agent answers; optional free cloud models can be switched on per message, with names hidden.</td></tr>
   <tr><td><strong>Scam Shield model</strong></td><td>Naive Bayes over words and character n-grams (handles Bangla script and Banglish spelling), combined with explainable red-flag rules and a sender check.</td><td>104 labelled synthetic messages; rules + model flagged 9/9 held-out scams with 0/11 false alarms. Small set: next step is real, consented scam reports.</td></tr>
   <tr><td><strong>Monte Carlo + optimiser</strong></td><td>1,000 seeded futures estimate shortfall odds; an exact optimiser searches rescue bundles under the owner's policy limits.</td><td>Deterministic, auditable, integer-money arithmetic.</td></tr>
 </table>
@@ -107,7 +107,7 @@ footer { margin-top: 6px; padding-top: 5px; border-top: 1px solid #dde3ec; font-
   <li><strong>AI that cannot move money.</strong> The agent can only read and propose. Only a PIN-approved, signed, expiring, single-use mandate can execute; text inside a message can never grant authority.</li>
   <li><strong>Bangla-first and number-safe.</strong> Answers are templates filled with tool outputs, so translation can never change a figure.</li>
   <li><strong>Explainable fraud verdicts</strong> in two languages, with the official way to verify.</li>
-  <li><strong>On-device AI:</strong> private ledgers stay on the owner's computer; works offline.</li>
+  <li><strong>Private by default:</strong> ledgers stay on the owner's computer and the core works offline; cloud AI and browser voice input stay off until the owner switches them on.</li>
 </ul>
 </div>
 <div>
@@ -115,7 +115,7 @@ footer { margin-top: 6px; padding-top: 5px; border-top: 1px solid #dde3ec; font-
 <ul>
   <li><strong>A working prototype already exists</strong> (open source, MIT): web app, three Sylhet demo businesses in BDT, Scam Shield, Bangla assistant, treasury hub, lender radar.</li>
   <li>Runs on any laptop with Python 3.11, no paid API, no internet needed for the core app.</li>
-  <li>579 automated tests; a 30-case self-test blocks 25/25 simulated attacks (prompt injection, payee change, tampering, replay).</li>
+  <li>679 automated tests; a 30-case self-test blocks 25/25 simulated attacks (prompt injection, payee change, tampering, replay).</li>
   <li>Security by design: role checks, CSRF, rate limits, kill switch, hash-chained audit with an independent witness.</li>
 </ul>
 </div>
@@ -123,7 +123,7 @@ footer { margin-top: 6px; padding-top: 5px; border-top: 1px solid #dde3ec; font-
 <table>
   <tr><th style="width:30%">Risk</th><th>Mitigation</th></tr>
   <tr><td>Scam model trained on synthetic data</td><td>Rules carry the critical signals; collect consented, anonymised scam reports with a held-out set; publish false-alarm rate.</td></tr>
-  <tr><td>Owners do not type records</td><td>Paste SMS or photograph invoices; drafts are created automatically; CSV import.</td></tr>
+  <tr><td>Owners do not type records</td><td>Paste SMS (or photograph invoices on Apple Silicon); drafts are created automatically; CSV import.</td></tr>
   <tr><td>Wrong advice on money</td><td>AI proposes only; people approve; every figure is recomputed by code, never written by the model.</td></tr>
   <tr><td>Data privacy</td><td>On-device by default; any cloud model is opt-in, and the app shows exactly what it would see first.</td></tr>
 </table>
@@ -139,7 +139,7 @@ footer { margin-top: 6px; padding-top: 5px; border-top: 1px solid #dde3ec; font-
 <ul>
   <li><strong>Low running cost:</strong> AI runs on the user's device, so serving cost per user is near zero; no per-query cloud bill.</li>
   <li><strong>Sustainability:</strong> free core keeps micro-businesses included; lenders fund the platform because earlier warnings reduce their defaults. Open-source core builds trust; hosted sync, lender dashboards and support are paid.</li>
-  <li><strong>Roadmap:</strong> (1) pilot with 20 Sylhet SMEs and one MFI; (2) consented real scam dataset and Bangla voice input; (3) read-only bank and MFS statement import with user consent; (4) regulatory review before any live payment integration. Until then, Tideway stays a sandbox and moves no real money.</li>
+  <li><strong>Roadmap:</strong> (1) pilot with 20 Sylhet SMEs and one MFI; (2) consented real scam dataset and offline Bangla speech recognition; (3) read-only bank and MFS statement import with user consent; (4) regulatory review before any live payment integration. Until then, Tideway stays a sandbox and moves no real money.</li>
 </ul>
 
 <footer>Tideway · The Last BrainCell, BUET · Source: github.com/ramim167/tideway-mu-2026 · All business data in the prototype is synthetic; no real bank, MFS account or money is connected. MFS brand names are used only to describe the messages users receive.</footer>

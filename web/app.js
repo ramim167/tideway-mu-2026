@@ -20,7 +20,10 @@ function syncLanguage() {
 function setLanguage(next) {
   state.lang = next === "bn" ? "bn" : "en";
   try { localStorage.setItem("tideway:lang", state.lang); } catch (_) { /* optional preference */ }
-  if (state.dashboard) render(); else syncLanguage();
+  if (!state.dashboard) { syncLanguage(); return; }
+  const fields = formSnapshot(true);  // the currency is unchanged, so money inputs keep their typed text too
+  render();
+  restoreForm(fields);
 }
 function setAi(on) {
   state.aiConsent = Boolean(on);
@@ -146,18 +149,25 @@ function changeDisplayCurrency(code) {
     if(moneyDraft(input).error){$('#display-currency').value=state.displayCurrency;throw new Error('Fix the invalid amount before changing currency.');}
   }
   // Preserve ordinary form drafts too; converted money controls redraw from canonical models.
-  const fields=[...document.querySelectorAll('#view input,#view select,#view textarea')]
-    .filter(el=>!el.readOnly&&!el.disabled&&!['password','file','submit','button'].includes(el.type)&&!el.hasAttribute('data-money-currency')&&(el.id||el.form?.id&&el.name))
-    .map(el=>({id:el.id,form:el.form?.id,name:el.name,value:el.value,checked:el.checked,type:el.type}));
+  const fields=formSnapshot(false);
   stopSpeaking();
   state.displayCurrency=code;
   try {localStorage.setItem(`tideway:currency:${state.operator.id}`,code);} catch(_) { /* optional preference */ }
   render();
+  restoreForm(fields);
+  resizeChatInput();
+}
+// Typed text in the current page, so a re-render (currency or language switch) never wipes what the user wrote.
+function formSnapshot(includeMoney) {
+  return [...document.querySelectorAll('#view input,#view select,#view textarea')]
+    .filter(el=>!el.readOnly&&!el.disabled&&!['password','file','submit','button'].includes(el.type)&&(includeMoney||!el.hasAttribute('data-money-currency'))&&(el.id||el.form?.id&&el.name))
+    .map(el=>({id:el.id,form:el.form?.id,name:el.name,value:el.value,checked:el.checked,type:el.type}));
+}
+function restoreForm(fields) {
   for(const field of fields) {
     const el=field.id?document.getElementById(field.id):document.getElementById(field.form)?.elements.namedItem(field.name);
     if(el){if(field.type==='checkbox'||field.type==='radio')el.checked=field.checked;else el.value=field.value;}
   }
-  resizeChatInput();
 }
 function compact(minor) {
   const units = minor / 100;
@@ -261,10 +271,11 @@ function showLogin() {
   const plans = config.plans || [];
   $("#plan-cards").innerHTML = plans.map((plan) => `<article class="plan-card"><h3>${esc(plan.label)}</h3>
     <p class="plan-price"><strong>${plan.price_bdt_month ? `৳${esc(plan.price_bdt_month.toLocaleString("en-US"))}` : "Free"}</strong>${plan.price_bdt_month ? "<span> / month, illustrative</span>" : ""}</p>
-    <ul><li>${esc(plan.seats)} team seats</li><li>${esc(plan.businesses)} ${plan.businesses === 1 ? "business" : "businesses"}</li><li>Scam Shield, বাংলা assistant, rescue agent and audit trail</li></ul></article>`).join("");
+    <ul><li>${esc(plan.seats)} team seats</li><li>${esc(plan.businesses)} ${plan.businesses === 1 ? "business" : "businesses"}</li><li>${esc(plan.features || "Scam Shield, বাংলা assistant, rescue agent and audit trail")}</li></ul></article>`).join("");
   $("#signup-plans").innerHTML = `<legend>Plan</legend>` + plans.map((plan, index) =>
     `<label class="plan-option"><input type="radio" name="plan" value="${esc(plan.id)}" ${index === 0 ? "checked" : ""}><strong>${esc(plan.label)}</strong><span>${plan.price_bdt_month ? `৳${esc(plan.price_bdt_month)}/mo (illustrative)` : "Free"} · ${esc(plan.seats)} seats</span></label>`).join("");
-  const currencies = config.currencies || [];
+  // Taka first: Tideway is for Bangladeshi businesses; other currencies stay available below it.
+  const currencies = [...(config.currencies || [])].sort((a, b) => (b.code === "BDT") - (a.code === "BDT"));
   const select = $("#signup-currency");
   if (!select.options.length) select.innerHTML = currencies.map((item) => `<option value="${esc(item.code)}" ${item.code === "BDT" ? "selected" : ""}>${esc(item.code)} · ${esc(item.name)}</option>`).join("");
   $("#login-pin").value = "";
@@ -349,6 +360,7 @@ function clearPrivateContext() {
 function resetSessionState() {
   clearPrivateContext();
   stopSpeaking();
+  window.TidewayLearn?.reset();
   window.TidewayOwner.reset();
   window.TidewayLab.reset();
   window.TidewayTreasury.reset();
@@ -581,6 +593,7 @@ function setBusy(busy) {
 
 async function act(label, work) {
   if (state.busy) return null;
+  clearError();
   setBusy(true);
   try {
     return await work();
@@ -830,7 +843,7 @@ function renderOverview() {
   ${window.TidewayReview.customers(d.owner_view)}
   <section class="card section-gap"><div class="card-head"><div><h3>Customer payment behaviour</h3><p>Lateness = paid date − due date. Thin histories borrow from the business-wide average (credibility weighting), so one lucky payment never makes a customer look perfect.</p></div></div>
     <div class="table-wrap"><table><thead><tr><th>Customer</th><th>Grade</th><th class="num">Settled</th><th class="num">Expected delay</th><th class="num">P80 delay</th><th class="num">Own-history weight</th><th class="num">Open balance</th><th>Why</th></tr></thead><tbody>
-    ${customers.length ? "" : `<p class="muted">No customer history yet. Add invoices to see who pays late.</p>`}
+    ${customers.length ? "" : `<tr><td colspan="9" class="muted">No customer history yet. Add invoices to see who pays late.</td></tr>`}
     ${customers.map((item) => `<tr><td><strong>${esc(item.customer)}</strong></td><td><span class="pill ${item.grade <= "B" ? "ok" : item.grade === "C" ? "unsettled" : "storm"}">${esc(item.grade)}</span></td><td class="num">${esc(item.settled_invoices)}</td><td class="num">${esc(days(item.expected_delay_days))}</td><td class="num">${esc(days(item.p80_delay_days))}</td><td class="num">${pct(item.own_history_weight)}</td><td class="num">${money(item.open_exposure_minor)}</td><td class="small muted">${esc(moneyProse(item.explanation))}</td></tr>`).join("")}
     </tbody></table></div></section>`;
 }
@@ -874,7 +887,7 @@ function toggleSpeak() {
   if (state.speaking) return stopSpeaking();
   if (!state.dashboard) return;
   const utterance = new SpeechSynthesisUtterance(briefText(state.dashboard));
-  utterance.lang = document.documentElement.lang || "en";
+  utterance.lang = /[ঀ-৿]/.test(utterance.text) ? "bn-BD" : "en-US";  // the voice must match the text's language
   const done = () => { if (state.speaking) { state.speaking = false; updateSpeakButton(); } };
   utterance.onend = done;
   utterance.onerror = done;
@@ -1115,7 +1128,7 @@ function mandateCard(view) {
     controls.push(`<button class="button ghost" data-action="cancel-mandate" data-mandate="${esc(m.mandate_id)}">Cancel mandate</button>`);
   }
   return `<section class="card section-gap" id="mandate-${esc(m.mandate_id)}"><div class="card-head"><div><span class="eyebrow">Signed mandate · ${esc(m.version)}</span><h3>${esc(m.actions.length)} bound action(s) · exposure ${money(m.exposure_minor)}</h3><p>Approved by ${m.approvals.map((item) => `${esc(item.operator_id)} (${esc(item.role)})`).join(" + ")} · expires ${esc(dhakaTimestamp(m.expires_at))} (${dhakaTimeLabel()}) · human present</p></div><span class="pill ${statusPill}">${esc(view.status)}</span></div>
-    <div class="status-strip"><span class="tag">plan ${esc(m.plan_hash.slice(0, 10))}…</span><span class="tag">snapshot ${esc(m.snapshot_hash.slice(0, 10))}…</span><span class="tag">signature ${esc(m.signature.slice(0, 14))}…</span><span class="tag">nonce ${esc(m.nonce.slice(0, 8))}…</span>
+    <div class="status-strip"><span class="tag">plan ${esc(m.plan_hash.slice(0, 10))}…</span><span class="tag">snapshot ${esc(m.snapshot_hash.slice(0, 10))}…</span><span class="tag">signature ${esc(m.signature.slice(0, 14))}…</span><span class="tag no-translate">nonce ${esc(m.nonce.slice(0, 8))}…</span>
       <button class="button small ghost" data-action="verify-mandate" data-mandate="${esc(m.mandate_id)}">Verify signature</button><button class="button small ghost" data-action="tamper-mandate" data-mandate="${esc(m.mandate_id)}">Tamper test</button></div>
     ${transcript.length ? `<div class="transcript section-gap">${transcript.join("")}</div>` : `<p class="small muted section-gap">No requests sent yet. Counterparties are rule-based simulations with their own limits; nobody real is contacted.</p>`}
     ${view.status === "countered" ? `<div class="alert warning section-gap">${icon("alert")}<div><strong>Counter-offer received</strong><span>A signed mandate is never edited in place. Accepting creates a new proposal that needs fresh approval and is re-checked for risk.</span></div></div>` : ""}
@@ -1181,10 +1194,10 @@ function rescueSummaryHtml(d) {
   }
   const pctText = (bps) => (bps / 100).toFixed(bps % 100 ? 1 : 0);
   const step = (a) => {
-    if (a.type === "supplier_deferral") return L(`Ask <strong>${esc(a.counterparty)}</strong> to wait ${a.days} days for ${money(a.amount_minor)} (pay on ${day(a.to_date)} instead of ${day(a.from_date)}). No fee.`,
-      `<strong>${esc(a.counterparty)}</strong>-কে ${money(a.amount_minor)} পেতে ${a.days} দিন অপেক্ষা করতে বলুন (${day(a.from_date)}-এর বদলে ${day(a.to_date)})। কোনো ফি নেই।`);
-    if (a.type === "early_payment_offer") return L(`Offer <strong>${esc(a.counterparty)}</strong> ${pctText(a.discount_bps)}% off (${money(a.discount_minor)}) to pay ${money(a.face_minor)} by ${day(a.to_date)} instead of ${day(a.from_date)}.`,
-      `<strong>${esc(a.counterparty)}</strong>-কে ${pctText(a.discount_bps)}% ছাড় (${money(a.discount_minor)}) দিন, যাতে ${day(a.from_date)}-এর বদলে ${day(a.to_date)}-এর মধ্যে ${money(a.face_minor)} দেয়।`);
+    if (a.type === "supplier_deferral") return L(`Ask <strong>${esc(a.counterparty)}</strong> to wait ${a.days} days for ${money(a.amount_minor)} (pay on ${esc(day(a.to_date))} instead of ${esc(day(a.from_date))}). No fee is charged.`,
+      `<strong>${esc(a.counterparty)}</strong>-কে ${money(a.amount_minor)} পেতে ${a.days} দিন অপেক্ষা করতে বলুন (${esc(day(a.from_date))}-এর বদলে ${esc(day(a.to_date))})। কোনো ফি নেই।`);
+    if (a.type === "early_payment_offer") return L(`Offer <strong>${esc(a.counterparty)}</strong> ${pctText(a.discount_bps)}% off (${money(a.discount_minor)}) to pay ${money(a.face_minor)} by ${esc(day(a.to_date))} instead of ${esc(day(a.from_date))}.`,
+      `<strong>${esc(a.counterparty)}</strong>-কে ${pctText(a.discount_bps)}% ছাড় (${money(a.discount_minor)}) দিন, যাতে ${esc(day(a.from_date))}-এর বদলে ${esc(day(a.to_date))}-এর মধ্যে ${money(a.face_minor)} দেয়।`);
     return `${esc(String(a.type).replaceAll("_", " "))}: <strong>${esc(a.counterparty || "")}</strong>`;
   };
   const after = best.after || {};
@@ -1195,7 +1208,7 @@ function rescueSummaryHtml(d) {
     <h2 id="rescue-summary-title">${L(`${best.actions.length} step${best.actions.length === 1 ? "" : "s"} to cover the gap of ${money(plan.gap_minor)}`, `${money(plan.gap_minor)} ঘাটতি মেটাতে ${best.actions.length}টি ধাপ`)}</h2>
     <ol class="rescue-steps">${best.actions.map((a) => `<li><span>${step(a)}</span></li>`).join("")}</ol>
     <div class="rescue-outcome">
-      <div><span>${L("Total cost", "মোট খরচ")}</span><strong>${money(best.economic_cost_minor)}</strong></div>
+      <div><span>${L("Estimated cost", "আনুমানিক খরচ")}</span><strong>${money(best.economic_cost_minor)}</strong><small>${L("Discounts given, plus an implied 12% a year for each day a supplier waits", "দেওয়া ছাড়, আর সরবরাহকারী যত দিন অপেক্ষা করেন তার জন্য বছরে ১২% হারে ধরা আনুমানিক খরচ")}</small></div>
       <div><span>${L("Salaries", "বেতন")}</span><strong class="${after.payroll_at_risk ? "negative" : "positive"}">${after.payroll_at_risk ? L("Still at risk", "এখনো ঝুঁকিতে") : L("Can be paid", "দেওয়া যাবে")}</strong></div>
       <div><span>${L("Lowest cash after", "পরে সর্বনিম্ন নগদ")}</span><strong>${money(after.minimum_cash_minor)}</strong></div>
       <div><span>${L("Who must agree", "কাদের সম্মতি লাগবে")}</span><strong>${esc([...new Set((best.actions || []).map((a) => a.counterparty).filter(Boolean))].join(", ") || "—")}</strong></div>
@@ -1260,6 +1273,8 @@ const tidelmLabel = () => state.config?.tidelm?.label || "TideLM · local Qwen3 
 const TIDELM_PROMPTS = ["Should I give Nila Traders 30 days credit on 50,000?", "Which customers pay late?",
   "What if Bay Logistics pays 15 days late?", "এই মাসে কি বেতন দিতে পারব?", "Nila Traders ২০ দিন দেরিতে টাকা দিলে কী হবে?",
   "beton dite parbo?", "Remind everyone who owes me", "pay Rahman now"];
+const LOCAL_PROMPTS_BN = ["এই মাসে কি বেতন দিতে পারব?", "এই মাসে ঝুঁকি কতটা?", "কাকে আগে টাকা চাইব?",
+  "Nila Traders ২০ দিন দেরিতে টাকা দিলে কী হবে?", "আমার জন্য একটি উদ্ধার পরিকল্পনা করো", "beton dite parbo?"];
 const LOCAL_PROMPTS = ["Can I pay payroll on time?", "How risky is this month?", "Who should I chase first?",
   "এই মাসে কি বেতন দিতে পারব?", "Nila Traders ২০ দিন দেরিতে টাকা দিলে কী হবে?", "beton dite parbo?",
   "Find me a rescue plan", "Why this plan?", "Approve the plan and pay the supplier"];
@@ -1316,8 +1331,10 @@ function toolResultHtml({tool, result: r}) {
 }
 
 function feedbackHtml(item, index) {
-  if (item.voted) return `<div class="feedback small muted">${item.voted === "up" ? "Thanks: marked helpful." : "Thanks: marked not helpful."}</div>`;
-  return `<div class="feedback" role="group" aria-label="Was this answer helpful?"><span class="small muted">Helpful?</span>
+  // Chat bubbles are skipped by the page translator, so their labels pick the language here.
+  const bn = state.lang === "bn";
+  if (item.voted) return `<div class="feedback small muted">${item.voted === "up" ? (bn ? "ধন্যবাদ: কাজে লেগেছে বলে চিহ্নিত।" : "Thanks: marked helpful.") : (bn ? "ধন্যবাদ: কাজে লাগেনি বলে চিহ্নিত।" : "Thanks: marked not helpful.")}</div>`;
+  return `<div class="feedback" role="group" aria-label="${bn ? "উত্তরটি কি কাজে লেগেছে?" : "Was this answer helpful?"}"><span class="small muted">${bn ? "কাজে লেগেছে?" : "Helpful?"}</span>
     <button class="chip" type="button" data-action="feedback" data-index="${index}" data-helpful="true" aria-label="Helpful">👍</button>
     <button class="chip" type="button" data-action="feedback" data-index="${index}" data-helpful="false" aria-label="Not helpful">👎</button></div>`;
 }
@@ -1711,17 +1728,20 @@ async function copyText(text) {
 
 function renderAssistant() {
   const on = tidelmOn();
-  if (!state.chat.length) state.chat.push({role: "agent", text: state.lang === "bn"
-    ? "ব্যবসার টাকা নিয়ে কী জানতে চান? বেতন, দেরিতে পাওনা বা ঘাটতি মেটানোর পরিকল্পনা নিয়ে প্রশ্ন করুন।"
-    : "What would you like to know about your cash? Ask about payday, late payments or ways to cover a shortfall."});
-  const prompts = on ? TIDELM_PROMPTS.map(p=>p.replace('on 50,000?',`on ${displayCurrency()} ${displayCurrency()===currency()?'50,000':'500'}?`)) : LOCAL_PROMPTS;
+  // The opening line follows the current language: it is re-written on every render until the first question.
+  const greeting = state.lang === "bn" ? "ব্যবসার টাকা নিয়ে কী জানতে চান? বেতন, দেরিতে পাওনা বা ঘাটতি মেটানোর পরিকল্পনা নিয়ে প্রশ্ন করুন।"
+    : "What would you like to know about your cash? Ask about payday, late payments or ways to cover a shortfall.";
+  if (!state.chat.length) state.chat.push({role: "agent", greeting: true, text: greeting});
+  else if (state.chat.length === 1 && state.chat[0].greeting) state.chat[0].text = greeting;
+  const prompts = on ? TIDELM_PROMPTS.map(p=>p.replace('on 50,000?',`on ${displayCurrency()} ${displayCurrency()===currency()?'50,000':'500'}?`))
+    : state.lang === "bn" ? LOCAL_PROMPTS_BN : LOCAL_PROMPTS;
   const aiReady = !on && state.config.ai_configured;
   const aiSwitch = aiReady ? `<div class="ai-switch-row"><label class="ai-switch"><input id="ai-consent" type="checkbox" role="switch" ${state.aiConsent ? "checked" : ""}><span class="ai-switch-track" aria-hidden="true"></span><span class="ai-switch-label">AI answers</span></label><span class="small muted">${state.aiConsent ? "On for this question and recent chat history. Known counterparty names are hidden." : "Off: the offline assistant answers. Turn on to share this question and recent chat history."}</span><button type="button" class="button small ghost" data-action="privacy-preview-chat">See what is sent</button></div>` : "";
   const consent = on || aiReady ? "" : `<p class="hint">Local agent mode: answers come from deterministic tools, no network. An optional LLM mode is available when a key is configured.</p>`;
   const mode = on ? `<div class="row chat-mode"><span class="pill teal">${icon("spark")}${esc(tidelmLabel())}</span></div>` : "";
   return `<section class="assistant-layout"><div class="card chat ${on ? "with-mode" : ""}">${mode}<div class="chat-log" id="chat-log" aria-live="polite">${state.chat.map((item, index) => item.pending
       ? `<div class="msg agent pending" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>${esc(item.role === "user" ? item.text : moneyProse(item.text))}</div>`
-      : `<div class="msg ${item.role === "user" ? "user" : "agent"} ${item.unverified?.length || item.rejected ? "warn" : ""}">${esc(item.role === "user" ? item.text : moneyProse(item.text))}${item.trace?.length ? `<div class="trace">${item.trace.map((t) => `<span>${esc(t.tool)} · ${esc(t.permission)}</span>`).join("")}</div>` : ""}${item.copilot ? copilotHtml(item.copilot) : ""}${item.aiNudge && state.config.ai_configured && !state.aiConsent ? `<div class="ai-nudge"><button type="button" class="button small primary" data-action="ai-retry" data-prompt="${esc(item.question)}">${icon("spark")}Turn on AI and ask again</button></div>` : ""}${item.question && !item.rejected ? feedbackHtml(item, index) : ""}${index === state.chat.length - 1 && item.role !== "user" ? suggestionsHtml(item.suggestions || (index === 0 ? prompts.slice(0, 3) : [])) : ""}</div>`).join("")}</div>
+      : `<div class="msg ${item.role === "user" ? "user" : "agent"} ${item.unverified?.length || item.rejected ? "warn" : ""}">${esc(item.role === "user" ? item.text : moneyProse(item.text))}${item.trace?.length ? `<div class="trace">${item.trace.map((t) => `<span>${esc(t.tool)} · ${esc(t.permission)}</span>`).join("")}</div>` : ""}${item.copilot ? copilotHtml(item.copilot) : ""}${item.aiNudge && state.config.ai_configured && !state.aiConsent ? `<div class="ai-nudge"><button type="button" class="button small primary" data-action="ai-retry" data-prompt="${esc(item.question)}">${icon("spark")}${state.lang === "bn" ? "AI চালু করে আবার জিজ্ঞেস করুন" : "Turn on AI and ask again"}</button></div>` : ""}${item.question && !item.rejected ? feedbackHtml(item, index) : ""}${index === state.chat.length - 1 && item.role !== "user" ? suggestionsHtml(item.suggestions || (index === 0 ? prompts.slice(0, 3) : [])) : ""}</div>`).join("")}</div>
     ${aiSwitch}${aiReady ? window.TidewayLab.chatPreview() : ""}<p class="hint">Money in questions: include ${esc(displayCurrency())}, e.g. ${esc(displayCurrency())} 100. Dates, days and percentages keep their own units.</p>
     <form id="chat-form" class="chat-form">
       <label class="sr-only" for="chat-input">Your question</label>
@@ -2002,7 +2022,7 @@ function demoDelayHtml() {
     <label class="field">Owner PIN<input name="pin" type="password" inputmode="numeric" autocomplete="off" required></label></div>
     <label class="check section-gap"><input name="confirmed" type="checkbox" required> Apply this change to synthetic records and invalidate previous authority.</label>
     <button class="button teal section-gap" type="submit">Apply payment delay to demo ledger</button></form>
-    ${change ? `<div class="table-wrap section-gap"><table><thead><tr><th>Calculated change</th><th>Before</th><th>After</th></tr></thead><tbody>${rows.map((r) => `<tr>${r.map((v) => `<td>${v}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+    ${change ? `<div class="table-wrap section-gap"><table><thead><tr><th>Calculated change</th><th>Before</th><th>After</th></tr></thead><tbody>${rows.map((r) => `<tr>${r.map((v) => `<td>${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
     <p class="small">${esc(change.invalidated_plans.length)} proposal(s) and ${esc(change.invalidated_mandates.length)} mandate(s) invalidated. ${esc(moneyProse(change.next))}</p>
     <p class="mono tiny">Snapshot ${esc(change.before_snapshot.slice(0, 12))} → ${esc(change.after_snapshot.slice(0, 12))}</p>
     <div class="row">${change.invalidated_mandates.length ? `<button type="button" class="button ghost" data-action="demo-stale">Check old mandate is blocked</button>` : ""}<button type="button" class="button primary" data-view="rescue">Create and review a fresh rescue</button></div>
@@ -2050,7 +2070,7 @@ function renderRecords() {
   return `<section class="card"><div class="row between"><div class="row"><select id="record-filter" aria-label="Record type">${["all", "transaction", "invoice", "bill", "flagged"].map((value) => `<option value="${value}" ${state.recordFilter === value ? "selected" : ""}>${value === "flagged" ? "Quarantined / flagged" : value === "all" ? "All records" : value[0].toUpperCase() + value.slice(1) + "s"}</option>`).join("")}</select><input id="record-search" class="search" placeholder="Search id, party or text" value="${esc(state.recordQuery)}" aria-label="Search records"></div>
     <div class="row"><a class="button ghost" href="/api/export?kind=records&business_id=${encodeURIComponent(state.businessId)}">${icon("download")}Ledger CSV (for import)</a><a class="button ghost" href="/api/export?kind=records&business_id=${encodeURIComponent(state.businessId)}&display_currency=${encodeURIComponent(displayCurrency())}">${icon("download")}Display-currency report</a>${canApprove() ? `<button class="button primary" data-action="import">${icon("upload")}Import CSV</button>` : ""}</div></div>
     <div class="table-wrap section-gap"><table><thead><tr><th>Type</th><th>Record</th><th>Party</th><th>Date</th><th class="num">Amount</th><th>Status</th><th>Screening</th></tr></thead><tbody>
-    ${shown.map((row) => `<tr class="${row.flags.length ? "flagged" : ""}"><td><span class="tag">${esc(row.kind)}</span></td><td><strong>${esc(row.id)}</strong><div class="small muted">${esc(moneyProse(row.text))}</div></td><td>${esc(row.party)}</td><td class="nowrap">${esc(day(row.date, true))}</td><td class="num ${row.amount < 0 ? "negative" : "positive"}">${money(row.amount)}</td><td class="small">${esc(row.status)}</td><td>${row.flags.length ? row.flags.map((flag) => `<span class="tag bad">${esc(flag.replaceAll("_", " "))}</span>`).join(" ") : `<span class="tag">no flags</span>`}</td></tr>`).join("")}
+    ${shown.map((row) => `<tr class="${row.flags.length ? "flagged" : ""}"><td><span class="tag">${esc(row.kind)}</span></td><td><strong>${esc(row.id)}</strong><div class="small muted record-text">${esc(moneyProse(row.text))}</div></td><td>${esc(row.party)}</td><td class="nowrap">${esc(day(row.date, true))}</td><td class="num ${row.amount < 0 ? "negative" : "positive"}">${money(row.amount)}</td><td class="small">${esc(row.status)}</td><td>${row.flags.length ? row.flags.map((flag) => `<span class="tag bad">${esc(flag.replaceAll("_", " "))}</span>`).join(" ") : `<span class="tag">no flags</span>`}</td></tr>`).join("")}
     </tbody></table></div><p class="hint section-gap">Showing ${shown.length} of ${rows.length}. Text is rendered as data. Flags mean the agent never receives that text and it cannot change any action.</p></section>`;
 }
 
@@ -2166,9 +2186,10 @@ function openApprove(planId, bundleId) {
   const submit = $("#approve-submit");
   let wait = 3;
   submit.disabled = true;
-  submit.textContent = `Read first (${wait})`;
+  const bn = state.lang === "bn";
+  submit.textContent = bn ? `আগে পড়ুন (${bnDigits(wait)})` : `Read first (${wait})`;
   clearInterval(approveTimer);
-  approveTimer = setInterval(() => { wait -= 1; if (wait <= 0) { clearInterval(approveTimer); submit.disabled = false; submit.textContent = "Approve"; } else submit.textContent = `Read first (${wait})`; }, 1000);
+  approveTimer = setInterval(() => { wait -= 1; if (wait <= 0) { clearInterval(approveTimer); submit.disabled = false; submit.textContent = bn ? "অনুমোদন করুন" : "Approve"; } else submit.textContent = bn ? `আগে পড়ুন (${bnDigits(wait)})` : `Read first (${wait})`; }, 1000);
   $("#approve-dialog").showModal();
 }
 
@@ -2192,6 +2213,9 @@ async function submitApprove(event) {
       body.confirm_amount_minor=pending.bundle.exposure_minor;
     }catch(error){$("#approve-error").textContent=error.message;return;}
   }
+  const submit = $("#approve-submit");
+  if (submit.disabled) return;  // a double click must not send two approvals
+  submit.disabled = true;
   try {
     const result = await api("/api/plan/approve", body);
     $("#approve-dialog").close();
@@ -2200,6 +2224,8 @@ async function submitApprove(event) {
     await act("Reload", () => loadDashboard());
   } catch (error) {
     $("#approve-error").textContent = error.message;
+  } finally {
+    submit.disabled = false;
   }
 }
 
@@ -2340,6 +2366,7 @@ document.addEventListener("click", async (event) => {
   if (options?.open && !options.contains(target)) options.open = false;
   if (nav) {
     if (state.view === "team" && nav.dataset.view !== "team") state.invite = null;  // the code is shown once
+    clearError();
     state.view = nav.dataset.view;
     render();
     if (state.view === "evidence" && state.dashboard) loadAudit();
@@ -2519,7 +2546,7 @@ document.addEventListener("input", (event) => {
       draft.edited=true;
     }
   }
-  else if (target.id === "record-search") { state.recordQuery = target.value; const position = target.selectionStart; render(); const box = $("#record-search"); box.focus(); box.setSelectionRange(position, position); }
+  else if (target.id === "record-search" && !event.isComposing) { state.recordQuery = target.value; const position = target.selectionStart; render(); const box = $("#record-search"); box.focus(); box.setSelectionRange(position, position); }
 });
 
 document.addEventListener("submit", async (event) => {

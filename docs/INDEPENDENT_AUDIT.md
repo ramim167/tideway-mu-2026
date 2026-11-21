@@ -1,4 +1,4 @@
-> Historical internal review pass before the screening/risk/infrastructure follow-up. See [REMEDIATION_V7.md](REMEDIATION_V7.md) and [READINESS_CURRENT.md](READINESS_CURRENT.md) for later source and evidence.
+> Historical review from the team's earlier FinTechathon 2026 (Topic E) entry, kept as evidence. Internal review pass before the screening/risk/infrastructure follow-up. See [REMEDIATION_V7.md](REMEDIATION_V7.md) and [READINESS_CURRENT.md](READINESS_CURRENT.md) for later source and evidence.
 
 # Internal pre-submission review - 17 October 2026
 

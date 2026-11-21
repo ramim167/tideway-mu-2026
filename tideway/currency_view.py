@@ -32,6 +32,9 @@ def display(minor, source, target=None):
 AMOUNT=re.compile(r"(?<![\w])(?P<sign>[−-]?)(?P<code>[A-Z]{3})\s*(?P<amount>(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)(?!(?:\w|,\d|\.\d|[-/]\d))",re.I)
 
 
+_LOWERCASE_CODES = frozenset({"bdt", "usd", "eur", "gbp", "inr"})
+
+
 def question(message, input_currency, ledger_currency, protected=(), *, require_explicit=True):
     """Convert explicitly coded monetary tokens; never reinterpret days, IDs or bare amounts."""
     code(input_currency);code(ledger_currency)
@@ -40,7 +43,11 @@ def question(message, input_currency, ledger_currency, protected=(), *, require_
     for name in protected:
         if not name:continue
         ranges.extend((m.start(),m.end()) for m in re.finditer(re.escape(name),message,re.I))
-    matches=[m for m in AMOUNT.finditer(message) if m['code'].upper() in CURRENCIES and not any(m.start()<b and m.end()>a for a,b in ranges)]
+    # Codes count in capitals (BDT 100); lowercase only for common codes that are not English words, so
+    # "try 10 more days" or "all 20" is never read as Turkish lira or Albanian lek.
+    matches=[m for m in AMOUNT.finditer(message) if m['code'].upper() in CURRENCIES
+             and (m['code'].isupper() or m['code'].lower() in _LOWERCASE_CODES)
+             and not any(m.start()<b and m.end()>a for a,b in ranges)]
     masked=list(message)
     for a,b in ranges+[(m.start(),m.end()) for m in matches]:masked[a:b]=' '*(b-a)
     remaining=''.join(masked)

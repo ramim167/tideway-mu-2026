@@ -112,8 +112,13 @@ def chat_to_responses(response):
         raise ProviderError(f"The AI service returned no answer{': ' + str(detail)[:160] if detail else '.'}")
     message = choices[0]["message"]
     output = []
-    for call in message.get("tool_calls") or []:
-        function = call.get("function") or {}
+    calls = message.get("tool_calls") or []
+    if not isinstance(calls, list):
+        raise ProviderError("The AI service returned malformed tool calls.")
+    for call in calls:
+        function = call.get("function") if isinstance(call, dict) else None
+        if not isinstance(function, dict):
+            raise ProviderError("The AI service returned a malformed tool call.")
         output.append({"type": "function_call", "call_id": call.get("id"), "name": function.get("name"),
                        "arguments": function.get("arguments") or "{}"})
     if isinstance(message.get("content"), str) and message["content"].strip():
@@ -927,8 +932,10 @@ class Agent:
                         result = aliases.scrub(self.tool(name, business_id, target, actor, trace))
                     except (ValidationError, ValueError, TypeError) as exc:
                         result = {"error": "Rejected by local policy."}
+                        # Logged, but a model's bad tool call never counts toward the circuit breaker: otherwise any
+                        # member (even a viewer) could pause the business and void its plans just by chatting.
                         self.store.reject(business_id, "agent.tool_rejected", actor, exc, {"tool": str(name)[:60]},
-                                          security_relevant=isinstance(exc, SecurityError))
+                                          security_relevant=False)
                         trace.append({"tool": str(name)[:60], "permission": "denied"})
                     statements = financial_statements(result, snapshot["business"]["currency"], ui_lang)
                     if statements:

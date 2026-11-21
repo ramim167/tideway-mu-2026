@@ -110,7 +110,7 @@ def replay_capsule(value):
 def challenge(lab, context, kind, customer=None, delay_days=7, bill_id=None, text=""):
     if kind == "delay":
         integer(delay_days, "Delay", 1, 60)
-        if customer not in {r["customer"] for r in context.records["invoices"]}:
+        if not isinstance(customer, str) or customer not in {r["customer"] for r in context.records["invoices"]}:
             raise ValidationError("Select a customer from this business.")
         return context.envelope({"kind": "challenge_delay", "customer": customer, "delay_days": delay_days,
                                  "before": summary(context.projection()), "after": summary(context.projection({customer: delay_days})),

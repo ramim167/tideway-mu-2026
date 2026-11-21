@@ -1,6 +1,6 @@
 # Tideway: technical documentation
 
-*FinTechathon 2026 International Track, Topic E (SME Finance Copilot). Synthetic sandbox only: no real money, bank, lender, supplier or customer is connected.*
+*MU CSE Fest 2026 AI Builders Hackathon, FinTech & Financial Intelligence track. Synthetic sandbox only: no real money, bank, lender, supplier or customer is connected.*
 
 ## 1. Problem and scope
 

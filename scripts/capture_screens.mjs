@@ -295,14 +295,14 @@ try {
   await until("!!document.querySelector('.shield-result.storm') && document.querySelector('.shield-verdict').textContent.includes('সম্ভবত প্রতারণা')", "Scam check flags a fake cash-in SMS");
   await shot("00d-scam-check-bangla");
   // Money lessons: six lessons in Bangla, each with the business's own numbers and a one-question check.
-  await evaluate("localStorage.removeItem('tideway:lessons'), true");
+  await evaluate("localStorage.removeItem('tideway:lessons:' + state.operator.id), true");
   await view("learn");
   await until("state.view === 'learn' && document.querySelector('#page-title').textContent === 'টাকার পাঠ' && document.querySelectorAll('.learn-item').length === 6", "Money lessons in Bangla");
   if (!await evaluate("document.querySelector('.learn-yours').textContent.includes('20,000') && document.querySelector('.learn-yours').textContent.includes('নিরাপত্তার টাকা')")) throw new Error("Money lessons do not use the business's own safety money");
   await click('[data-action="learn-answer"][data-id="safety"][data-i="0"]');
   await until("!!document.querySelector('.learn-feedback.wrong')", "wrong answer explained");
   await click('[data-action="learn-answer"][data-id="safety"][data-i="1"]');
-  await until("!!document.querySelector('.learn-feedback.right') && localStorage.getItem('tideway:lessons') === '[\"safety\"]' && document.querySelector('.learn-progress').textContent.includes('১টি')", "lesson marked done");
+  await until("!!document.querySelector('.learn-feedback.right') && localStorage.getItem('tideway:lessons:' + state.operator.id) === '[\"safety\"]' && document.querySelector('.learn-progress').textContent.includes('১টি')", "lesson marked done");
   await shot("00e-money-lessons-bangla");
   await click('[data-view="shield"]');
   await until("state.view === 'shield'", "back to Scam check");

@@ -5,7 +5,7 @@
 // Financial literacy for owners who never had a finance class. Read-only: it changes no record and moves no money.
 // Progress is kept in this browser only (localStorage).
 window.TidewayLearn = (() => {
-  const KEY = "tideway:lessons";
+  const key = () => `tideway:lessons:${state.operator?.id || "guest"}`;
   const BN_MONTHS = "জানু ফেব্রু মার্চ এপ্রি মে জুন জুলাই আগ সেপ্টে অক্টো নভে ডিসে".split(" ");
   let openId = "safety";
   const answers = {};
@@ -22,10 +22,10 @@ window.TidewayLearn = (() => {
     return `${d.getUTCDate()} ${BN_MONTHS[d.getUTCMonth()]}`;
   };
   function done() {
-    try { return new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch (_) { return new Set(); }
+    try { return new Set(JSON.parse(localStorage.getItem(key()) || "[]")); } catch (_) { return new Set(); }
   }
   function save(set) {
-    try { localStorage.setItem(KEY, JSON.stringify([...set])); } catch (_) { /* optional progress */ }
+    try { localStorage.setItem(key(), JSON.stringify([...set])); } catch (_) { /* optional progress */ }
   }
 
   // Only figures the server already computed; nothing is forecast here.
@@ -195,5 +195,6 @@ window.TidewayLearn = (() => {
     render_();
     if (name === "open" && openId) document.querySelector(`.learn-head[data-id="${openId}"]`)?.scrollIntoView({block: "nearest"});
   }
-  return {render, action, bind(renderer) { render_ = renderer; }, LESSONS};
+  function reset() { Object.keys(answers).forEach((k) => delete answers[k]); openId = LESSONS[0].id; }
+  return {render, action, reset, bind(renderer) { render_ = renderer; }, LESSONS};
 })();

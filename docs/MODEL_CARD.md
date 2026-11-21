@@ -105,8 +105,8 @@ learning and privacy guarantees remain future work.
 
 This is a Tideway-trained LoRA adapter on Qwen3-4B-Instruct-2507, converted to
 4-bit MLX format by mlx-community. The third-party base model is Apache-2.0.
-We trained the adapter, not the base model. The public adapter release is
-`https://github.com/SadManQT/tideway/releases/tag/tidelm-v2`.
+We trained the adapter, not the base model. The public adapter release is in the team's original
+development repository: `https://github.com/SadManQT/tideway/releases/tag/tidelm-v2`.
 
 The v2 evaluation uses 300 planning and 200 extraction examples. Names are held
 out, while training and test share generated template families. Exact plans:
