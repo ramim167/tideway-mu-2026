@@ -1,4 +1,4 @@
-# Tideway model and evidence card
+# MoneyGuard model and evidence card
 
 All reported results use synthetic data. They do not estimate real-world lending,
 fraud-detection or production accuracy. Application permissions and human approval
@@ -6,7 +6,7 @@ remain necessary even when a model produces a valid answer.
 
 ## TidePay
 
-Tideway's pure-Python softmax classifier predicts five invoice-lateness bands from
+MoneyGuard's pure-Python softmax classifier predicts five invoice-lateness bands from
 14 features. The shipped artifact remains `tideway/ml/tidepay_model.json`, with
 its historical observation retained at `evidence/ml/tidepay_report.json`. The
 historical prior baseline's MAE used the test delay mean; its split also lacked
@@ -103,7 +103,7 @@ learning and privacy guarantees remain future work.
 
 ## TideLM v2
 
-This is a Tideway-trained LoRA adapter on Qwen3-4B-Instruct-2507, converted to
+This is a MoneyGuard-trained LoRA adapter on Qwen3-4B-Instruct-2507, converted to
 4-bit MLX format by mlx-community. The third-party base model is Apache-2.0.
 We trained the adapter, not the base model. The public adapter release is in the team's original
 development repository: `https://github.com/SadManQT/tideway/releases/tag/tidelm-v2`.
@@ -131,7 +131,7 @@ The released MLX adapter has **no post-change device measurement of this loop**.
 
 ## Optional compatible GGUF text models
 
-The separately provisioned helper `scripts/local_demo_model.py` offers two profiles; neither contains a Tideway fine-tune or the released MLX adapter:
+The separately provisioned helper `scripts/local_demo_model.py` offers two profiles; neither contains a MoneyGuard fine-tune or the released MLX adapter:
 
 | Profile | Alias/artifact | Download bytes |
 |---|---|---:|
@@ -149,7 +149,7 @@ Structured planning is opt-in and off by default. Supporting local servers recei
 ## TideVision
 
 TideVision integrates the third-party Qwen2.5-VL-3B-Instruct model, converted by
-mlx-community, without a Tideway fine-tune. The base model has the Qwen Research
+mlx-community, without a MoneyGuard fine-tune. The base model has the Qwen Research
 license, not the application's MIT license. See `THIRD_PARTY_NOTICES` and
 `licenses/Qwen2.5-VL-3B-Research.txt`. Keep research/evaluation use and any future
 commercial deployment distinct.
@@ -169,7 +169,7 @@ No post-fix device accuracy or general receipt-reading accuracy is claimed.
 | Optional compatible local server | Windows, macOS or Linux, installed model, literal loopback endpoint | Transport/guard tests; authored Windows Qwen3 4B text smoke 6/6 and expanded 12/12, not a general benchmark |
 | Optional cloud assistant | User key, network and per-message consent | Simulated transport tests; no measured live-provider run |
 
-First-time downloads require network access. The helper's cached inference is local; independently installed compatible servers must be trusted not to forward input elsewhere, which Tideway's loopback check cannot audit. Local processing depends on host security. The default Windows path remains deterministic unless a local model is explicitly configured. Post-change Apple Silicon TideLM and post-fix vision verification remain outstanding.
+First-time downloads require network access. The helper's cached inference is local; independently installed compatible servers must be trusted not to forward input elsewhere, which MoneyGuard's loopback check cannot audit. Local processing depends on host security. The default Windows path remains deterministic unless a local model is explicitly configured. Post-change Apple Silicon TideLM and post-fix vision verification remain outstanding.
 
 ## Reproduce and extend
 

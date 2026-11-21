@@ -1,6 +1,6 @@
-"""Bangla (বাংলা) reply templates for Tideway's assistant.
+"""Bangla (বাংলা) reply templates for MoneyGuard's assistant.
 
-Every template is filled with numbers from Tideway's own tools, exactly like the other languages in
+Every template is filled with numbers from MoneyGuard's own tools, exactly like the other languages in
 ``i18n.py``, so translation can never change a figure.  Amounts keep their ISO code (BDT), which is how
 Bangladeshi bank and MFS statements print them.  Kept in its own module so the Bangla team can edit it
 without touching the other languages.

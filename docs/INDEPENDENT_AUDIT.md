@@ -2,7 +2,7 @@
 
 # Internal pre-submission review - 17 October 2026
 
-**Verdict:** Tideway is a credible, reproducible Topic E synthetic sandbox, with
+**Verdict:** MoneyGuard is a credible, reproducible Topic E synthetic sandbox, with
 working financial decisions and approval-gated execution. It is not yet a
 fully cleared contest submission or a validated real-world financial service.
 The local defects below were reproduced and repaired. Submission administration,

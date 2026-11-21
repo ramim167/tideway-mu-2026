@@ -44,7 +44,7 @@ Nine attempted tasks failed. T3 has four unavailable-model records and two
 not-attempted records; these six are excluded from attempted-task denominators.
 
 The 14 reported attempted T3 observations do not establish which DeepSeek
-runtime was used inside or outside Tideway. They are not native TideLM adapter,
+runtime was used inside or outside MoneyGuard. They are not native TideLM adapter,
 receipt-model or current-build model-quality verification.
 
 ## Questionnaire

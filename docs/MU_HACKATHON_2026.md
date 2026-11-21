@@ -1,18 +1,18 @@
-# Tideway at the MU AI Builders Hackathon 2026
+# MoneyGuard at the MU AI Builders Hackathon 2026
 
 **Competition:** Metropolitan University Inter-University AI Builders Hackathon 2026, powered by Phitron (MU CSE Fest 2026, Sylhet)
 **Track:** 04 — FinTech & Financial Intelligence ("digital finance, fraud detection, financial literacy and financial inclusion")
-**Project:** Tideway, an AI cash-flow and fraud-safety copilot for Bangladeshi small businesses
+**Project:** MoneyGuard, an AI cash-flow and fraud-safety copilot for Bangladeshi small businesses
 **Team:** The Last BrainCell, BUET (3–4 registered members; see `submission-team.public.json`)
 
-The organisers confirmed that an existing project may be adapted for the preliminary round. Tideway was first built for
+The organisers confirmed that an existing project may be adapted for the preliminary round. MoneyGuard was first built for
 FinTechathon 2026 (Shenzhen); that material is kept in [`archive/fintechathon-2026/`](archive/fintechathon-2026/).
 
 ## 1. Preliminary round: what we submit
 
 | Requirement (rulebook §3.3) | Our item | Status |
 |---|---|---|
-| Project idea proposal, one PDF, max 3 pages: problem, AI solution, target users and impact, innovation and feasibility, business model and sustainability | [`proposal/Tideway_MU_AI_Builders_2026_Proposal.pdf`](proposal/Tideway_MU_AI_Builders_2026_Proposal.pdf) (source: `proposal/proposal.html`) | Ready; upload to Google Drive, share as "anyone with the link" |
+| Project idea proposal, one PDF, max 3 pages: problem, AI solution, target users and impact, innovation and feasibility, business model and sustainability | [`proposal/MoneyGuard_MU_AI_Builders_2026_Proposal.pdf`](proposal/MoneyGuard_MU_AI_Builders_2026_Proposal.pdf) (source: `proposal/proposal.html`) | Ready; upload to Google Drive, share as "anyone with the link" |
 | Team Leader's GitHub profile URL | Leader's profile, with this repository public and pinned | Team to confirm |
 | Idea presentation video, max 5 minutes, introduces every member and their role; segments: problem, solution, workflow, AI approach, impact | Not made yet (deferred by the team) | To do |
 | Track selection | FinTech & Financial Intelligence | Select on the form |
@@ -20,7 +20,7 @@ FinTechathon 2026 (Shenzhen); that material is kept in [`archive/fintechathon-20
 
 Deadline: **20 November 2026**. Top 50 + 10 waiting-list teams announced 25 November.
 
-## 2. How Tideway meets the preliminary judging criteria
+## 2. How MoneyGuard meets the preliminary judging criteria
 
 The rulebook (§3.4) judges problem relevance, innovation, feasibility, proposed AI approach, expected impact, presentation
 quality and team preparedness.
@@ -56,6 +56,6 @@ quality and team preparedness.
 ## 5. Grand Finale reminders (4–5 December)
 
 The finale is a **new, unrelated problem** built from scratch in a **new GitHub repository**; pre-built projects are not
-allowed there, so Tideway is not reused at the finale. All members must be on site for 24 hours. Scoring: relevance 5,
+allowed there, so MoneyGuard is not reused at the finale. All members must be on site for 24 hours. Scoring: relevance 5,
 functionality 20, implementation quality 15, UI/UX 15, AI integration 15, teamwork 10, innovation 5, presentation 15.
 Bring student IDs, laptops, chargers, a multi-plug and a mobile hotspot.

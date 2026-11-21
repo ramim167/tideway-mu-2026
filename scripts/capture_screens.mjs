@@ -1,4 +1,4 @@
-// End-to-end browser check and screenshot capture for Tideway.
+// End-to-end browser check and screenshot capture for MoneyGuard.
 //
 // Starts its own server on a throwaway database, drives headless Chrome over the
 // DevTools protocol (Node 22+ built-in WebSocket, no npm packages), walks the

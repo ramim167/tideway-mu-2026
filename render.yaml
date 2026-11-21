@@ -1,11 +1,11 @@
-# Render Blueprint: one free web service running the synthetic Tideway demo.
-# Render sets PORT and RENDER_EXTERNAL_HOSTNAME; Tideway accepts requests for that public hostname only.
+# Render Blueprint: one free web service running the synthetic MoneyGuard demo.
+# Render sets PORT and RENDER_EXTERNAL_HOSTNAME; MoneyGuard accepts requests for that public hostname only.
 # The SQLite file lives on the instance's temporary disk, so the demo data resets on each deploy or restart.
 # Optional cloud AI: add OPENROUTER_API_KEY and/or GEMINI_API_KEY as secret environment variables in the
 # Render dashboard (never in this file). Without them the local agent answers every question.
 services:
   - type: web
-    name: tideway-mu-2026
+    name: moneyguard
     runtime: python
     plan: free
     autoDeploy: true

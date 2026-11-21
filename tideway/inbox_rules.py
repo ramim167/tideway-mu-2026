@@ -1,6 +1,6 @@
 """Rule-based Inbox extraction: the fallback when TideLM is not installed.
 
-Reads the alert formats Tideway documents (bank SMS, card alerts, M-Pesa, UPI, WeChat Pay,
+Reads the alert formats MoneyGuard documents (bank SMS, card alerts, M-Pesa, UPI, WeChat Pay,
 Alipay, PayNow, DuitNow, GCash, Pix, SEPA, Faster Payments, Wise, bKash, invoice and bill
 notices, and short chat promises such as "Nila Traders will pay 50,000 next Friday") with
 regular expressions only.  It returns the same JSON shape TideLM's extractor returns, so the

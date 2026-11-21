@@ -10,10 +10,10 @@ records its source, outstanding artifacts and scope.
 
 | Field | Team-reported information |
 |---|---|
-| Study | Tideway usability study on team-reported build 9dbe495 |
+| Study | MoneyGuard usability study on team-reported build 9dbe495 |
 | Session date | 19 October 2026 |
 | Moderator | Ramim |
-| Recruitment | Convenience sample of SME owners, bookkeepers and accountants; participants were not involved in implementing Tideway |
+| Recruitment | Convenience sample of SME owners, bookkeepers and accountants; participants were not involved in implementing MoneyGuard |
 | Consent | Obtained before recording; covered anonymous task outcomes, timings, questionnaire responses and non-identifying observer notes |
 | Database reset | The database was reset between participants, confirmed in the latest correction. Whether a separate database file was created for each person is unspecified; reset logs were not supplied |
 | Task order | T1, T2, T3, T4, T5 |
@@ -24,7 +24,7 @@ records its source, outstanding artifacts and scope.
 | OS and browser | Windows 11; Microsoft Edge 155.0.4283.45 on the survey laptop, supplied by the user. The separate desktop capture is Edge 155.0.4283.62 |
 | Language and currency | Bangla or English, recorded per participant; BDT; selected-currency check included |
 | AI model | Qwen3-4B-Instruct-2507, Q4_K_M |
-| Runtime | llama.cpp b11678; local, inside Tideway through a loopback server |
+| Runtime | llama.cpp b11678; local, inside MoneyGuard through a loopback server |
 | Fallback | Recorded separately and not counted as model success, according to the team; per-generation fallback records were not inspected |
 | Tested commit / local changes | User identified `9dbe4955514909fc8125fef1665b10be585c3ac3`, confirmed in Git. Local working-tree changes during the session are unknown |
 | Collection | Outcomes and times were recorded during sessions. SUS was completed individually afterward, without coaching |
@@ -95,7 +95,7 @@ Across attempted tasks: **87/97 (89.69%) without assistance**, and **94/97 (96.9
 
 Complete SUS questionnaires: 20; mean **75.75/100**. SUS is not a percentage of completed tasks.
 
-T3: 2 unavailable-model and 1 unattempted records are excluded from its attempted denominator. The team reports local Qwen3-4B-Instruct-2507 inference inside Tideway. Survey-linked runtime hashes and per-generation fallback records have not been inspected; a questionnaire response alone does not verify a particular model invocation.
+T3: 2 unavailable-model and 1 unattempted records are excluded from its attempted denominator. The team reports local Qwen3-4B-Instruct-2507 inference inside MoneyGuard. Survey-linked runtime hashes and per-generation fallback records have not been inspected; a questionnaire response alone does not verify a particular model invocation.
 
 ## Security assistance records
 

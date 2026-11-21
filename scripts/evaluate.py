@@ -1,4 +1,4 @@
-"""Run the Tideway self-test suite and write reproducible evidence files.
+"""Run the MoneyGuard self-test suite and write reproducible evidence files.
 
 Writes evidence/results.csv, evidence/run-log.jsonl and evidence/verification-summary.json.
 Synthetic sandbox only: this evidences the listed cases, not live-model or user-study results.
@@ -31,7 +31,7 @@ def main():
     with (OUT / "run-log.jsonl").open("w", encoding="utf-8") as handle:
         for item in report["results"]:
             handle.write(json.dumps({"run_at": stamp, "fixture": "tideway-synthetic", "live_ai": False, **item}, sort_keys=True) + "\n")
-    summary = {"project": "Tideway", "track": "MU CSE Fest 2026 AI Builders Hackathon, FinTech & Financial Intelligence track", "run_at": stamp,
+    summary = {"project": "MoneyGuard", "track": "MU CSE Fest 2026 AI Builders Hackathon, FinTech & Financial Intelligence track", "run_at": stamp,
                **report["summary"], "live_model_tested": False,
                "live_model_reason": "The suite uses simulated model transports; no provider key is used.",
                "fixture": "Synthetic sandbox (Shapla Services, Lotus Print, Haorline Traders)"}

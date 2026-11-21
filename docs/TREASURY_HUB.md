@@ -1,7 +1,7 @@
 # Treasury hub
 
 The **Treasury** view (sidebar, between *Decision lab* and *Records*) turns one SME's
-Tideway records into the artefacts that banks, lenders and the finance teams of large
+MoneyGuard records into the artefacts that banks, lenders and the finance teams of large
 buyers already use: a 13-week cash flow, a working-capital health score, a
 payment-integrity scan and a signed, expiring credit passport.
 
@@ -18,7 +18,7 @@ routes in [`tideway/server.py`](../tideway/server.py). Tests:
 
 ## 1. 13-week cash flow (TWCF)
 
-Weekly buckets of Tideway's existing daily projection (`projection.project`, the same
+Weekly buckets of MoneyGuard's existing daily projection (`projection.project`, the same
 function the dashboard uses) over exactly 91 days from the ledger opening date (the
 sandbox current date), with no look-ahead.
 
@@ -54,7 +54,7 @@ existing `csv_cell` formula guard.
 
 ## 2. Working-capital health score
 
-A 0–100 weighted mean of component scores. Weights and scoring anchors are **Tideway
+A 0–100 weighted mean of component scores. Weights and scoring anchors are **MoneyGuard
 design parameters, not industry benchmarks**. If a component has no data (for example no
 settled invoices), it is dropped and the remaining weights are renormalised; the UI shows
 the weight actually used.
@@ -90,13 +90,13 @@ and `blocks_nothing: true`.
 | Rule | Fires when |
 |---|---|
 | `duplicate_bill` | Same payee and amount with due dates ≤ 7 days apart, or same payee and the same invoice-like reference in the description (e.g. `INV-2291` and `INV 2291`; four-digit years are ignored). High severity if either bill is still open |
-| `split_below_threshold` | ≥ 2 bills to one payee within 7 days, each below the dual-approval threshold, together at or above it. The threshold is `policy.dual_approval_threshold_minor`, Tideway's two-person approval threshold for recovery bundles, used here as the AP control threshold |
+| `split_below_threshold` | ≥ 2 bills to one payee within 7 days, each below the dual-approval threshold, together at or above it. The threshold is `policy.dual_approval_threshold_minor`, MoneyGuard's two-person approval threshold for recovery bundles, used here as the AP control threshold |
 | `amount_outlier` | Modified z-score `0.6745 × (amount − median) / MAD` above 3.5 against the payee's other bills (at least 3) **and** at least 25% from that median. If MAD is 0, the mean absolute deviation (× 1.253314) is used |
 | `bank_details_changed` | Existing `analytics.payee_checks`: bank details differ from paid history or the callback-verified account. Accounts are masked |
 | `lookalike_payee` | Existing `analytics.payee_checks`: a new payee name ≥ 85% similar to an established supplier |
 | `round_amount` | Open bill that is a multiple of 1,000 currency units with at least 2 more trailing zeros than any of the payee's other bills (at least 2), or a first-time payee's round bill at or above the threshold |
 
-The scan is advisory. Tideway's existing payee blocks, approval rules and execution guard
+The scan is advisory. MoneyGuard's existing payee blocks, approval rules and execution guard
 remain authoritative and are unchanged.
 
 **Synthetic test sample.** The demo ledgers contain few anomalies, so the UI offers "Also

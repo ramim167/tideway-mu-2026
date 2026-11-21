@@ -99,12 +99,12 @@ class PackagePrivacy(unittest.TestCase):
 class DistributedIntegrity(unittest.TestCase):
     @staticmethod
     def archive(entries=None, extras=(), bad_size=False):
-        entries = entries or {'Tideway/source/run.py': b'print("sandbox")\n',
-                              'Tideway/README-FIRST.md': b'Local source review only.\n'}
+        entries = entries or {'MoneyGuard/source/run.py': b'print("sandbox")\n',
+                              'MoneyGuard/README-FIRST.md': b'Local source review only.\n'}
         files = {name: {'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
                  for name, data in entries.items()}
         if bad_size:
-            files['Tideway/source/run.py']['bytes'] += 1
+            files['MoneyGuard/source/run.py']['bytes'] += 1
         memory = io.BytesIO()
         with warnings.catch_warnings(), zipfile.ZipFile(memory, 'w') as archive:
             warnings.simplefilter('ignore', UserWarning)  # deliberate duplicate-entry fixture
@@ -112,7 +112,7 @@ class DistributedIntegrity(unittest.TestCase):
                 archive.writestr(name, data)
             for name, data in extras:
                 archive.writestr(name, data)
-            archive.writestr('Tideway/package-manifest.json', json.dumps({'files': files}))
+            archive.writestr('MoneyGuard/package-manifest.json', json.dumps({'files': files}))
         memory.seek(0)
         return zipfile.ZipFile(memory)
 
@@ -121,18 +121,18 @@ class DistributedIntegrity(unittest.TestCase):
             self.assertEqual(len(inspect_archive(archive)['files']), 2)
 
     def test_unmanifested_source_is_refused_before_execution(self):
-        with self.archive(extras=[('Tideway/source/scripts/extra.py', b'print("unmanifested")')]) as archive:
+        with self.archive(extras=[('MoneyGuard/source/scripts/extra.py', b'print("unmanifested")')]) as archive:
             with self.assertRaisesRegex(RuntimeError, 'exactly match'):
                 inspect_archive(archive)
 
     def test_private_deliverable_is_refused_even_with_matching_manifest(self):
-        entries = {'Tideway/source/run.py': b'pass', 'Tideway/deliverables/private-roster.json': b'{}'}
+        entries = {'MoneyGuard/source/run.py': b'pass', 'MoneyGuard/deliverables/private-roster.json': b'{}'}
         with self.archive(entries) as archive, self.assertRaisesRegex(RuntimeError, 'Unexpected deliverable'):
             inspect_archive(archive)
 
     def test_duplicates_and_case_collisions_are_refused(self):
-        cases = [[('Tideway/source/run.py', b'changed')],
-                 [('Tideway/source/docs/One.md', b'one'), ('Tideway/source/docs/one.md', b'two')]]
+        cases = [[('MoneyGuard/source/run.py', b'changed')],
+                 [('MoneyGuard/source/docs/One.md', b'one'), ('MoneyGuard/source/docs/one.md', b'two')]]
         for extras in cases:
             with self.subTest(extras=extras), self.archive(extras=extras) as archive:
                 with self.assertRaisesRegex(RuntimeError, 'case-colliding'):
@@ -143,7 +143,7 @@ class DistributedIntegrity(unittest.TestCase):
             inspect_archive(archive)
 
     def test_symlink_archive_member_is_refused(self):
-        link = zipfile.ZipInfo('Tideway/source/docs/linked.md')
+        link = zipfile.ZipInfo('MoneyGuard/source/docs/linked.md')
         link.create_system = 3
         link.external_attr = 0o120777 << 16
         with self.archive(extras=[(link, b'/private/workstation/file')]) as archive:

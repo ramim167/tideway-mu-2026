@@ -23,11 +23,11 @@ window.TidewayHelp = (() => {
         "সবচেয়ে কম টাকার দিনটি খুঁজুন এবং নিরাপত্তার টাকার সাথে মিলিয়ে দেখুন।",
         "কিছু কেনার কথা ভাবছেন? আগে “খরচ যাচাই” করে দেখুন।"],
       safe: "শুধু দেখার জন্য। এই পাতা থেকে কোনো টাকা নড়ে না।"},
-    rescue: {what: "টাকার ঘাটতি আসছে? টাইডওয়ে সমাধান খুঁজে দেয়: সরবরাহকারীকে পরে টাকা দেওয়া, আগে টাকা দিলে ক্রেতাকে ছোট ছাড়, বা রিমাইন্ডার। সিদ্ধান্ত মানুষের।", who: "মালিক ও হিসাবরক্ষক অনুমোদন করেন; দর্শক দেখতে পারেন",
+    rescue: {what: "টাকার ঘাটতি আসছে? মানিগার্ড সমাধান খুঁজে দেয়: সরবরাহকারীকে পরে টাকা দেওয়া, আগে টাকা দিলে ক্রেতাকে ছোট ছাড়, বা রিমাইন্ডার। সিদ্ধান্ত মানুষের।", who: "মালিক ও হিসাবরক্ষক অনুমোদন করেন; দর্শক দেখতে পারেন",
       steps: ["খরচ, বাকি ঝুঁকি আর কাদের রাজি হতে হবে তা তুলনা করুন।", "নিজের পিন দিয়ে অনুমোদন করুন। বড় অঙ্কে দ্বিতীয় একজন লাগবে।",
         "কার্যকর করা আলাদা ও শেষ ধাপ, এবং তা শুধু অনুশীলন মোডে হয়।"],
       safe: "এআই প্রস্তাব দিতে পারে, কিন্তু কখনো অনুমোদন বা কার্যকর করতে পারে না। প্রতিটি অনুমোদনে মানুষ ও পিন লাগে।"},
-    assistant: {what: "সহজ ভাষায়, বাংলা বা ইংরেজিতে প্রশ্ন করুন; উত্তর আসে টাইডওয়ের নিজের হিসাব থেকে।", who: "সবাই",
+    assistant: {what: "সহজ ভাষায়, বাংলা বা ইংরেজিতে প্রশ্ন করুন; উত্তর আসে মানিগার্ডর নিজের হিসাব থেকে।", who: "সবাই",
       steps: ["আজকের অবস্থার সারাংশ পেতে “আসসালামু আলাইকুম” লিখুন।", "জিজ্ঞেস করুন, যেমন “Nila Traders যদি ২০ দিন দেরিতে টাকা দেয়?”",
         "কোন হিসাব ব্যবহার হয়েছে তা উত্তরের নিচে দেখা যায়।"],
       safe: "সহকারী পড়তে ও ব্যাখ্যা করতে পারে। টাকা নাড়াতে বা রেকর্ড বদলাতে পারে না।"},
@@ -70,7 +70,7 @@ window.TidewayHelp = (() => {
         "রসিদ খুলে খাতার আগের ও পরের ছাপ দেখুন।",
         "প্রমাণ, রেকর্ড বা ব্যাংক পেমেন্টের খসড়া ফাইল এক্সপোর্ট করুন।"],
       safe: "এক্সপোর্ট শুধু পড়ার কপি। ব্যাংকের খসড়া ফাইল কখনো পাঠানো হয় না।"},
-    inbox: {what: "ব্যাংক বা বিকাশের এসএমএস বা চ্যাট মেসেজ পেস্ট করুন। টাইডওয়ে হিসাবের খসড়া বানাবে, কাউকে টাইপ করতে হবে না।", who: "মালিক ও হিসাবরক্ষক সংরক্ষণ করেন",
+    inbox: {what: "ব্যাংক বা বিকাশের এসএমএস বা চ্যাট মেসেজ পেস্ট করুন। মানিগার্ড হিসাবের খসড়া বানাবে, কাউকে টাইপ করতে হবে না।", who: "মালিক ও হিসাবরক্ষক সংরক্ষণ করেন",
       steps: ["মেসেজ পেস্ট করে এক্সট্র্যাক্ট চাপুন।", "প্রতিটি ঘর মিলিয়ে দেখুন: অঙ্ক, তারিখ, ক্রেতা বা সরবরাহকারী।", "নিশ্চিত করলে সংরক্ষণ হবে। মেসেজের ভেতরের সন্দেহজনক নির্দেশ চিহ্নিত হয়।"],
       safe: "আপনি নিশ্চিত না করা পর্যন্ত কিছু সংরক্ষণ হয় না। মেসেজের লেখা কখনো ক্ষমতা পায় না।"},
     whatif: {what: "“যদি এমন হয়” প্রশ্ন করে দেখুন: ক্রেতা দেরিতে দিলে, হঠাৎ বিল এলে, বিক্রি কমলে নগদের কী হয়।", who: "সবাই",
@@ -96,7 +96,7 @@ window.TidewayHelp = (() => {
       safe: "Read-only. Nothing on this page moves money.",
     },
     rescue: {
-      what: "When a cash gap is coming, Tideway suggests ways to close it: pay a supplier later, offer a customer a small discount to pay sooner, or send reminders. People decide.",
+      what: "When a cash gap is coming, MoneyGuard suggests ways to close it: pay a supplier later, offer a customer a small discount to pay sooner, or send reminders. People decide.",
       who: "Owners and accountants approve; viewers can read",
       steps: ["Ask the agent for options, then compare cost, remaining risk and who has to agree.",
         "Approve with your own PIN. Large amounts need a second person.",
@@ -104,7 +104,7 @@ window.TidewayHelp = (() => {
       safe: "The AI can propose but can never approve or execute. Every approval needs a person and a PIN.",
     },
     assistant: {
-      what: "Ask questions in plain words, in your own language, and get answers built from Tideway's own calculations.",
+      what: "Ask questions in plain words, in your own language, and get answers built from MoneyGuard's own calculations.",
       who: "Everyone",
       steps: ["Type “hi” for a quick briefing on today's cash position.",
         "Ask something like “What if Nila Traders pays 20 days late?”",
@@ -118,7 +118,7 @@ window.TidewayHelp = (() => {
       safe: "Learning only. No record changes and no money moves. Progress stays in this browser.",
     },
     inbox: {
-      what: "Paste a bank SMS, payment alert or chat message. Tideway turns it into draft records so nobody has to type them in.",
+      what: "Paste a bank SMS, payment alert or chat message. MoneyGuard turns it into draft records so nobody has to type them in.",
       who: "Owners and accountants save; everyone can try",
       steps: ["Paste the message and press extract.",
         "Check every drafted field: amount, date, customer or supplier.",
@@ -197,7 +197,7 @@ window.TidewayHelp = (() => {
   const TERMS = [
     [["reserve floor", "reserve"], "Reserve floor", "The minimum cash you want to keep in the bank at all times: your safety cushion."],
     [["shortfall", "cash gap"], "Shortfall", "How much cash would be missing on a given day compared with what you need."],
-    [["target date"], "Target date", "The day you care about, such as payroll day. Tideway also looks 14 days beyond it so problems can't hide just after."],
+    [["target date"], "Target date", "The day you care about, such as payroll day. MoneyGuard also looks 14 days beyond it so problems can't hide just after."],
     [["Monte Carlo"], "Monte Carlo", "Replaying the coming weeks many times with realistic random payment delays to estimate the chance of running short."],
     [["breach risk", "breach probability", "breach"], "Breach", "Cash falling below your reserve floor. The risk is the share of simulated futures where that happens."],
     [["likely scenario", "likely path", "likely forecast"], "Likely scenario", "A forecast based on how each customer actually tends to pay, predicted by TidePay."],
@@ -211,25 +211,25 @@ window.TidewayHelp = (() => {
     [["circuit breaker"], "Circuit breaker", "An automatic pause after repeated blocked attempts, like a fuse that trips."],
     [["audit trail", "audit log", "audit"], "Audit trail", "A permanent record of who did what and when. Each entry is chained to the previous one."],
     [["hash"], "Hash", "A digital fingerprint of data. If anything changes, even one digit, the fingerprint changes."],
-    [["injection"], "Injection", "Hidden instructions inside a message that try to trick an AI. Tideway flags them and never obeys them."],
-    [["TidePay"], "TidePay", "Tideway's own model that predicts how late each invoice is likely to be paid."],
-    [["TideLM"], "TideLM", "Tideway's own language model that understands questions and pasted messages in several languages."],
+    [["injection"], "Injection", "Hidden instructions inside a message that try to trick an AI. MoneyGuard flags them and never obeys them."],
+    [["TidePay"], "TidePay", "MoneyGuard's own model that predicts how late each invoice is likely to be paid."],
+    [["TideLM"], "TideLM", "MoneyGuard's own language model that understands questions and pasted messages in several languages."],
     [["DSO"], "DSO", "Days Sales Outstanding: on average, how many days customers take to pay you."],
     [["DPO"], "DPO", "Days Payable Outstanding: on average, how many days you take to pay suppliers."],
     [["HHI", "concentration"], "Concentration", "How dependent you are on a few customers. High concentration means one late payer can hurt a lot."],
     [["13-week", "TWCF"], "13-week cash flow", "A week-by-week cash plan for the next quarter: the format banks and lenders ask for."],
     [["credit passport", "passport"], "Credit passport", "A signed summary of the business's cash health to share with a lender. Any edit breaks the signature."],
-    [["HMAC"], "HMAC signature", "A secret-key signature that reveals tampering. Here only the issuing Tideway can verify it."],
+    [["HMAC"], "HMAC signature", "A secret-key signature that reveals tampering. Here only the issuing MoneyGuard can verify it."],
     [["counter-offer", "counter offer"], "Counter-offer", "The other side proposes different terms. It becomes a new proposal that needs fresh approval."],
     [["step-up"], "Step-up", "Entering your PIN again for a sensitive action."],
     [["separation of duties"], "Separation of duties", "Whoever verified a payee cannot be the only person approving payments to them."],
     [["pseudonym", "pseudonymised", "pseudonymized"], "Pseudonym", "A stand-in name, so the real name is not shared with an outside service."],
     [["sandbox"], "Sandbox", "A safe practice environment with fictional businesses. No real money or bank is connected."],
-    [["pain.001", "ISO 20022"], "ISO 20022 pain.001", "The international bank file format for payment instructions. Tideway only drafts it; it is never sent."],
+    [["pain.001", "ISO 20022"], "ISO 20022 pain.001", "The international bank file format for payment instructions. MoneyGuard only drafts it; it is never sent."],
     [["runway"], "Runway", "How many days your cash lasts at the current spending rate."],
     [["witness"], "Witness checkpoint", "A separate copy of the latest audit position that proves the log was not cut short."],
     [["exposure"], "Exposure", "The total amount of money affected by an approval."],
-    [["read-back"], "Read-back", "After executing, Tideway reads the ledger again to confirm the change really happened."],
+    [["read-back"], "Read-back", "After executing, MoneyGuard reads the ledger again to confirm the change really happened."],
     [["quarantine", "quarantined"], "Quarantine", "Suspicious text is set aside and shown only as data, never treated as an instruction."],
     [["backtest"], "Backtest", "Checking a warning system against simulated outcomes it did not see when it made its call."],
     [["AUC"], "AUC", "How well a score ranks risky clients above safe ones: 0.5 is a coin flip, 1.0 is perfect."],
@@ -337,10 +337,10 @@ window.TidewayHelp = (() => {
   const TOUR = [
     ["home", "Home", "Start here: can you pay salaries, how low will cash go, and what should you do next?"],
     ["overview", "Cash forecast", "Will cash last until the day that matters? Day by day, with the odds of running short."],
-    ["rescue", "Fix a cash gap", "If a gap is coming, Tideway proposes fixes. People approve with a PIN."],
-    ["assistant", "Ask Tideway", "Ask anything in plain words, in বাংলা or English."],
+    ["rescue", "Fix a cash gap", "If a gap is coming, MoneyGuard proposes fixes. People approve with a PIN."],
+    ["assistant", "Ask MoneyGuard", "Ask anything in plain words, in বাংলা or English."],
     ["shield", "Scam check", "Paste a suspicious bKash, Nagad or Rocket SMS before you act on it."],
-    ["inbox", "Add from SMS", "Paste payment alerts and messages; Tideway drafts the records for you."],
+    ["inbox", "Add from SMS", "Paste payment alerts and messages; MoneyGuard drafts the records for you."],
     ["learn", "Money lessons", "Six one-minute lessons with your own numbers: safety money, salary day, late payers, scams and loans."],
     ["whatif", "What if…?", "Try scenarios safely. Nothing is saved."],
     ["records", "Records", "Every invoice, bill and transaction behind the numbers."],
@@ -412,7 +412,7 @@ window.TidewayHelp = (() => {
       decorate(document.getElementById("view"));
       decorate(document.getElementById("quick-start"));
     } catch (error) {
-      console.warn("Tideway help layer skipped:", error);
+      console.warn("MoneyGuard help layer skipped:", error);
     } finally {
       const view = document.getElementById("view");
       if (view) observer.observe(view, {childList: true, subtree: true});

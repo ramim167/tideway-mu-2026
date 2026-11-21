@@ -4,7 +4,7 @@ The assistant answers in Bangla (বাংলা), English, Chinese, Spanish, Fr
 Indonesian/Malay, whichever the question was written in (Banglish and Hinglish questions written in
 Latin letters get English, the language their speakers read on business apps).  Bangla templates
 live in ``i18n_bn.py``.  Every sentence is a template filled with numbers from
-Tideway's own tools, so translation can never change a figure.  Amounts keep ISO 4217 codes.
+MoneyGuard's own tools, so translation can never change a figure.  Amounts keep ISO 4217 codes.
 """
 from __future__ import annotations
 
@@ -168,7 +168,7 @@ M = {
                    "perkiraan TidePay, membuat simulasi, menilai kelayakan kredit pelanggan, menyiapkan pengingat pembayaran, "
                    "menyusun rencana penyelamatan untuk disetujui, dan berkas pinjaman bank. Saya tidak pernah menyetujui atau "
                    "memindahkan uang. Coba salah satu saran di bawah."},
-    "not_understood": {"en": "I'm not sure what you mean. I'm Tideway's cash-flow copilot for {business}: ask about cash, payroll, "
+    "not_understood": {"en": "I'm not sure what you mean. I'm MoneyGuard's cash-flow copilot for {business}: ask about cash, payroll, "
                              "customers, risk or a rescue plan, in your own words and language. For example:",
                        "zh": "我不太明白你的意思。我是{business}的现金流助手：可以用你自己的话问我现金、工资、客户、风险或救援方案。例如：",
                        "es": "No estoy seguro de qué quieres decir. Soy el copiloto de caja de {business}: pregúntame por la caja, "

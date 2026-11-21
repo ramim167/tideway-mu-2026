@@ -156,7 +156,7 @@ class Tideway:
         """Public settings, plus only the businesses this operator is a member of (never other tenants)."""
         businesses = self.store.businesses_for(operator["id"]) if operator else []
         stories = {item["business"]["business_id"]: item["story"] for item in fixtures()}
-        return {"name": "Tideway", "tagline": "Approval-gated cash-flow rescue for small businesses",
+        return {"name": "MoneyGuard", "tagline": "Approval-gated cash-flow rescue for small businesses",
                 "currencies": [{"code": code, "name": name, "illustrative_per_usd": rate}
                                for code, (name, rate) in CURRENCIES.items()],
                 "version": "4.0.0", "track": "MU CSE Fest 2026 AI Builders Hackathon, FinTech & Financial Intelligence track",
@@ -692,7 +692,7 @@ class Tideway:
             ET.SubElement(ET.SubElement(transfer, q("RmtInf")), q("Ustrd")).text = \
                 f"Deferred portion of bill {bill['id']} (sandbox draft; never sent)"[:140]
         body = ET.tostring(root, encoding="unicode")
-        comment = "<!-- Tideway sandbox draft. Generated, never transmitted. Not schema-validated; modelled on pain.001.001.09. -->"
+        comment = "<!-- MoneyGuard sandbox draft. Generated, never transmitted. Not schema-validated; modelled on pain.001.001.09. -->"
         return '<?xml version="1.0" encoding="UTF-8"?>\n' + comment + "\n" + body + "\n"
 
     def import_csv(self, business_id, text, actor, replace_demo=False):

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 430" width="1200" height="430" role="img" aria-label="Tideway: sees the cash gap coming, plans the rescue, lets people decide">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 430" width="1200" height="430" role="img" aria-label="MoneyGuard: sees the cash gap coming, plans the rescue, lets people decide">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#061a2b"/><stop offset="1" stop-color="#0f3a5c"/></linearGradient>
     <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5cc2c6" stop-opacity="0"/><stop offset=".5" stop-color="#5cc2c6" stop-opacity=".35"/><stop offset="1" stop-color="#5cc2c6" stop-opacity="0"/></linearGradient>
@@ -29,7 +29,7 @@
   <g class="t">
     <text class="in d1" x="80" y="88" fill="#5cc2c6" font-size="14" font-weight="700" letter-spacing="3">AI BUILDERS HACKATHON 2026 · FINTECH &amp; FINANCIAL INTELLIGENCE</text>
     <rect class="in d1" x="80" y="102" width="72" height="3" fill="#d4a72c"/>
-    <text class="in d2" x="74" y="192" fill="#ffffff" font-size="92" font-weight="800" letter-spacing="-2">Tideway</text>
+    <text class="in d2" x="74" y="192" fill="#ffffff" font-size="92" font-weight="800" letter-spacing="-2">MoneyGuard</text>
     <text class="in d3" x="80" y="240" fill="#cfe2ea" font-size="25" font-weight="300">Sees the cash gap coming. Plans the rescue.</text>
     <text class="in d3" x="80" y="274" fill="#cfe2ea" font-size="25" font-weight="300">Lets <tspan fill="#ffffff" font-weight="600">people</tspan> decide.</text>
     <g class="in d4" font-size="13" font-weight="600">

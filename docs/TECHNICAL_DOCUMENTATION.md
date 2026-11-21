@@ -1,10 +1,10 @@
-# Tideway: technical documentation
+# MoneyGuard: technical documentation
 
 *MU CSE Fest 2026 AI Builders Hackathon, FinTech & Financial Intelligence track. Synthetic sandbox only: no real money, bank, lender, supplier or customer is connected.*
 
 ## 1. Problem and scope
 
-A small business with payroll approaching and cash short needs bounded, explainable choices, not another dashboard. Tideway turns business records into a source-linked cash gap, plans a recovery, negotiates with simulated counterparties and executes only what a human approved, inside a sandbox. One business uses one currency. The first version targets service businesses and wholesalers with invoices, supplier bills and payroll.
+A small business with payroll approaching and cash short needs bounded, explainable choices, not another dashboard. MoneyGuard turns business records into a source-linked cash gap, plans a recovery, negotiates with simulated counterparties and executes only what a human approved, inside a sandbox. One business uses one currency. The first version targets service businesses and wholesalers with invoices, supplier bills and payroll.
 
 Out of scope: moving real money, production bank integration, binding credit decisions, payroll deferral, a full ERP.
 
@@ -142,7 +142,7 @@ Loopback only. Host and Origin allow-lists, a per-run CSRF token on every write,
 
 A single-page app: a landing page with sign-up, live demo and join-by-code; then Overview (cash weather, scenarios, fan chart, warnings, read-aloud brief), Rescue (agent run, plan bundles, approval, negotiation, receipt), Assistant (TideLM with its typed plan shown, follow-up suggestions), Inbox (paste messages, confirm drafts), What-if, Records (import, quarantine), Team (members, invites, plan), Security (permission tiers, autonomy dial, kill switch, payee verification, self-test) and Evidence (audit chain, exports, tamper drill).
 
-## 15. Tideway's own AI
+## 15. MoneyGuard's own AI
 
 **TidePay** predicts, for each open invoice, the probability of five lateness bands (on time; 1-7, 8-15, 16-30, more than 30 days late) from 14 features (customer history, amount, terms, seasonality, portfolio pattern). It is a softmax model in pure Python, trained with **simulated federated averaging** across 40 synthetic SMEs. One process holds all synthetic client data and creates reproducible pairwise masks. Global scaling uses pooled training features. This demonstrates aggregation arithmetic, not a distributed cryptographic protocol or a guarantee against a curious server. Its distribution drives the likely and stress scenarios and the Monte Carlo. The exact shipped artifact now scores 8.5585 days MAE / 1.2850 natural-log loss / 0.6712 sum Brier on 7,427 fresh synthetic invoices from 80 unseen SMEs; the matching frozen prior scores 11.7453 / 1.5769 / 0.7871. These are synthetic issue-time forecasts, including 2,640 cold starts whose model log loss is slightly worse than that prior. See `docs/DEPLOYED_MODEL_EVALUATION.md`; the historical experiment and separate audit model retain their own distinct reports and caveats in Section 21.
 
@@ -158,7 +158,7 @@ Each operator has a role per business through memberships; every API call is sco
 
 ## 18. Counterparty risk map
 
-For each customer with open invoices, Tideway stresses that customer alone on the likely projection (paying 30 days later than TidePay expects, and never paying) and reports the drop in lowest cash, cash lost by the horizon end and extra days under the reserve. Expected impact weights those losses by TidePay's probabilities, so a reliable large customer and an unreliable small one share one scale. Suppliers show open amounts, next due date, whether deferral is possible and any fraud block.
+For each customer with open invoices, MoneyGuard stresses that customer alone on the likely projection (paying 30 days later than TidePay expects, and never paying) and reports the drop in lowest cash, cash lost by the horizon end and extra days under the reserve. Expected impact weights those losses by TidePay's probabilities, so a reliable large customer and an unreliable small one share one scale. Suppliers show open amounts, next due date, whether deferral is possible and any fraud block.
 
 ## 19. Cross-platform local inference
 

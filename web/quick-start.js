@@ -29,7 +29,7 @@ window.TidewayQuickStart = (() => {
       {id: "forecast", view: "overview", title: "Check your cash forecast", label: "Open cash forecast",
         text: next.hasRecords ? "Start with the target date, reserve and expected collections. Projections are estimates." : "Your forecast currently starts with opening cash. Add invoices and bills using the getting-started card below."},
       {id: "rescue", view: "rescue", title: viewer ? "Inspect a rescue plan" : "Find a rescue plan", label: "Find a fix",
-        text: viewer ? "Review an existing proposal. An owner or accountant can ask Tideway to create one." : "Ask Tideway for options, then compare dates, fees and remaining risk before choosing."},
+        text: viewer ? "Review an existing proposal. An owner or accountant can ask MoneyGuard to create one." : "Ask MoneyGuard for options, then compare dates, fees and remaining risk before choosing."},
       {id: "review", view: "rescue", title: viewer ? "Know who can approve" : "Review before approving", label: "Review the workflow",
         text: viewer ? "You have read-only access. An owner or accountant must approve with their own PIN; larger actions need two people." : "Read the exact terms and use your own PIN. Larger actions need two people. Execution is a separate action after agreement."},
       {id: "evidence", view: "evidence", title: "Check what happened", label: "Open audit trail",

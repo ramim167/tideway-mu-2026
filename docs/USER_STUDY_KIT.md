@@ -1,4 +1,4 @@
-# Tideway user study kit
+# MoneyGuard user study kit
 
 **Current supplied observations: 20 SME participants, with consent confirmed by
 the team.** See [results and collection limits](USER_STUDY_RESULTS.md) and the
@@ -63,7 +63,7 @@ stimulus. This file is a protocol template, not a participant dataset:
 
 Read this before observing or recording anything:
 
-> We are students testing Tideway, a competition prototype. It uses made-up
+> We are students testing MoneyGuard, a competition prototype. It uses made-up
 > businesses and simulated actions. Please do not enter real business or personal
 > information. With your permission, we will record anonymous task outcomes,
 > timings and optional usability ratings. We will not collect your name, contact

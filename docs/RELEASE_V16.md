@@ -1,6 +1,6 @@
 # Release v16: MU AI Builders Hackathon edition
 
-Tideway adapted for the MU CSE Fest 2026 AI Builders Hackathon, track 04 FinTech & Financial Intelligence.
+MoneyGuard adapted for the MU CSE Fest 2026 AI Builders Hackathon, track 04 FinTech & Financial Intelligence.
 
 ## New
 
@@ -30,12 +30,12 @@ now single-currency (BDT). Self-test: 5/5 tasks, 25/25 attacks blocked.
 Approval gating, signed mandates, audit chain, tenant isolation and every security control behave as in v15.
 Older evidence files under `evidence/` describe v15 runs and keep their original fixture names.
 
-## Redesign for everyday owners ("Tideway Aurora")
+## Redesign for everyday owners ("MoneyGuard Aurora")
 
 - **Home** is the first screen: one plain answer ("Salary money will run short"), four key numbers, four big task
   cards, a day-by-day cash chart, who owes you and which bills are blocked for fraud. Nothing on it moves money.
 - **One English / বাংলা switch** for page names, Home, help cards, the cash-forecast owner view and Scam check.
-- **Plain page names** grouped as Every day (Home, Cash forecast, Fix a cash gap, Ask Tideway, Scam check, Add from SMS),
+- **Plain page names** grouped as Every day (Home, Cash forecast, Fix a cash gap, Ask MoneyGuard, Scam check, Add from SMS),
   Plan and records, and **More tools** for accountants and lenders (Decision lab, Bank reports, Lender radar,
   Safety settings, Audit trail).
 - **Fix a cash gap** opens with a plain summary: each step in one sentence, total cost, whether salaries can be paid,
@@ -46,7 +46,7 @@ Older evidence files under `evidence/` describe v15 runs and keep their original
 - The end-to-end browser test (`node scripts/capture_screens.mjs`) now covers Home, the Bangla switch and Scam check,
   and passes with the owner-view, decision-lab and 406-combination currency checks.
 - **A colour pairing for every page:** each page has its own two-colour mesh gradient (for example violet and pink
-  for Ask Tideway, crimson and orange for Scam check, rust and amber for Fix a cash gap, midnight blue and cyan for
+  for Ask MoneyGuard, crimson and orange for Scam check, rust and amber for Fix a cash gap, midnight blue and cyan for
   Cash forecast). It runs through the header band, quick-start panel, active menu item, buttons and accents. White
   text on every button colour is 5.2:1 to 10.4:1.
 

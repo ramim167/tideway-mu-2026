@@ -1,4 +1,4 @@
-# Run Tideway on Windows and macOS
+# Run MoneyGuard on Windows and macOS
 
 ## Core app on either machine
 
@@ -70,8 +70,8 @@ Default downloads use ignored `models/local-demo/`. `--cache-dir` explicitly cho
 Windows PowerShell, terminal A (the drive/path is an example):
 
 ```powershell
-python scripts/local_demo_model.py --download --profile qwen3-4b --cache-dir E:/Tideway-model-cache
-python scripts/local_demo_model.py --serve --profile qwen3-4b --cache-dir E:/Tideway-model-cache --port 8791
+python scripts/local_demo_model.py --download --profile qwen3-4b --cache-dir E:/MoneyGuard-model-cache
+python scripts/local_demo_model.py --serve --profile qwen3-4b --cache-dir E:/MoneyGuard-model-cache --port 8791
 ```
 
 Windows PowerShell, terminal B:
@@ -86,8 +86,8 @@ python run.py
 macOS Terminal A (macOS arm64 helper and Qwen3 path verified; other hardware remains unverified):
 
 ```bash
-python3 scripts/local_demo_model.py --download --profile qwen3-4b --cache-dir ~/Tideway-model-cache
-python3 scripts/local_demo_model.py --serve --profile qwen3-4b --cache-dir ~/Tideway-model-cache --port 8791
+python3 scripts/local_demo_model.py --download --profile qwen3-4b --cache-dir ~/MoneyGuard-model-cache
+python3 scripts/local_demo_model.py --serve --profile qwen3-4b --cache-dir ~/MoneyGuard-model-cache --port 8791
 ```
 
 macOS Terminal B:
@@ -107,10 +107,10 @@ The final Windows Qwen3 4B configuration matched [6/6 authored requests](../evid
 
 ## Optional local model server on Windows or macOS
 
-Tideway also supports a separately installed, trusted, OpenAI-compatible local
+MoneyGuard also supports a separately installed, trusted, OpenAI-compatible local
 server such as Ollama or llama.cpp. Configure a model that the server actually
 lists at `/v1/models`. Do not select a cloud model or a server that forwards
-input elsewhere. Tideway connects only to a literal loopback HTTP address and
+input elsewhere. MoneyGuard connects only to a literal loopback HTTP address and
 does not follow redirects. This boundary does not audit the local server itself.
 
 Copy `.env.example` to `.env`, keep the cloud API key blank, and set:
@@ -123,8 +123,8 @@ TIDEWAY_LOCAL_VISION_MODEL=
 
 Replace the example model ID with an actual installed model. To enable photos,
 set `TIDEWAY_LOCAL_VISION_MODEL` to a vision-capable installed model and install
-Pillow in Tideway's environment. Leave both model IDs blank to use the default
-MLX/deterministic path. Restart Tideway after changing configuration.
+Pillow in MoneyGuard's environment. Leave both model IDs blank to use the default
+MLX/deterministic path. Restart MoneyGuard after changing configuration.
 
 This backend is labelled **Local model (unbenchmarked)**. It is not the
 released MLX TideLM adapter, and it does not inherit its benchmark scores.

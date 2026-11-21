@@ -1,6 +1,6 @@
 """Deterministic evidence for the five contest security boundaries.
 
-Each case uses a new in-memory Tideway seeded with fictional demo records.  The
+Each case uses a new in-memory MoneyGuard seeded with fictional demo records.  The
 case runners return only sanitized booleans, counts, statuses and screening
 category names so the evaluator can retain proof without credentials,
 mandate identifiers, account numbers or source text.

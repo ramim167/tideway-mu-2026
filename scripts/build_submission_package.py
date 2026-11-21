@@ -30,7 +30,7 @@ PRIVATE_NAMES = re.compile(r"(?:passport|national[-_ ]?id|identity[-_ ]?document
 # Public implementation/test code, not identity documents. Keep exceptions exact and narrow.
 PUBLIC_PASSPORT_CODE = {"scripts/verify_passport.py", "tests/test_passport_public_key.py"}
 DELIVERABLE_SOURCES = (
-    "docs/proposal/Tideway_MU_AI_Builders_2026_Proposal.pdf",
+    "docs/proposal/MoneyGuard_MU_AI_Builders_2026_Proposal.pdf",
     "docs/MU_HACKATHON_2026.md", "docs/architecture.pdf", "docs/security-assessment.pdf",
     "docs/MODEL_CARD.md", "docs/SETUP_WINDOWS_MAC.md",
 )
@@ -119,19 +119,19 @@ def main():
     for name in sorted(set(filter(None, names))):
         path = source_file(ROOT, name)
         if path is not None:
-            entries["Tideway/source/" + name] = path.read_bytes()
+            entries["MoneyGuard/source/" + name] = path.read_bytes()
     for name in DELIVERABLE_SOURCES:
         path = source_file(ROOT, name)
         if path is None:
             sys.exit(f"Deliverable missing or symlinked: {name}")
-        entries["Tideway/deliverables/" + Path(name).name] = path.read_bytes()
-    intro = ("# Tideway - The Last BrainCell\n\n"
-             "Start with deliverables/Tideway_MU_AI_Builders_2026_Proposal.pdf and deliverables/MU_HACKATHON_2026.md. "
+        entries["MoneyGuard/deliverables/" + Path(name).name] = path.read_bytes()
+    intro = ("# MoneyGuard - The Last BrainCell\n\n"
+             "Start with deliverables/MoneyGuard_MU_AI_Builders_2026_Proposal.pdf and deliverables/MU_HACKATHON_2026.md. "
              "Run `python run.py` inside source/.\n"
              "This is a local review package. It has not been pushed or submitted.\n"
              f"Validated source tree SHA-256: {digest}\n\n"
              "## Team-controlled outstanding items\n\n" + "\n".join("- " + gap for gap in gaps) + "\n")
-    entries["Tideway/README-FIRST.md"] = intro.encode("utf-8")
+    entries["MoneyGuard/README-FIRST.md"] = intro.encode("utf-8")
     manifest = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 "base_commit": test["base_commit"], "includes_local_uncommitted_changes": True,
                 "source_tree_sha256": digest, "tests_run": test["tests_run"],
@@ -140,10 +140,10 @@ def main():
                 "outstanding": gaps,
                 "files": {name: {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
                           for name, data in sorted(entries.items())}}
-    entries["Tideway/package-manifest.json"] = (json.dumps(manifest, indent=2) + "\n").encode("utf-8")
+    entries["MoneyGuard/package-manifest.json"] = (json.dumps(manifest, indent=2) + "\n").encode("utf-8")
     output = ROOT / "dist"
     output.mkdir(exist_ok=True)
-    archive = output / "Tideway-submission.zip"
+    archive = output / "MoneyGuard-submission.zip"
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as zipped:
         for name, data in sorted(entries.items()):
             zipped.writestr(name, data)

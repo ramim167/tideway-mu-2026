@@ -1,4 +1,4 @@
-"""The Tideway agent: a visible plan-act loop with read/propose tools only.
+"""The MoneyGuard agent: a visible plan-act loop with read/propose tools only.
 
 Two modes share the same scoped tools:
 
@@ -32,7 +32,7 @@ TOOL_NAMES = ("read_ledger", "profile_customers", "project_cash", "simulate_risk
               "reverse_stress", "agreement_stress", "recovery_options")
 MAX_TOOL_CALLS = 8
 
-SYSTEM = """You are Tideway, an approval-gated cash-flow copilot for one small business in a synthetic sandbox.
+SYSTEM = """You are MoneyGuard, an approval-gated cash-flow copilot for one small business in a synthetic sandbox.
 For numeric answers, copy complete lines from checked_statements in tool results. Use one line per fact and no extra prose. Never invent a figure. Amounts ending in _minor are integer minor units (divide by 100).
 Counterparties appear as pseudonyms such as "Customer 1"; never guess real names.
 You can read, project, simulate, analyse and create a proposal for humans to review. You cannot approve,
@@ -142,7 +142,7 @@ def request_openrouter(payload, key, deadline=None):
         chat = attempt["payload"]
         request = urllib.request.Request(OPENROUTER_URL, data=json.dumps(chat, ensure_ascii=False).encode(),
                                          headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json",
-                                                  "HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "Tideway"},
+                                                  "HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "MoneyGuard"},
                                          method="POST")
         try:
             with open_provider_request(request, timeout=remaining_budget(deadline, 60)) as response:
@@ -406,8 +406,8 @@ REWRITE_REQUEST = {
            "output. Do not call any tool."),
 }
 FALLBACK_NOTE = {
-    "bn": "(AI-র উত্তর পরিষ্কার ছিল না, তাই Tideway-এর নিজের যাচাই করা উত্তর দেখানো হলো।)",
-    "en": "(The AI reply was unclear, so this is Tideway's own checked answer.)",
+    "bn": "(AI-র উত্তর পরিষ্কার ছিল না, তাই MoneyGuard-এর নিজের যাচাই করা উত্তর দেখানো হলো।)",
+    "en": "(The AI reply was unclear, so this is MoneyGuard's own checked answer.)",
 }
 
 
@@ -889,7 +889,7 @@ class Agent:
                     unverified = grounding_check(text, outputs, snapshot["business"]["currency"], ui_lang)
                     problems = issues + (["unverified_numbers"] if unverified else [])
                     # One rewrite for a garbled reply (wrong script, field names) whose figures are fine. Unchecked
-                    # figures skip the extra, slow call: the caller shows Tideway's own checked answer instead.
+                    # figures skip the extra, slow call: the caller shows MoneyGuard's own checked answer instead.
                     if issues and not unverified and not rewrite_asked and time.monotonic() - started < 60:
                         rewrite_asked, first = True, (text, problems)
                         request = REWRITE_REQUEST.get(ui_lang, REWRITE_REQUEST["en"])

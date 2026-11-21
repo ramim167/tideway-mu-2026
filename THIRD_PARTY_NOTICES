@@ -1,17 +1,17 @@
-Tideway uses Python's standard library for runtime code.
+MoneyGuard uses Python's standard library for runtime code.
 
-The MIT license covers Tideway application code only. Model weights, base-model
+The MIT license covers MoneyGuard application code only. Model weights, base-model
 architectures, runtimes and optional tools retain the licenses of their authors.
 
 Optional models and inference:
 
-* TideLM is a Tideway-trained LoRA adapter for Qwen/Qwen3-4B-Instruct-2507,
+* TideLM is a MoneyGuard-trained LoRA adapter for Qwen/Qwen3-4B-Instruct-2507,
   converted to 4-bit MLX by mlx-community. The base model is Apache-2.0.
   Upstream: https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507
   Conversion: https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit
   License copy: licenses/Qwen3-Apache-2.0.txt
 * TideVision uses mlx-community/Qwen2.5-VL-3B-Instruct-4bit, derived from
-  Qwen/Qwen2.5-VL-3B-Instruct, without a Tideway fine-tune. The upstream
+  Qwen/Qwen2.5-VL-3B-Instruct, without a MoneyGuard fine-tune. The upstream
   Qwen RESEARCH LICENSE AGREEMENT permits non-commercial research/evaluation;
   commercial use requires a separate license. Redistribution carries additional
   notice and license obligations. No vision weights are included in this package.
@@ -32,7 +32,7 @@ Optional models and inference:
   text models separately. `compact` uses Qwen/Qwen2.5-1.5B-Instruct-GGUF
   (Q4_K_M); `qwen3-4b` uses unsloth/Qwen3-4B-Instruct-2507-GGUF (Q4_K_M),
   derived from Qwen/Qwen3-4B-Instruct-2507. Both model cards identify Apache-2.0.
-  These are third-party models/conversions, not Tideway-trained adapters, and
+  These are third-party models/conversions, not MoneyGuard-trained adapters, and
   they do not inherit the released TideLM MLX evaluation scores.
   https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF
   https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF
@@ -95,6 +95,6 @@ Fonts (bundled in web/fonts/, Latin subset WOFF2 from Google Fonts):
 
 Illustration:
 
-* web/img/hero.webp was generated for Tideway with an AI image model
+* web/img/hero.webp was generated for MoneyGuard with an AI image model
   (gpt-image-2.5 via ElevenLabs) from an original prompt; no third-party
   artwork, logos or text are included.

@@ -2,7 +2,7 @@
 
 # Competition readiness follow-up - 16 October 2026
 
-Tideway remains a synthetic Topic E prototype. No bank, real counterparty or payment
+MoneyGuard remains a synthetic Topic E prototype. No bank, real counterparty or payment
 rail is connected. The team has deferred leader/roles/registration details and video.
 
 ## Improvements

@@ -1,4 +1,4 @@
-"""Verify a Tideway credit passport offline with an independently obtained issuer key.
+"""Verify a MoneyGuard credit passport offline with an independently obtained issuer key.
 
     python scripts/verify_passport.py passport.json --public-key TRUSTED_HEX
 """

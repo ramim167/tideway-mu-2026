@@ -84,7 +84,7 @@ def fetch(url, target, expected_size, expected_sha):
         raise RuntimeError("Insufficient disk space: download needs its size plus 512 MiB free headroom.")
     sha, size, announced = hashlib.sha256(), 0, 0
     try:
-        request = urllib.request.Request(url, headers={"User-Agent": "Tideway-local-demo"})
+        request = urllib.request.Request(url, headers={"User-Agent": "MoneyGuard-local-demo"})
         with urllib.request.urlopen(request, timeout=45) as response, partial.open("wb") as output:
             for chunk in iter(lambda: response.read(1024 * 1024), b""):
                 size += len(chunk)

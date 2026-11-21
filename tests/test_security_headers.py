@@ -1,4 +1,4 @@
-"""Browser security headers: the microphone works on Tideway's own pages ("Speak your question"); nothing else opens up."""
+"""Browser security headers: the microphone works on MoneyGuard's own pages ("Speak your question"); nothing else opens up."""
 import http.client
 from http.server import ThreadingHTTPServer
 import threading

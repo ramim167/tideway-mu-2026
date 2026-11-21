@@ -1,4 +1,4 @@
-# Tideway: evaluation plan
+# MoneyGuard: evaluation plan
 
 This plan separates what we have **measured** (deterministic, local, reproducible) from what is **planned** (needs a live provider, real people or the organiser). Nothing in the "planned" column may be reported as a result until it has been run and the raw evidence saved.
 
@@ -21,7 +21,7 @@ Total: **30/30 cases, 0 attacks not blocked.** Assumptions: worst-case hijacked 
 
 ## 2. Product-level scenario comparison
 
-`python scripts/evaluate_scenarios.py` compares a fixed largest-permitted-bill deferral rule against the unchanged Tideway optimiser on 20 authored opening-cash perturbations of the three existing fixtures. The rule finds a feasible cash path in 10/20 and Tideway in 12/20. Both use the same ledger evaluator. This is a narrow synthetic comparison, not independent businesses, user benefit, or a comparison against generic LLMs. Raw outcomes and the scenario-spec hash are in `evidence/scenario-comparison.json`.
+`python scripts/evaluate_scenarios.py` compares a fixed largest-permitted-bill deferral rule against the unchanged MoneyGuard optimiser on 20 authored opening-cash perturbations of the three existing fixtures. The rule finds a feasible cash path in 10/20 and MoneyGuard in 12/20. Both use the same ledger evaluator. This is a narrow synthetic comparison, not independent businesses, user benefit, or a comparison against generic LLMs. Raw outcomes and the scenario-spec hash are in `evidence/scenario-comparison.json`.
 
 The versioned Upgrade C suite adds 24 distinct authored business conditions,
 split into 12 development and 12 held-out cases. Its expectations are sealed
@@ -88,7 +88,7 @@ cryptographic privacy guarantee.
 
 | Item | Plan | Evidence to keep |
 |---|---|---|
-| Expanded baseline comparison | Existing rule comparison is measured above; future three-mode comparison: spreadsheet rule (defer the largest bill), generic LLM suggestion, Tideway. Compare shortfall cleared, payroll safety, invalid recommendations, unauthorised actions, cost of plan. | Raw per-run CSV, model name and settings |
+| Expanded baseline comparison | Existing rule comparison is measured above; future three-mode comparison: spreadsheet rule (defer the largest bill), generic LLM suggestion, MoneyGuard. Compare shortfall cleared, payroll safety, invalid recommendations, unauthorised actions, cost of plan. | Raw per-run CSV, model name and settings |
 | Real-world scenario generalisation | The authored 24-case synthetic suite is measured above; independent consented SME cases remain future work | Consent, anonymised cases, fixed expectations and results |
 | External payment-profile validation | The chronological synthetic back-test is measured above; independent consented invoice histories remain future work | Availability-aware splits, raw predictions and uncertainty |
 | Live-LLM mode | At least 30 controlled runs: median and p95 latency, cost per run, grounding-flag rate, tool-denial rate | Run log without keys |

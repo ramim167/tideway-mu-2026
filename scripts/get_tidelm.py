@@ -1,4 +1,4 @@
-"""Download Tideway's trained TideLM adapter from the GitHub release and verify it.
+"""Download MoneyGuard's trained TideLM adapter from the GitHub release and verify it.
 
 Run: python3 scripts/get_tidelm.py   (then: pip install mlx-lm, Apple Silicon only)
 """

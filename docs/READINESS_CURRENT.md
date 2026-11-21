@@ -2,7 +2,7 @@
 
 Current local release: [customer/payment review and screening precision](RELEASE_V14.md). Currency foundation: [v13](RELEASE_V13.md). Prior features: [Owner view](OWNER_VIEW.md) and [Decision lab](DECISION_LAB.md).
 
-This is the current review index. Tideway remains a synthetic SME finance copilot:
+This is the current review index. MoneyGuard remains a synthetic SME finance copilot:
 cash forecasts, recovery proposals, human approval, simulated negotiation and
 verifiable sandbox execution. No bank, real lender or payment rail is connected.
 Historical upgrade and Windows reports describe earlier source versions.

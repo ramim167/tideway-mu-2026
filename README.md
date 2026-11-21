@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/media/hero.svg" alt="Tideway: sees the cash gap coming, plans the rescue, lets people decide" width="100%">
+<img src="docs/media/hero.svg" alt="MoneyGuard: sees the cash gap coming, plans the rescue, lets people decide" width="100%">
 
 <br>
 
@@ -19,30 +19,30 @@ Built by **The Last BrainCell** · Bangladesh University of Engineering and Tech
 
 ---
 
-## Why Tideway
+## Why MoneyGuard
 
 > A profitable shop in Sylhet can still miss payroll. Customers pay late, suppliers want cash on time, and the gap lands on salary day. The owner finds out too late, then borrows from an informal lender at a painful rate. On the same day, a fake bKash "cash-in" SMS or a "sent by mistake, please send it back" call can wipe out a week's profit.
 
-Bangladesh's small businesses run on mobile money and trust, but they have no finance team. **Tideway is an AI financial copilot for them, with hard limits.** It forecasts the cash gap days ahead, predicts which customers will pay late, compares the costs and risks of candidate rescue plans, checks suspicious bKash, Nagad and Rocket messages for fraud, and explains everything in **বাংলা** or English. Then it stops. **People approve** with a PIN, large amounts need **two people**, and only a **signed, expiring mandate** can execute, once, with proof.
+Bangladesh's small businesses run on mobile money and trust, but they have no finance team. **MoneyGuard is an AI financial copilot for them, with hard limits.** It forecasts the cash gap days ahead, predicts which customers will pay late, compares the costs and risks of candidate rescue plans, checks suspicious bKash, Nagad and Rocket messages for fraud, and explains everything in **বাংলা** or English. Then it stops. **People approve** with a PIN, large amounts need **two people**, and only a **signed, expiring mandate** can execute, once, with proof.
 
-## How Tideway answers the FinTech track
+## How MoneyGuard answers the FinTech track
 
-| Track theme | What Tideway does | Where to see it |
+| Track theme | What MoneyGuard does | Where to see it |
 |---|---|---|
 | **Fraud detection** | **Scam Shield** checks pasted MFS messages (fake cash-in SMS, PIN/OTP requests, wrong-send refund trick, prize fees, phishing links) with explainable rules plus a learned text model. Payment-integrity scan blocks changed bank details, look-alike payees and duplicate bills. | *Scam check*, *Add from SMS*, *Bank reports → Payment integrity* |
-| **Financial literacy** | **Money lessons (টাকার পাঠ):** six one-minute lessons (safety money, salary day, late payers, relying on one customer, MFS scams, getting a loan), each explained with the owner's own numbers and ending in a one-question check. Ask in **বাংলা**: "এই মাসে কি বেতন দিতে পারব?" Answers are built from the ledger's own numbers, never guessed. 40 finance terms explained on tap. | *Money lessons*, *Ask Tideway*, help layer |
+| **Financial literacy** | **Money lessons (টাকার পাঠ):** six one-minute lessons (safety money, salary day, late payers, relying on one customer, MFS scams, getting a loan), each explained with the owner's own numbers and ending in a one-question check. Ask in **বাংলা**: "এই মাসে কি বেতন দিতে পারব?" Answers are built from the ledger's own numbers, never guessed. 40 finance terms explained on tap. | *Money lessons*, *Ask MoneyGuard*, help layer |
 | **Financial inclusion** | **Speak your question** in বাংলা or English with the microphone button, for owners who find typing hard. A signed **credit passport** turns a micro-business's cash-flow record into evidence a bank or MFI can verify offline, without collateral history. A lender **portfolio radar** spots SMEs heading for trouble weeks early. | *Bank reports → Credit passport*, *Lender radar* |
 | **Digital finance** | Reads bKash, Nagad, Rocket and bank alerts into draft ledger records (nothing saved until a person confirms), forecasts cash 14 days ahead with 1,000 simulated futures, and plans supplier deferrals and early-payment discounts. Payment reminders and supplier requests are written in **বাংলা** with a **Copy** button for SMS or WhatsApp. | *Add from SMS*, *Cash forecast*, *Fix a cash gap* |
 
 The one-page mapping to the hackathon's rules and judging criteria is in [docs/MU_HACKATHON_2026.md](docs/MU_HACKATHON_2026.md); the 3-page proposal is in [docs/proposal/](docs/proposal/).
 
-<img src="docs/media/flow.svg" alt="How Tideway works: see, predict and propose by AI; approve, execute and prove by people and signed mandates" width="100%">
+<img src="docs/media/flow.svg" alt="How MoneyGuard works: see, predict and propose by AI; approve, execute and prove by people and signed mandates" width="100%">
 
 ## Who it helps
 
-<img src="docs/media/audience.svg" alt="Who Tideway helps: SME owners, finance teams, banks and lenders, large buyers and auditors" width="100%">
+<img src="docs/media/audience.svg" alt="Who MoneyGuard helps: SME owners, finance teams, banks and lenders, large buyers and auditors" width="100%">
 
-| Who | Their problem | How Tideway helps |
+| Who | Their problem | How MoneyGuard helps |
 |---|---|---|
 | **SME owner** | Payroll surprises, no time for spreadsheets, MFS scams | A 14-day cash forecast with the odds of a shortfall, a ranked rescue plan, Scam Shield and answers in বাংলা |
 | **Finance team** | Manual data entry, duplicate or redirected payments | Zero-entry inbox, 13-week cash flow, payment-integrity scan and maker-checker approvals |
@@ -52,7 +52,7 @@ The one-page mapping to the hackathon's rules and judging criteria is in [docs/M
 
 ## See it in action
 
-<img src="docs/media/ui-landing.webp" alt="Tideway landing page: dark aurora hero with the headline Plan ahead for payroll" width="100%">
+<img src="docs/media/ui-landing.webp" alt="MoneyGuard landing page: dark aurora hero with the headline Plan ahead for payroll" width="100%">
 
 <table>
 <tr>
@@ -64,7 +64,7 @@ The one-page mapping to the hackathon's rules and judging criteria is in [docs/M
 <td valign="top"><b>Fix a cash gap in plain words</b><br><img src="docs/media/ui-rescue.webp" alt="Rescue summary: two steps to cover the gap, total cost and who must agree" width="100%"><br><sub>Each step in one sentence, the total cost, whether salaries can be paid and who must agree; then approve with a PIN.</sub></td>
 </tr>
 <tr>
-<td valign="top"><b>Ask in your own words</b><br><img src="docs/media/ui-assistant.webp" alt="Ask Tideway answers a payroll question" width="100%"><br><sub>Ask in বাংলা, English or Banglish. The tools used are shown under every answer.</sub></td>
+<td valign="top"><b>Ask in your own words</b><br><img src="docs/media/ui-assistant.webp" alt="Ask MoneyGuard answers a payroll question" width="100%"><br><sub>Ask in বাংলা, English or Banglish. The tools used are shown under every answer.</sub></td>
 <td valign="top"><b>Made for phones</b><br><img src="docs/media/ui-mobile.webp" alt="Phone layout with a bottom tab bar" width="60%"><br><sub>Most owners use a phone: a bottom tab bar keeps Home, Fix gap, Ask and Scam check one tap away.</sub></td>
 </tr>
 </table>
@@ -87,20 +87,20 @@ python -c "from tideway import scam_shield; print(scam_shield.evaluate())"   # r
 
 The assistant detects Bangla script and answers in Bangla, routing the question to the same tools as English, so the figures are identical. Bangla digits work (`Nila Traders যদি ১০ দিন দেরিতে টাকা দেয়?`), customer names are only ever taken from the ledger, and money requests are refused in Bangla too.
 
-| You ask | Tideway answers (from the ledger, not from a guess) |
+| You ask | MoneyGuard answers (from the ledger, not from a guess) |
 |---|---|
 | এই মাসে কি বেতন দিতে পারব? | নির্ধারিত হিসাব: সর্বনিম্ন নগদ −BDT 10,000, 31 অক্টো তারিখে; নিরাপত্তা সঞ্চয়ে ঘাটতি BDT 30,000; বেতন ঝুঁকিতে আছে। |
 | আমার জন্য একটি উদ্ধার পরিকল্পনা করো | পরামর্শ: Rahman Supplies-কে BDT 60,000 পরিশোধ 31 অক্টো থেকে 14 নভে তারিখে পেছাতে অনুরোধ; … একজন মানুষের অনুমোদনের অপেক্ষায়। |
 | Rahman Supplies কে এখনই টাকা পাঠাও | আমি টাকা অনুমোদন, পরিশোধ বা পাঠাতে পারি না; একজন মানুষ অ্যাপে পিন দিয়ে অনুমোদন করেন। |
 
-## Everything Tideway does
+## Everything MoneyGuard does
 
 **For the business**
 
 - **Cash weather.** Exact daily cash projection in integer minor units; scheduled, likely and stress scenarios; 1,000 seeded simulations; a 14-day look-ahead so a deferral cannot hide a gap just past the target date.
 - **TidePay predictions.** Every open invoice gets a probability for each lateness band, learned from payment histories.
 - **Rescue plan.** The optimiser compares preset supplier deferrals and early-payment discounts across up to six eligible records, and proposes zero-cash reminders. Plans disclose when the search omits records. Simulated counterparties accept, counter-offer or refuse; a counter becomes a new proposal that needs fresh approval.
-- **Ask Tideway.** Plain-language questions in বাংলা, English, Banglish and five more languages, with the tool plan shown under every answer. Works with or without a language model installed.
+- **Ask MoneyGuard.** Plain-language questions in বাংলা, English, Banglish and five more languages, with the tool plan shown under every answer. Works with or without a language model installed.
 - **Zero-entry inbox.** Paste bKash, Nagad, Rocket, bank and card alerts (international formats work too); get draft records. Nothing is saved until a person confirms.
 - **What-if and Decision lab.** Find a plan's breaking point, stress accepted agreements, compare recovery options, replay a private capsule, inspect exactly what an optional cloud model would see, and negotiate terms that protect two businesses at once.
 - **Treasury hub.** A 13-week cash flow that reconciles exactly with the daily projection; a 0-100 working-capital health score with every formula and weight shown; a payment-integrity scan for duplicates, split bills, outliers and changed payees; a credit passport with an Ed25519 public-key signature.
@@ -116,7 +116,7 @@ The assistant detects Bangla script and answers in Bangla, routing the question 
 - **Workspaces and roles.** Sign up a business in any of 29 currencies, invite your accountant by one-time code, and keep tenants fully isolated.
 - **Exports.** Evidence JSON, records and receipts CSV (spreadsheet-formula-safe), a 13-week cash-flow CSV, a bank pack and a draft ISO 20022 `pain.001` payment file that is never sent.
 
-## Tideway's own AI
+## MoneyGuard's own AI
 
 Trained by the team, running on the device. The language model can only propose; validators, permissions and people decide.
 
@@ -176,14 +176,14 @@ Start on **Home** for the next payday, cash figures and common tasks. Open **All
 
 Home shows today's date in Bangladesh and the ledger date used for the forecast. The demo uses a fixed October 2026 ledger so the same practice scenarios work whenever you open it.
 
-**Judge tour** — Start on **Home** and open **Cash forecast**. In **Scam check**, try *Fake cash-in SMS*. In **Ask Tideway**, ask `এই মাসে কি বেতন দিতে পারব?` Open **Fix a cash gap** to propose a rescue and follow its approval instructions. In **Add from SMS**, select *Sample: injection attempt* and extract the draft. Run the self-test in **Safety settings**, explore **Bank reports** and **Lender radar**, then try the tamper drill in **Audit trail**.
+**Judge tour** — Start on **Home** and open **Cash forecast**. In **Scam check**, try *Fake cash-in SMS*. In **Ask MoneyGuard**, ask `এই মাসে কি বেতন দিতে পারব?` Open **Fix a cash gap** to propose a rescue and follow its approval instructions. In **Add from SMS**, select *Sample: injection attempt* and extract the draft. Run the self-test in **Safety settings**, explore **Bank reports** and **Lender radar**, then try the tamper drill in **Audit trail**.
 
 ```bash
 docker build -t tideway:local . && docker run --rm -p 127.0.0.1:8787:8787 tideway:local   # isolated container
 python run.py --no-demo --db data/empty.sqlite3                                         # empty workspace
 ```
 
-**Optional: free cloud AI, with automatic fallback.** Not needed for anything above. Copy `.env.example` to `.env` and fill any of: `GEMINI_API_KEY` (Google AI Studio, free tier, good at Bangla), `GROQ_API_KEY` (free tier), `OPENROUTER_API_KEY` (`:free` models), or a custom OpenAI-compatible service. Restart. Tideway tries them in `TIDEWAY_AI_ORDER`, and each provider's model list in order, moving on when one is busy, down or out of quota (`tideway/ai_providers.py`). In **Ask Tideway**, tick the consent box to use it. Names are replaced with pseudonyms before anything is sent, the AI can only call read and propose tools, and every number it writes is checked against tool output. `.env` is git-ignored, so the key never reaches GitHub.
+**Optional: free cloud AI, with automatic fallback.** Not needed for anything above. Copy `.env.example` to `.env` and fill any of: `GEMINI_API_KEY` (Google AI Studio, free tier, good at Bangla), `GROQ_API_KEY` (free tier), `OPENROUTER_API_KEY` (`:free` models), or a custom OpenAI-compatible service. Restart. MoneyGuard tries them in `TIDEWAY_AI_ORDER`, and each provider's model list in order, moving on when one is busy, down or out of quota (`tideway/ai_providers.py`). In **Ask MoneyGuard**, tick the consent box to use it. Names are replaced with pseudonyms before anything is sent, the AI can only call read and propose tools, and every number it writes is checked against tool output. `.env` is git-ignored, so the key never reaches GitHub.
 
 ### Dictation on desktop and phones
 
@@ -203,7 +203,7 @@ python -c "from huggingface_hub import snapshot_download; snapshot_download('Sys
 
 ## Proof, not promises
 
-<img src="docs/media/stats.svg" alt="Tideway by the numbers" width="100%">
+<img src="docs/media/stats.svg" alt="MoneyGuard by the numbers" width="100%">
 
 ```bash
 python -m unittest discover -s tests     # full automated suite
@@ -219,7 +219,7 @@ Raw results live in [`evidence/`](evidence); the [readiness index](docs/READINES
 | | |
 |---|---|
 | [Technical documentation](docs/TECHNICAL_DOCUMENTATION.md) | Architecture, algorithms and data flow |
-| [MU hackathon mapping](docs/MU_HACKATHON_2026.md) · [Proposal (PDF, 3 pages)](docs/proposal/Tideway_MU_AI_Builders_2026_Proposal.pdf) | Current submission |
+| [MU hackathon mapping](docs/MU_HACKATHON_2026.md) · [Proposal (PDF, 3 pages)](docs/proposal/MoneyGuard_MU_AI_Builders_2026_Proposal.pdf) | Current submission |
 | [Scam Shield](docs/SCAM_SHIELD.md) | Fraud check design, corpus and evaluation |
 | [Treasury hub](docs/TREASURY_HUB.md) · [Portfolio radar](docs/PORTFOLIO_RADAR.md) | Lender-grade features, formulas and limits |
 | [Decision lab](docs/DECISION_LAB.md) · [Owner view](docs/OWNER_VIEW.md) | Decision support in depth |
@@ -238,8 +238,8 @@ The MU AI Builders Hackathon allows 3–4 members per team; the registered team 
 
 ## Scope
 
-Tideway runs in a synthetic sandbox: fictional businesses and simulated counterparties, with no real bank, lender, supplier or customer connected and no real money moved. Forecasts are projections, not bank balances; scores and tiers are decision support, not credit decisions.
+MoneyGuard runs in a synthetic sandbox: fictional businesses and simulated counterparties, with no real bank, lender, supplier or customer connected and no real money moved. Forecasts are projections, not bank balances; scores and tiers are decision support, not credit decisions.
 
 ## License
 
-Tideway application code is released under the [MIT License](LICENSE). Third-party models and tools keep their own licenses; see [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES).
+MoneyGuard application code is released under the [MIT License](LICENSE). Third-party models and tools keep their own licenses; see [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES).

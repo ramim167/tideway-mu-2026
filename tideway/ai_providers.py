@@ -1,6 +1,6 @@
 """Several AI providers, tried in order, so a busy or failing one never blocks an answer.
 
-Every provider here speaks the OpenAI chat-completions format. Tideway tries them in order (and each
+Every provider here speaks the OpenAI chat-completions format. MoneyGuard tries them in order (and each
 provider's models in order) and moves on when one is busy (429), down (5xx, timeout), missing a model
 (404) or out of quota / wrongly keyed (401, 402, 403). The agent's guards are unchanged whichever
 provider answers: names are pseudonymised, only read/propose tools exist, every number is checked.
@@ -87,7 +87,7 @@ def label(providers):
 def _post(provider, chat, deadline):
     headers = {"Authorization": f"Bearer {provider.key}", "Content-Type": "application/json"}
     if provider.name == "openrouter":
-        headers.update({"HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "Tideway"})
+        headers.update({"HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "MoneyGuard"})
     request = urllib.request.Request(provider.url, data=json.dumps(chat, ensure_ascii=False).encode(), headers=headers, method="POST")
     with open_provider_request(request, timeout=remaining_budget(deadline, TIMEOUT_SECONDS)) as response:
         raw = response.read(262145)

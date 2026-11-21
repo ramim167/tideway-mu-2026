@@ -1,4 +1,4 @@
-"""Run the Tideway local sandbox (Python 3.11+, standard library only)."""
+"""Run the MoneyGuard local sandbox (Python 3.11+, standard library only)."""
 import argparse
 import errno
 import os
@@ -27,11 +27,11 @@ def load_env():
 
 if __name__ == "__main__":
     if sys.version_info < (3, 11):
-        sys.exit("Tideway needs Python 3.11 or newer.")
+        sys.exit("MoneyGuard needs Python 3.11 or newer.")
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     load_env()
-    parser = argparse.ArgumentParser(description="Tideway: approval-gated cash-flow rescue (synthetic sandbox)")
+    parser = argparse.ArgumentParser(description="MoneyGuard: approval-gated cash-flow rescue (synthetic sandbox)")
     parser.add_argument("--host", default=os.getenv("TIDEWAY_HOST", "127.0.0.1"),
                         help="Bind address (loopback by default; Docker uses 0.0.0.0 behind a local port mapping)")
     parser.add_argument("--port", type=int, default=int(os.getenv("TIDEWAY_PORT", "8787")))
@@ -54,6 +54,6 @@ if __name__ == "__main__":
     except OSError as exc:
         if exc.errno != errno.EADDRINUSE:
             raise
-        sys.exit(f"Port {args.port} is already in use, probably by another Tideway still running.\n"
+        sys.exit(f"Port {args.port} is already in use, probably by another MoneyGuard still running.\n"
                  f"Stop it with Ctrl+C in its terminal, or start this one on another port:\n"
                  f"  python3 run.py --port {args.port + 1}")

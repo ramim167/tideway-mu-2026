@@ -253,7 +253,7 @@ def brief_html(report, display_currency=None):
     money = lambda value: e(display(value, report["currency"], display_currency)) if value is not None else "Not available"
     rows = "".join(f"<tr><td>{e(d['date'])}</td><td>{money(d['inflow_minor'])}</td><td>{money(d['outflow_minor'])}</td><td>{money(d['closing_cash_minor'])}</td></tr>" for d in report["calendar"])
     dependencies = "".join(f"<li>{e(r['customer'])}: lowest cash falls by {money(r['impact_on_lowest_cash_minor'])} if its unpaid receipts do not arrive.</li>" for r in report["dependencies"][:3])
-    return f"""<!doctype html><html lang="en"><meta charset="utf-8"><title>Tideway decision brief</title>
+    return f"""<!doctype html><html lang="en"><meta charset="utf-8"><title>MoneyGuard decision brief</title>
 <style>@page{{size:A4;margin:16mm}}body{{font:15px/1.5 system-ui;color:#152643;max-width:900px;margin:30px auto;padding:0 18px}}h1,h2{{color:#203775}}table{{width:100%;border-collapse:collapse}}td,th{{padding:7px;border-bottom:1px solid #bbb;text-align:left}}tr{{break-inside:avoid}}.note{{background:#eef3fa;padding:12px}}code{{overflow-wrap:anywhere;font-size:11px}}@media print{{body{{margin:0;padding:0}}}}</style>
 <h1>{e(report['business_name'])}: decision brief</h1><p>Simulation date {e(report['as_of'])}; target {e(report['target_date'])}; protects through {e(report['end_date'])}.</p>
 <p class="note">Private business figures. Share only with trusted people. Read-only analysis; no approval, financial execution or counterparty contact occurred.</p>
@@ -263,5 +263,5 @@ def brief_html(report, display_currency=None):
 <h2>Receipts that matter</h2><ul>{dependencies or '<li>No unpaid-customer dependency identified in this horizon.</li>'}</ul>
 <h2>Check before relying on this</h2><p>Payroll identified: {e(report['payroll']['identified'])}; flagged records: {report['data_checks']['quarantined_records']}; customers with fewer than three settled invoices: {len(report['data_checks']['customers_under_three_settlements'])}. No confidence percentage or bank verification is implied.</p>
 <h2>Dated cash story</h2><table><thead><tr><th>Date</th><th>Money in</th><th>Money out</th><th>Closing cash</th></tr></thead><tbody>{rows}</tbody></table>
-<p>{e(report['scope'])}</p><p>Proposed actions are not counted as collected cash. To act, return to Tideway, review a fresh proposal, obtain the required PIN approvals and counterparty consent, then execute through the normal workflow.</p>
+<p>{e(report['scope'])}</p><p>Proposed actions are not counted as collected cash. To act, return to MoneyGuard, review a fresh proposal, obtain the required PIN approvals and counterparty consent, then execute through the normal workflow.</p>
 <p>Source snapshot: <code>{e(report['snapshot_hash'])}</code>. This document is a private explanation, not an authorship signature. Print using the browser's Print command.</p></html>"""

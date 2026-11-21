@@ -1,6 +1,6 @@
 # TidePay v2: chronological prediction audit
 
-This evaluation improves the evidence for invoice timing in Tideway's cash-flow
+This evaluation improves the evidence for invoice timing in MoneyGuard's cash-flow
 management. It does not replace the shipped TidePay model or retrospectively
 rewrite the historical experiment. All data are generated, synthetic invoices.
 

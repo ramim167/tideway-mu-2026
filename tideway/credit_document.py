@@ -93,7 +93,7 @@ def _financial_sections(document):
 def schema_error(document):
     if (not isinstance(document, dict) or set(document) != set(PASSPORT_FIELDS)
             or document.get("version") != PASSPORT_VERSION or document.get("type") != "TidewayCreditPassport"):
-        return "Not a Tideway credit passport in the expected format."
+        return "Not a MoneyGuard credit passport in the expected format."
     sections = ("issuer", "business", "audit", "twcf", "health", "breach_risk", "public_signature")
     if (not all(isinstance(document[name], dict) for name in sections)
             or not all(isinstance(document[name], str) and document[name] for name in PASSPORT_FIELDS if name not in sections)

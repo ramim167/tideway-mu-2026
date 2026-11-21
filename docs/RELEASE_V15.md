@@ -1,6 +1,6 @@
 # V15: lender-grade treasury, portfolio early warning and plain-language help
 
-V15 widens Tideway from one owner's cash rescue to the people around that owner:
+V15 widens MoneyGuard from one owner's cash rescue to the people around that owner:
 the finance team, the lender reviewing the business, and the bank that manages
 many such businesses. It also makes every page explain itself so that anyone in
 the company can use it. All data remains synthetic; no real bank, lender,
@@ -18,7 +18,7 @@ customer or supplier is connected and no real money moves.
 - **Working-capital health score.** Six weighted components (collection speed,
   overdue share, customer concentration, runway, reserve coverage, simulated
   breach risk), each with its formula shown, plus the three data-based changes
-  that would raise the score most. The weights are Tideway's documented choices,
+  that would raise the score most. The weights are MoneyGuard's documented choices,
   not validated against outcomes. Synthetic demo scores: Shapla 41, Lotus 58,
   Harbourline 26.
 - **Payment-integrity scan.** Possible duplicate bills, split-under-threshold

@@ -1,4 +1,4 @@
-"""Loopback-only HTTP API and static UI for the Tideway sandbox."""
+"""Loopback-only HTTP API and static UI for the MoneyGuard sandbox."""
 from __future__ import annotations
 
 import csv
@@ -547,7 +547,7 @@ def public_hosts(env=None):
 def make_handler(app):
     hosted = public_hosts()
     class Handler(BaseHTTPRequestHandler):
-        server_version = "Tideway/3.0"
+        server_version = "MoneyGuard/3.0"
 
         def trusted_host(self):
             port = self.server.server_port
@@ -613,7 +613,7 @@ def make_handler(app):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
             self.send_header("X-Frame-Options", "DENY")
-            # The microphone is allowed for Tideway's own pages only ("Speak your question"); never for other origins.
+            # The microphone is allowed for MoneyGuard's own pages only ("Speak your question"); never for other origins.
             self.send_header("Permissions-Policy", "camera=(), microphone=(self), geolocation=()")
             self.send_header("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; "
                                                         "connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; "
@@ -803,7 +803,7 @@ def serve(db_path, port=8787, key="", model="gpt-5-mini", seed=True, host="127.0
     elif model_status["available"]:
         print("Local compatible model configured; its results are not the TideLM v2 benchmark.", flush=True)
     display_host = "127.0.0.1" if host in ("0.0.0.0", "::") else host
-    print(f"Tideway is ready: http://{display_host}:{server.server_port}", flush=True)
+    print(f"MoneyGuard is ready: http://{display_host}:{server.server_port}", flush=True)
     accounts = app.tideway.config()["demo_accounts"]
     if accounts:
         print("Demo sign-in (synthetic sandbox): " + " · ".join(
@@ -813,6 +813,6 @@ def serve(db_path, port=8787, key="", model="gpt-5-mini", seed=True, host="127.0
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("Tideway stopped.")
+        print("MoneyGuard stopped.")
     finally:
         server.server_close()

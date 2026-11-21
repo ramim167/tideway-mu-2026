@@ -1,4 +1,4 @@
-# Tideway synthetic scenario evaluation v2
+# MoneyGuard synthetic scenario evaluation v2
 
 This evaluation covers 24 separately specified synthetic business conditions, rather than opening-cash changes to the three demonstration fixtures. It measures bounded financial workflows, refusal handling, screening errors and planner runtime. It is an authored local evaluation, not independent human review, a real-business study, production accuracy, or proof of security.
 

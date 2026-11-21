@@ -64,7 +64,7 @@ def main(argv=None):
     ci_status = f"Stored hosted run {ci.get('run_number', 'unknown')} concluded {ci.get('conclusion', ci.get('remote_baseline_conclusion', 'unknown'))} for commit {ci.get('remote_commit', 'unknown')}."
     doc = f'''# Current technical readiness
 
-This is the current review index. Tideway remains a synthetic SME finance copilot:
+This is the current review index. MoneyGuard remains a synthetic SME finance copilot:
 cash forecasts, recovery proposals, human approval, simulated negotiation and
 verifiable sandbox execution. No bank, real lender or payment rail is connected.
 Historical upgrade and Windows reports describe earlier source versions.

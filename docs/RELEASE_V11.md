@@ -1,6 +1,6 @@
 # Decision lab upgrade - 18 October 2026
 
-This local upgrade adds seven connected decision-support features to Tideway's Topic E SME Finance Copilot. It remains a synthetic sandbox with no bank, real lender or real counterparty connected. No submission, deployment or push is implied by this local work.
+This local upgrade adds seven connected decision-support features to MoneyGuard's Topic E SME Finance Copilot. It remains a synthetic sandbox with no bank, real lender or real counterparty connected. No submission, deployment or push is implied by this local work.
 
 ## Implemented
 

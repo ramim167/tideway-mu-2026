@@ -1,4 +1,4 @@
-"""Validated business records for Tideway.
+"""Validated business records for MoneyGuard.
 
 Every monetary value ending in ``_minor`` is an integer number of minor units
 (for example paisa for BDT or fen for CNY).  Human-facing amounts are parsed
@@ -445,11 +445,11 @@ CSV_COLUMNS = ("record_type", "business_id", "id", "date", "description", "amoun
                "issue_date", "expected_collection_date", "paid_date", "priority", "reschedule_allowed",
                "rescheduled_date", "risk_flags", "source")
 MAX_CSV_BYTES = 32 * 1024 * 1024
-IGNORED_CSV_COLUMNS = ("risk_flags", "source")  # written by Tideway's export; recomputed on import, never trusted
+IGNORED_CSV_COLUMNS = ("risk_flags", "source")  # written by MoneyGuard's export; recomputed on import, never trusted
 
 
 def _unguard(value):
-    """Undo the apostrophe Tideway's export adds before =, +, - or @ so an exported file re-imports unchanged."""
+    """Undo the apostrophe MoneyGuard's export adds before =, +, - or @ so an exported file re-imports unchanged."""
     if isinstance(value, str) and value.startswith("'") and value.lstrip("'").lstrip()[:1] in ("=", "+", "-", "@"):
         return value[1:]
     return value

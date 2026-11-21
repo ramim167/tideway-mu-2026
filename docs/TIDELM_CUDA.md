@@ -40,7 +40,7 @@ python -m tideway.ml.tidelm_cuda_eval               # base model
 python -m tideway.ml.tidelm_cuda_eval --adapter ~/tideway-models/tidelm-cuda-adapter
 ```
 
-To use it from the app, serve it on the loopback interface and point Tideway's
+To use it from the app, serve it on the loopback interface and point MoneyGuard's
 local-model setting at it:
 
 ```bash

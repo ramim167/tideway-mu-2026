@@ -95,7 +95,7 @@ window.TidewayTreasury = (() => {
       : `<li class="small muted">Every component already scores full marks.</li>`;
     return `<div class="tw-health-head"><div>${gauge(r.score, r.band)}</div>
         <div><h3>Working-capital health</h3><p>A transparent 0–100 composite from this business's own records: collection speed, overdue share, customer concentration, runway, reserve coverage and simulated breach risk.</p>
-        <p class="small muted">Bands: ${r.bands.map((b) => `${esc(b.label)} ≥ ${esc(b.from)}`).join(" · ")}. Weights and anchors are Tideway design parameters, not industry benchmarks. Not a credit rating.</p></div></div>
+        <p class="small muted">Bands: ${r.bands.map((b) => `${esc(b.label)} ≥ ${esc(b.from)}`).join(" · ")}. Weights and anchors are MoneyGuard design parameters, not industry benchmarks. Not a credit rating.</p></div></div>
       <h3 class="section-gap">What would move the score most</h3><ol class="tw-tips">${tips}</ol>
       <div class="table-wrap section-gap"><table><thead><tr><th>Component and formula</th><th>Measured</th><th>Score</th><th class="num">Weight</th><th class="num">Points</th></tr></thead><tbody>${rows}</tbody>
       <tfoot><tr><td colspan="3"><strong>Composite score</strong> (weighted mean of available components; weight used ${esc(r.weight_total_used)}/100)</td><td class="num">100</td><td class="num"><strong>${esc(r.score)}</strong></td></tr></tfoot></table></div>
@@ -173,7 +173,7 @@ window.TidewayTreasury = (() => {
         ${json("Signed passport JSON", p)}</section>`;
     }
     return `<div class="row between"><div><h3>Verifiable credit passport</h3><p>A signed, expiring summary a business can hand a lender: 13-week cash flow, health score and components, breach risk, snapshot hash and audit-chain head.</p></div>${issue}</div>
-      <div class="alert info section-gap">${icon("shield")}<div><strong>Honest limits</strong><p class="small">Each passport carries an Ed25519 public-key signature, so a lender can verify it offline with <code>python scripts/verify_passport.py passport.json --public-key TRUSTED_HEX</code> without contacting Tideway. The issuer key is demo-grade (derived from the instance key; no HSM or revocation list). Synthetic data; not a credit rating, offer or guarantee. Issuing writes one audit entry and changes no financial record.</p></div></div>
+      <div class="alert info section-gap">${icon("shield")}<div><strong>Honest limits</strong><p class="small">Each passport carries an Ed25519 public-key signature, so a lender can verify it offline with <code>python scripts/verify_passport.py passport.json --public-key TRUSTED_HEX</code> without contacting MoneyGuard. The issuer key is demo-grade (derived from the instance key; no HSM or revocation list). Synthetic data; not a credit rating, offer or guarantee. Issuing writes one audit entry and changes no financial record.</p></div></div>
       ${card}
       <div class="row section-gap"><label class="field">Verify a passport file<input id="treasury-passport-file" type="file" accept="application/json,.json"></label>${button("verify-file", `${icon("upload")}Verify file`, "ghost")}</div>
       ${verdictHtml(fileCheck, "File")}`;

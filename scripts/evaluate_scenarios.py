@@ -1,4 +1,4 @@
-"""Compare a fixed spreadsheet rule with Tideway on authored synthetic perturbations.
+"""Compare a fixed spreadsheet rule with MoneyGuard on authored synthetic perturbations.
 
 No cloud/model calls or financial mutations. These are variations of three demo
 fixtures, not independent real SMEs or a held-out clinical/business study.
@@ -58,7 +58,7 @@ def run():
                                      "honest_no_safe_plan": bool(plan["action_needed"] and not actions),
                                      "economic_cost_minor": sum(a["economic_cost_minor"] for a in actions),
                                      "risk_target_met": selected.get("risk_target_met") if selected else None}})
-            print(f"{case['id']}: rule={baseline['feasible']} Tideway={outcome['feasible']}", flush=True)
+            print(f"{case['id']}: rule={baseline['feasible']} MoneyGuard={outcome['feasible']}", flush=True)
     finally:
         app.store.close()
     report = {"run_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),

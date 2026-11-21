@@ -19,7 +19,7 @@ class MUReviewPackage(unittest.TestCase):
 
     def test_active_deliverables_exist_and_match_the_archive_allowlist(self):
         root = Path(__file__).resolve().parents[1]
-        self.assertIn('docs/proposal/Tideway_MU_AI_Builders_2026_Proposal.pdf', DELIVERABLE_SOURCES)
+        self.assertIn('docs/proposal/MoneyGuard_MU_AI_Builders_2026_Proposal.pdf', DELIVERABLE_SOURCES)
         self.assertIn('docs/MU_HACKATHON_2026.md', DELIVERABLE_SOURCES)
         self.assertNotIn('slides/pitch.pdf', DELIVERABLE_SOURCES)
         self.assertNotIn('docs/submission-notes.pdf', DELIVERABLE_SOURCES)

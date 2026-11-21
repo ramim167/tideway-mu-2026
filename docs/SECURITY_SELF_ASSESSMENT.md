@@ -1,4 +1,4 @@
-# Tideway: security self-assessment
+# MoneyGuard: security self-assessment
 
 *Synthetic sandbox. This is a self-assessment against our own test suite, not a third-party audit or a compliance certification.*
 
@@ -92,7 +92,7 @@ Old plans with missing instructions fail closed to a fresh proposal; existing
 records are not destructively migrated. Residual-risk acknowledgement remains
 separate from economic constraints and cannot waive a discount ceiling.
 
-Loopback bind; Host and Origin allow-lists; CSRF token on every write; `HttpOnly; SameSite=Strict` cookie; JSON-only bodies with a 2 MB cap and per-endpoint field allow-lists; role checks; token-bucket rate limits; CSP `default-src 'none'`, `X-Frame-Options: DENY`, `nosniff`, `no-referrer`, `no-store`; internal errors never returned to the client; malformed requests (bad Content-Length, deeply nested JSON, non-ASCII tokens) get 4xx, not 500; anonymous requests never write audit rows or trip the breaker; CSV export neutralises formula cells (and a Tideway export re-imports unchanged).
+Loopback bind; Host and Origin allow-lists; CSRF token on every write; `HttpOnly; SameSite=Strict` cookie; JSON-only bodies with a 2 MB cap and per-endpoint field allow-lists; role checks; token-bucket rate limits; CSP `default-src 'none'`, `X-Frame-Options: DENY`, `nosniff`, `no-referrer`, `no-store`; internal errors never returned to the client; malformed requests (bad Content-Length, deeply nested JSON, non-ASCII tokens) get 4xx, not 500; anonymous requests never write audit rows or trip the breaker; CSV export neutralises formula cells (and a MoneyGuard export re-imports unchanged).
 
 ## 5. Privacy
 
@@ -115,7 +115,7 @@ controls the signing key remains outside this protection's threat boundary.
 7. **Verification scope.** Authored Windows local-model smoke results are in `evidence/readiness-v2/model/`. The released MLX adapter, receipt model, SME user study and external penetration test remain unverified for this runtime.
 8. **Small model, synthetic training data.** TideLM can misread a name or drop a constraint (see its report); names are resolved against the ledger and every plan is only a proposal, but a person must still read it before approving.
 9. **Not a compliance certification.** No claim of PCI, SOC 2, local regulator or bank approval.
-10. **Optional local model service.** The compatible backend only sends HTTP to literal loopback addresses, refuses redirects, and bounds responses. Its typed plans have the same permission boundary. The independently installed server is trusted infrastructure and must use offline models; Tideway does not audit its plugins or forwarding behaviour. The first sealed Qwen3 compatible-model challenge is reported separately from the historical MLX adapter benchmark.
+10. **Optional local model service.** The compatible backend only sends HTTP to literal loopback addresses, refuses redirects, and bounds responses. Its typed plans have the same permission boundary. The independently installed server is trusted infrastructure and must use offline models; MoneyGuard does not audit its plugins or forwarding behaviour. The first sealed Qwen3 compatible-model challenge is reported separately from the historical MLX adapter benchmark.
 
 ## 7. Upgrade findings and additional verification
 

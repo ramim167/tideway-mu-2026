@@ -61,7 +61,7 @@ window.TidewayShield = (() => {
       ${meter(result.risk_score, v.cls)}
       ${(result.signals || []).length ? `<h4 class="section-gap">Why</h4><ul class="shield-list">${result.signals.map((s) => `<li><span class="tag ${s.weight >= 40 ? "bad" : ""}">+${esc(s.weight)}</span><div>${pick(s)}${s.words?.length ? `<span class="hint">Words that weighed most: ${s.words.map((w) => `<code>${esc(w)}</code>`).join(" ")}</span>` : ""}</div></li>`).join("")}</ul>` : ""}
       <h4 class="section-gap">What to do</h4><ol class="shield-list">${(result.actions || []).map((a) => `<li><div>${pick(a)}</div></li>`).join("")}</ol>
-      ${facts.length ? `<details class="section-gap"><summary>What Tideway read from the message</summary><ul class="small">${facts.map((f) => `<li>${f}</li>`).join("")}</ul></details>` : ""}
+      ${facts.length ? `<details class="section-gap"><summary>What MoneyGuard read from the message</summary><ul class="small">${facts.map((f) => `<li>${f}</li>`).join("")}</ul></details>` : ""}
       <details class="section-gap"><summary>Learned model</summary><p class="small">${esc(model.name || "")}: P(scam) = ${esc(Math.round((model.probability_scam || 0) * 100))}%. Trained on ${esc(model.training || "")}. Synthetic data: treat it as a second opinion, not proof.</p></details>
       <p class="hint section-gap">${esc(result.note || "")}</p></section>`;
   }

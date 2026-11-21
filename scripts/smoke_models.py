@@ -1,4 +1,4 @@
-"""Run Tideway's on-device models for real and record what happened (latency, answers, extracted records).
+"""Run MoneyGuard's on-device models for real and record what happened (latency, answers, extracted records).
 
 Run: python3 scripts/smoke_models.py   (needs the TideLM adapter, mlx-lm, and for photos mlx-vlm + the vision model)
 Writes evidence/ml/runtime_smoke.json. Loads one model at a time to stay within 16 GB.

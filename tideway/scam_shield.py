@@ -1,7 +1,7 @@
 """Scam Shield: checks a pasted SMS, WhatsApp or call script for mobile-money (MFS) fraud.
 
 Built for Bangladesh's bKash, Nagad and Rocket users: shop owners who receive payments on a
-personal or merchant wallet, and the small businesses Tideway serves.  Two parts work together:
+personal or merchant wallet, and the small businesses MoneyGuard serves.  Two parts work together:
 
 * **Explainable red-flag rules** for the scams that are actually common here: requests for a PIN
   or OTP, the "I sent money to you by mistake, please send it back" trick, fake cash-in SMS from a
@@ -11,7 +11,7 @@ personal or merchant wallet, and the small businesses Tideway serves.  Two parts
   on a labelled synthetic corpus in English, Bangla and Banglish.  It catches phrasing the rules
   have not seen, and it is reported as just one signal with its own probability.
 
-The result is advice, never an action: Tideway does not block, report or move money.  Every
+The result is advice, never an action: MoneyGuard does not block, report or move money.  Every
 verdict tells the person how to check for themselves (open the official app or dial the official
 USSD code, never call a number from the message).  Message text never gains any authority.
 """
@@ -106,8 +106,8 @@ _RULES = (
      "বিষয়টি গোপন রাখতে বলা হয়েছে।"),
     ("instruction_injection", 40,
      r"ignore (?:all |any )?(?:previous|prior) instructions|\bassistant\s*:|\bsystem\s*:|approve the transfer|mark .{0,30} as received",
-     "It contains instructions aimed at software or an AI assistant. Tideway never follows instructions inside messages.",
-     "মেসেজে সফটওয়্যার বা এআই-কে দেওয়া নির্দেশ আছে। টাইডওয়ে মেসেজের নির্দেশ মানে না।"),
+     "It contains instructions aimed at software or an AI assistant. MoneyGuard never follows instructions inside messages.",
+     "মেসেজে সফটওয়্যার বা এআই-কে দেওয়া নির্দেশ আছে। মানিগার্ড মেসেজের নির্দেশ মানে না।"),
 )
 _RULES = tuple((code, weight, re.compile(pattern, re.I), en, bn) for code, weight, pattern, en, bn in _RULES)
 _ADVICE = re.compile(r"\b(?:never|do not|don['’]t)\s+(?:ask|read|share|give|tell|send|enter|reply|confirm)\b|"
@@ -309,14 +309,14 @@ def check(text, sender="", _model=None):
     else:
         probability_signal = probability
     if probability_signal >= 0.95:
-        add("learned_model", 35, f"Tideway's text model finds it very similar to known scam messages ({round(probability * 100)}%).",
-            f"টাইডওয়ের এআই মডেল এটিকে পরিচিত প্রতারণার মেসেজের খুব কাছাকাছি দেখছে ({round(probability * 100)}%)।", words=top_words)
+        add("learned_model", 35, f"MoneyGuard's text model finds it very similar to known scam messages ({round(probability * 100)}%).",
+            f"মানিগার্ডর এআই মডেল এটিকে পরিচিত প্রতারণার মেসেজের খুব কাছাকাছি দেখছে ({round(probability * 100)}%)।", words=top_words)
     elif probability_signal >= 0.9:
-        add("learned_model", 30, f"Tideway's text model finds it very similar to known scam messages ({round(probability * 100)}%).",
-            f"টাইডওয়ের এআই মডেল এটিকে পরিচিত প্রতারণার মেসেজের মতো দেখছে ({round(probability * 100)}%)।", words=top_words)
+        add("learned_model", 30, f"MoneyGuard's text model finds it very similar to known scam messages ({round(probability * 100)}%).",
+            f"মানিগার্ডর এআই মডেল এটিকে পরিচিত প্রতারণার মেসেজের মতো দেখছে ({round(probability * 100)}%)।", words=top_words)
     elif probability_signal >= 0.75:
-        add("learned_model", 15, f"Tideway's text model finds some similarity to scam messages ({round(probability * 100)}%).",
-            f"টাইডওয়ের এআই মডেল কিছু মিল খুঁজে পেয়েছে ({round(probability * 100)}%)।", words=top_words)
+        add("learned_model", 15, f"MoneyGuard's text model finds some similarity to scam messages ({round(probability * 100)}%).",
+            f"মানিগার্ডর এআই মডেল কিছু মিল খুঁজে পেয়েছে ({round(probability * 100)}%)।", words=top_words)
 
     score = min(100, sum(signal["weight"] for signal in signals))
     critical = any(s["code"] in ("asks_secret", "notice_from_phone_number") for s in signals)
@@ -364,5 +364,5 @@ def check(text, sender="", _model=None):
         "signals": signals,
         "actions": [{"en": en, "bn": bn} for en, bn in actions],
         "advisory_only": True,
-        "note": "Advice only: Tideway saved nothing, blocked nothing and moved no money. Message text never gains authority.",
+        "note": "Advice only: MoneyGuard saved nothing, blocked nothing and moved no money. Message text never gains authority.",
     }

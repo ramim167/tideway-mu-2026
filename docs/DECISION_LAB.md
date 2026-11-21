@@ -1,4 +1,4 @@
-# Tideway decision lab
+# MoneyGuard decision lab
 
 MU CSE Fest 2026 AI Builders Hackathon, FinTech & Financial Intelligence track. These additions strengthen the existing payroll and cash-flow decision, security boundary and judge interaction. They do not add real banking, financing or real counterparty access. Open the running app, sign in, and select **Decision lab**.
 

@@ -1,4 +1,4 @@
-"""Render the Tideway submission PDFs with headless Chrome (no Python packages needed).
+"""Render the MoneyGuard submission PDFs with headless Chrome (no Python packages needed).
 
 Produces slides/pitch.pdf, docs/architecture.pdf, docs/security-assessment.pdf and
 docs/Tideway_FinTechathon_2026_Roadmap.pdf (from docs/roadmap/*.html).
@@ -210,7 +210,7 @@ def slides():
     fed, rule, thin, alone = (tidepay.get("federated", {}), tidepay.get("heuristic_v1", {}),
                               tidepay.get("federated_on_smaller_half_of_smes", {}), tidepay.get("local_only_on_smaller_half_of_smes", {}))
     deck = [
-        {"title": "Tideway", "subtitle": "Plan ahead for payroll.",
+        {"title": "MoneyGuard", "subtitle": "Plan ahead for payroll.",
          "bullets": ["On-device AI that predicts which customers will pay late, plans a cash rescue before the gap hits, "
                      "and acts only with your approval.", "FinTechathon 2026 · International Track · Topic E: SME Finance Copilot"],
          "image": "00-landing.png", "first": True},
@@ -247,7 +247,7 @@ def slides():
                      "Simulated counterparties accept, counter or refuse; idempotent execution with read-back"],
          "image": "03-approve-exactly-this.png"},
         {"title": "Talk to it in your language", "subtitle": "Glass-box answers, zero-entry bookkeeping",
-         "bullets": ["Optional TideLM shows its typed plan; figures come from Tideway's tools",
+         "bullets": ["Optional TideLM shows its typed plan; figures come from MoneyGuard's tools",
                      "Answers in the language of the question, with the same figures",
                      "Optional local models draft messages and photos; human confirmation is required"],
          "image": "07-assistant.png"},
@@ -390,7 +390,7 @@ def pitch(work: Path):
         classes = " ".join(c for c in ("first" if slide.get("first") else "", "with-image" if image and image.exists() else "") if c)
         parts.append(f"<section class='{classes}'>{text}<div class=n>{number:02d} · synthetic sandbox</div></section>")
     page = work / "pitch.html"
-    page.write_text(f"<!doctype html><meta charset=utf-8><title>Tideway pitch</title><style>{SLIDE_CSS}</style>" + "".join(parts),
+    page.write_text(f"<!doctype html><meta charset=utf-8><title>MoneyGuard pitch</title><style>{SLIDE_CSS}</style>" + "".join(parts),
                     encoding="utf-8")
     print_pdf(page, ROOT / "slides" / "pitch.pdf")
 

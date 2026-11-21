@@ -1,16 +1,16 @@
-"""Serve the CUDA-trained TideLM adapter as a loopback-only OpenAI-compatible endpoint for Tideway.
+"""Serve the CUDA-trained TideLM adapter as a loopback-only OpenAI-compatible endpoint for MoneyGuard.
 
 Implements exactly what tideway/local_model.py calls:
   GET  /v1/models            -> {"object": "list", "data": [{"id": MODEL_ID, ...}]}
   POST /v1/chat/completions  -> {"choices": [{"message": {"role": "assistant", "content": ...}}], ...}
 Decoding is always greedy (temperature is ignored) with Qwen3 thinking disabled, the same prompt format as
 training and evaluation. `response_format` (json_object or json_schema) is accepted but not enforced by
-constrained decoding: the model is trained to emit JSON and Tideway re-validates every answer itself.
+constrained decoding: the model is trained to emit JSON and MoneyGuard re-validates every answer itself.
 Image content is rejected (text model). Binds 127.0.0.1 only; requests with a non-loopback Host are refused.
 
 Run (ML venv, repo root):
   python scripts/serve_tidelm_cuda.py --adapter %USERPROFILE%/tideway-models/tidelm-cuda-adapter --port 8796
-Then start Tideway (standard-library Python) with:
+Then start MoneyGuard (standard-library Python) with:
   TIDEWAY_LOCAL_MODEL_URL=http://127.0.0.1:8796/v1  TIDEWAY_LOCAL_TEXT_MODEL=tidelm-cuda-qwen3-1.7b
 """
 from __future__ import annotations

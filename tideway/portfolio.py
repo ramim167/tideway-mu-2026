@@ -292,7 +292,7 @@ def _make_sme(seed, index, used_names):
 
 
 def generate_portfolio(n=DEFAULT_SIZE, seed=DEFAULT_SEED):
-    """Deterministic synthetic SME ledgers (validated Tideway records).  Never reads tenant data."""
+    """Deterministic synthetic SME ledgers (validated MoneyGuard records).  Never reads tenant data."""
     _check_size(n, seed)
     used = set()
     return [_make_sme(seed, index, used) for index in range(n)]

@@ -338,7 +338,7 @@ def monte_carlo(business, policy, records, target_date, adjustments=(), promises
             "invoice_late_share": {invoice_id: round(count / runs, 3) for invoice_id, count in sorted(late_after.items())},
             "fan": fan,
             "method": "Seeded Monte Carlo over open-invoice payment dates. Each invoice's lateness is drawn from TidePay, "
-                      "Tideway's own federated-trained model; one shared draw per customer per future, so a slow customer "
+                      "MoneyGuard's own federated-trained model; one shared draw per customer per future, so a slow customer "
                       "is slow on all its invoices. Overdue invoices only draw delays at least as long as their current "
                       "lateness. All other events are fixed. Estimates from synthetic data, not a guarantee."}
 

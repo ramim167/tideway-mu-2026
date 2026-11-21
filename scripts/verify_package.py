@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 from scripts.build_submission_package import DELIVERABLE_SOURCES, allowed_source, team_gaps
 from scripts.verify_submission import source_digest
 
-MANIFEST_PATH = 'Tideway/package-manifest.json'
+MANIFEST_PATH = 'MoneyGuard/package-manifest.json'
 DELIVERABLES = {Path(name).name for name in DELIVERABLE_SOURCES}
 # A complete suite can take several minutes on supported Windows machines.
 EXTRACTION_TEST_TIMEOUT = 600
@@ -46,16 +46,16 @@ def inspect_archive(z):
     for info in z.infolist():
         name = info.filename
         path = PurePosixPath(name)
-        if (not name.startswith('Tideway/') or '\\' in name or path.is_absolute()
+        if (not name.startswith('MoneyGuard/') or '\\' in name or path.is_absolute()
                 or '..' in path.parts or path.as_posix() != name or any(':' in p for p in path.parts)
                 or any(ord(c) < 32 for c in name) or info.is_dir()
                 or ((info.external_attr >> 16) & 0o170000) == 0o120000):
             raise RuntimeError(f'Unsafe ZIP entry: {name}')
-        if name.startswith('Tideway/source/'):
-            if not allowed_source(name.removeprefix('Tideway/source/')):
+        if name.startswith('MoneyGuard/source/'):
+            if not allowed_source(name.removeprefix('MoneyGuard/source/')):
                 raise RuntimeError(f'Forbidden source entry: {name}')
-        elif name not in {MANIFEST_PATH, 'Tideway/README-FIRST.md'}:
-            if name.removeprefix('Tideway/deliverables/') not in DELIVERABLES or not name.startswith('Tideway/deliverables/'):
+        elif name not in {MANIFEST_PATH, 'MoneyGuard/README-FIRST.md'}:
+            if name.removeprefix('MoneyGuard/deliverables/') not in DELIVERABLES or not name.startswith('MoneyGuard/deliverables/'):
                 raise RuntimeError(f'Unexpected deliverable entry: {name}')
     try:
         manifest = json.loads(z.read(MANIFEST_PATH))
@@ -85,7 +85,7 @@ def isolated_environment():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('archive', nargs='?', default=str(ROOT / 'dist/Tideway-submission.zip'))
+    parser.add_argument('archive', nargs='?', default=str(ROOT / 'dist/MoneyGuard-submission.zip'))
     args = parser.parse_args()
     archive = Path(args.archive).resolve()
     with tempfile.TemporaryDirectory(prefix='tideway-distributed-') as directory:
@@ -95,7 +95,7 @@ def main():
                 raise RuntimeError('Corrupt archive')
             manifest = inspect_archive(z)
             z.extractall(work)
-        source = work / 'Tideway/source'
+        source = work / 'MoneyGuard/source'
         if (source / '.git').exists() or (source / 'submission-team.json').exists():
             raise RuntimeError('Private workstation state found in extraction')
         actual_digest, _files = source_digest(source)

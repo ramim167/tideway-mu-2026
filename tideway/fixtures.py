@@ -173,6 +173,6 @@ def fixtures():
                  "status": "open", "priority": "normal", "reschedule_allowed": True},
             ],
             "story": "A tight wholesaler with a strict supplier, a slow customer and a poisoned bill: "
-                     "no safe plan exists, so Tideway says so and shows the cost of the alternatives.",
+                     "no safe plan exists, so MoneyGuard says so and shows the cost of the alternatives.",
         },
     ]

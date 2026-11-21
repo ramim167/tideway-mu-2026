@@ -1,4 +1,4 @@
-"""SQLite persistence and the approval-gated workflow for Tideway.
+"""SQLite persistence and the approval-gated workflow for MoneyGuard.
 
 Every read is scoped to one business and every mutation runs inside a
 ``BEGIN IMMEDIATE`` transaction.  The sandbox is synthetic: no bank,
@@ -64,7 +64,7 @@ INVITE_DAYS = 7
 # Free Starter for micro shops (Scam Shield, Bangla assistant, cash weather); Growth adds seats and businesses.
 PLANS = {
     "demo": {"label": "Demo", "price_bdt_month": 0, "price_usd_month": 0, "seats": 10, "businesses": 3,
-             "features": "Every feature, for trying Tideway with sample businesses"},
+             "features": "Every feature, for trying MoneyGuard with sample businesses"},
     "starter": {"label": "Starter", "price_bdt_month": 0, "price_usd_month": 0, "seats": 3, "businesses": 1,
                 "features": "Scam check, বাংলা assistant, cash forecast and money lessons"},
     "growth": {"label": "Growth", "price_bdt_month": 990, "price_usd_month": 8, "seats": 10, "businesses": 5,
@@ -521,7 +521,7 @@ class Store(EventStoreMixin):
                             "problem": "The previously recorded witness is missing; the witness file may have been deleted or is unreadable."})
         checkpoint = {"business_id": business_id, "entries": len(rows), "head_hash": previous, "signed_at": utc_now()}
         checkpoint["signature"] = security.sign(self.key, checkpoint)
-        return {"project": "Tideway", "track": "MU CSE Fest 2026 AI Builders Hackathon, FinTech & Financial Intelligence track",
+        return {"project": "MoneyGuard", "track": "MU CSE Fest 2026 AI Builders Hackathon, FinTech & Financial Intelligence track",
                 "environment": "local SQLite sandbox (synthetic)", "business_id": business_id,
                 "exported_at": utc_now(), "hash_chain_valid": valid, "first_invalid_entry": first_bad,
                 "genesis_hash": "0" * 64, "head_hash": previous, "checkpoint": checkpoint, "witness": witness,

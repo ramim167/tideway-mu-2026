@@ -1,4 +1,4 @@
-// Bangla coverage check: switches Tideway to বাংলা and walks every page and the important states
+// Bangla coverage check: switches MoneyGuard to বাংলা and walks every page and the important states
 // (landing, Home, forecast simple and detailed, rescue plan, approval dialog, assistant, Scam check,
 // Inbox drafts, What-if, Records, Team, every Decision lab / Treasury tab, Lender radar, Safety
 // self-test, Audit drill, a fraud-blocked business and a viewer). It lists interface text that is

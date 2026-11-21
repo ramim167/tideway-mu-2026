@@ -75,7 +75,7 @@ def main():
         run('Fresh ZIP extraction, tests and server', python + ['scripts/verify_package.py'])
     print(f'Checks passed for source {digest}.', flush=True)
     if not args.checks_only:
-        print('ZIP: dist/Tideway-submission.zip; extraction proof: dist/extraction-verification.json')
+        print('ZIP: dist/MoneyGuard-submission.zip; extraction proof: dist/extraction-verification.json')
         print('Review PDF appearance before sharing. Team administration and video remain pending.')
     return 0
 

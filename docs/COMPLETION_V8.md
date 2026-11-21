@@ -1,4 +1,4 @@
-# Tideway completion review — 17 October 2026
+# MoneyGuard completion review — 17 October 2026
 
 This review continues the existing remediation rather than replacing unrelated
 work. The request is the user's instruction to complete the current repository
@@ -51,7 +51,7 @@ Current final results are in [the readiness index](READINESS_CURRENT.md),
 [unit summary](../evidence/test-summary.json),
 [release log](../evidence/completion-v8/release-run.log) and
 [release stage/PDF hashes](../evidence/completion-v8/release-checks.json).
-The local package and extraction receipt are `dist/Tideway-submission.zip`,
+The local package and extraction receipt are `dist/MoneyGuard-submission.zip`,
 `dist/package-manifest.json`, `dist/SHA256SUMS.txt` and
 `dist/extraction-verification.json`. Final measurements are appended after
 completion; historical counts do not replace the current suite.
@@ -82,7 +82,7 @@ That set had zero uncertain/error outputs and median/p95 latency of approximatel
 1.556/2.374 seconds on its recorded machine, not a current Windows benchmark.
 
 This Windows machine has no MLX runtime or verified cached base weights. The
-historical `E:\Tideway-model-cache` paths are unavailable. No model was downloaded
+historical `E:\MoneyGuard-model-cache` paths are unavailable. No model was downloaded
 or substituted; current-device real semantic, planning and vision inference
 remain unverified. Injected tests establish containment and integration only.
 Benign classification cannot remove independent verification requirements,

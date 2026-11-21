@@ -55,7 +55,7 @@ class GuardedLoop(unittest.TestCase):
 
         bot = Agent(app, "sk-or-test-not-real", "google/gemma-4-31b-it:free", transport=fake_transport)
         reply = bot.chat(SHAPLA, None, "How risky is the month?", [], True, "agent:llm", "owner", "Nadia")
-        # The invented figure is caught at once (no slow rewrite call) and the user gets Tideway's own checked answer
+        # The invented figure is caught at once (no slow rewrite call) and the user gets MoneyGuard's own checked answer
         # instead of the made-up number.
         self.assertEqual(len(sent), 2)
         self.assertTrue(reply.get("ai_fallback"))

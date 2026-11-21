@@ -1,6 +1,6 @@
 "use strict";
 
-// Tideway UI: vanilla JS, no build step. Every server value is escaped before rendering.
+// MoneyGuard UI: vanilla JS, no build step. Every server value is escaped before rendering.
 const $ = (selector) => document.querySelector(selector);
 const freshWhatIf = () => ({delays: {}, expense: "", expenseDate: "", drop: "", result: null});
 const freshInbox = () => ({text: "", photo: "", photoName: "", transcript: "", drafts: null, suspicious: false, flags: [], screening: null, scam: null, note: "", saved: null});
@@ -35,7 +35,7 @@ const VIEWS = {
   home: ["Home", "See your cash and what to do next"],
   overview: ["Cash forecast", "See when cash could run short"],
   rescue: ["Fix a cash gap", "Compare plans, review terms and approve with your PIN"],
-  assistant: ["Ask Tideway", "Ask about your business in বাংলা or English"],
+  assistant: ["Ask MoneyGuard", "Ask about your business in বাংলা or English"],
   shield: ["Scam check", "Check a message for signs of fraud"],
   inbox: ["Add from SMS", "Turn a message into a record you can review and save"],
   learn: ["Money lessons", "Learn six ways to manage business cash"],
@@ -56,7 +56,7 @@ const VIEWS_BN = {
   assistant: ["প্রশ্ন করুন", "বাংলা বা ইংরেজিতে প্রশ্ন করুন; উত্তর আসে আপনার নিজের হিসাব থেকে"],
   shield: ["প্রতারণা যাচাই", "কিছু করার আগে বিকাশ, নগদ বা রকেটের মেসেজ যাচাই করুন"],
   learn: ["টাকার পাঠ", "আপনার নিজের হিসাব দিয়ে ব্যবসার টাকা সামলানোর ছয়টি ছোট পাঠ"],
-  inbox: ["এসএমএস থেকে হিসাব", "মেসেজ পেস্ট করুন; টাইডওয়ে হিসাব লিখে দেবে; আপনি নিশ্চিত না করা পর্যন্ত কিছু সংরক্ষণ হয় না"],
+  inbox: ["এসএমএস থেকে হিসাব", "মেসেজ পেস্ট করুন; মানিগার্ড হিসাব লিখে দেবে; আপনি নিশ্চিত না করা পর্যন্ত কিছু সংরক্ষণ হয় না"],
   whatif: ["যদি এমন হয়?", "দেরিতে পেমেন্ট বা বড় খরচ ধরে দেখুন; কিছু সংরক্ষণ হয় না"],
   records: ["হিসাবের খাতা", "সব চালান, বিল ও লেনদেন"],
   team: ["টিম", "কে দেখতে ও কাজ করতে পারে"],
@@ -274,7 +274,7 @@ function showLogin() {
     <ul><li>${esc(plan.seats)} team seats</li><li>${esc(plan.businesses)} ${plan.businesses === 1 ? "business" : "businesses"}</li><li>${esc(plan.features || "Scam Shield, বাংলা assistant, rescue agent and audit trail")}</li></ul></article>`).join("");
   $("#signup-plans").innerHTML = `<legend>Plan</legend>` + plans.map((plan, index) =>
     `<label class="plan-option"><input type="radio" name="plan" value="${esc(plan.id)}" ${index === 0 ? "checked" : ""}><strong>${esc(plan.label)}</strong><span>${plan.price_bdt_month ? `৳${esc(plan.price_bdt_month)}/mo (illustrative)` : "Free"} · ${esc(plan.seats)} seats</span></label>`).join("");
-  // Taka first: Tideway is for Bangladeshi businesses; other currencies stay available below it.
+  // Taka first: MoneyGuard is for Bangladeshi businesses; other currencies stay available below it.
   const currencies = [...(config.currencies || [])].sort((a, b) => (b.code === "BDT") - (a.code === "BDT"));
   const select = $("#signup-currency");
   if (!select.options.length) select.innerHTML = currencies.map((item) => `<option value="${esc(item.code)}" ${item.code === "BDT" ? "selected" : ""}>${esc(item.code)} · ${esc(item.name)}</option>`).join("");
@@ -854,7 +854,7 @@ function onboardingHtml(d) {
   if ((r.transactions || []).length + (r.invoices || []).length + (r.bills || []).length) return "";
   const editor = canApprove();
   return `<section class="card onboarding section-gap-bottom" aria-labelledby="onboard-title"><div class="card-head"><div><span class="eyebrow">Getting started</span><h3 id="onboard-title">Welcome to ${esc(d.business.name)}: your ledger is empty</h3>
-    <p>The forecast below only knows your opening cash. Add invoices, bills and transactions and Tideway will start predicting late payments and gaps.</p></div></div>
+    <p>The forecast below only knows your opening cash. Add invoices, bills and transactions and MoneyGuard will start predicting late payments and gaps.</p></div></div>
     <ol class="onboard-steps">
       <li><strong>Import a CSV</strong><span>Export from your accounting tool or bank. Every row is validated before anything is saved.</span>${editor ? `<button class="button small primary" data-action="import">${icon("upload")}Import CSV</button>` : ""}</li>
       <li><strong>Paste into the Inbox</strong><span>An invoice SMS, WhatsApp message, bKash/Nagad alert or bank alert, in English, বাংলা or Banglish. TideLM drafts the records; Scam Shield flags fraud; you confirm.</span><button class="button small ghost" data-view="inbox">${icon("inbox")}Open the Inbox</button></li>
@@ -946,7 +946,7 @@ function renderTeam() {
       ${owner ? `<div class="card"><h3>Invite someone</h3><p class="small muted">They get a one-time code to create their account or add this business to an existing one.</p>
         ${invite ? `<div class="invite-code section-gap" role="status"><span class="eyebrow">Invite code for ${esc(invite.name)} (${esc(invite.role)})</span><code id="invite-code">${esc(invite.code)}</code>
           <button class="button small teal" data-action="copy-invite">Copy code</button>
-          <p class="small">Share this code privately. It works once and expires on ${esc(dhakaTimestamp(invite.expires_at))} (${dhakaTimeLabel()}). It is shown only now: Tideway stores only a hash of it.</p>
+          <p class="small">Share this code privately. It works once and expires on ${esc(dhakaTimestamp(invite.expires_at))} (${dhakaTimeLabel()}). It is shown only now: MoneyGuard stores only a hash of it.</p>
           <button class="text-link" data-action="dismiss-invite">Done, hide the code</button></div>` : ""}
         <form id="invite-form" class="auth-form section-gap" novalidate autocomplete="off">
           <label class="field">Their name<input name="name" maxlength="80" required></label>
@@ -1114,7 +1114,7 @@ function mandateCard(view) {
   m.actions.forEach((action) => {
     const replies = view.negotiations.filter((item) => item.action_id === action.action_id);
     if (replies.length) {
-      transcript.push(`<div class="chat-bubble ours">${esc(moneyProse(replies[0].request.message || `Request: ${action.type}`))}<small>Tideway agent → ${esc(action.counterparty)} (sandbox)</small></div>`);
+      transcript.push(`<div class="chat-bubble ours">${esc(moneyProse(replies[0].request.message || `Request: ${action.type}`))}<small>MoneyGuard agent → ${esc(action.counterparty)} (sandbox)</small></div>`);
       replies.forEach((reply) => transcript.push(`<div class="chat-bubble theirs ${esc(reply.status)}">${esc(moneyProse(reply.response.message))}<small>${esc(reply.simulated_by)} · ${esc(reply.status)}</small></div>`));
     }
   });
@@ -1171,7 +1171,7 @@ function searchSummary(search = {}) {
   return [facts.length ? `${facts.join("; ")}.` : "", search.objective || ""].filter(Boolean).join(" ");
 }
 
-// One plain card on top of the rescue page: what Tideway suggests, what it costs, who must agree.
+// One plain card on top of the rescue page: what MoneyGuard suggests, what it costs, who must agree.
 // Built only from the server's proposal; the detailed cards below stay the source of truth.
 function rescueSummaryHtml(d) {
   const plan = d.plan, bn = state.lang === "bn";
@@ -1181,14 +1181,14 @@ function rescueSummaryHtml(d) {
     const short = d.owner_view?.likely?.reserve_shortfall_minor;
     if (!short) return "";
     return `<section class="card rescue-summary"><h2>${L("Find a way to cover the shortfall", "ঘাটতি মেটানোর উপায় খুঁজুন")}</h2>
-      <p>${esc(L(`You are about ${money(short)} short of your safety money. Tideway checks your suppliers and customers and suggests a fix. Nothing happens until you approve.`,
-        `নিরাপত্তার টাকার চেয়ে প্রায় ${money(short)} কম আছে। টাইডওয়ে সরবরাহকারী ও ক্রেতাদের দেখে সমাধান প্রস্তাব করবে। আপনি অনুমোদন না করা পর্যন্ত কিছুই হবে না।`))}</p>
+      <p>${esc(L(`You are about ${money(short)} short of your safety money. MoneyGuard checks your suppliers and customers and suggests a fix. Nothing happens until you approve.`,
+        `নিরাপত্তার টাকার চেয়ে প্রায় ${money(short)} কম আছে। মানিগার্ড সরবরাহকারী ও ক্রেতাদের দেখে সমাধান প্রস্তাব করবে। আপনি অনুমোদন না করা পর্যন্ত কিছুই হবে না।`))}</p>
       </section>`;
   }
   if (!plan.action_needed) return `<section class="card rescue-summary clear"><h2>${L("No fix needed", "কোনো সমাধানের দরকার নেই")}</h2><p>${L("Your cash stays above your safety money. Nothing to approve.", "আপনার নগদ টাকা নিরাপত্তার টাকার উপরে থাকবে। অনুমোদনের কিছু নেই।")}</p></section>`;
   const best = (plan.bundles || [])[0];
   if (!best?.feasible) {
-    return `<section class="card rescue-summary storm"><span class="eyebrow">${L("Tideway's answer", "টাইডওয়ের উত্তর")}</span><h2>${L("No safe fix fits your limits", "আপনার সীমার মধ্যে কোনো নিরাপদ সমাধান নেই")}</h2>
+    return `<section class="card rescue-summary storm"><span class="eyebrow">${L("MoneyGuard's answer", "মানিগার্ডর উত্তর")}</span><h2>${L("No safe fix fits your limits", "আপনার সীমার মধ্যে কোনো নিরাপদ সমাধান নেই")}</h2>
       <p>${esc(L(`Even the best combination still leaves about ${money(best?.remaining_shortfall_minor ?? plan.gap_minor)} short. Talk to your bank or MFI early; the loan options below show what each would cost.`,
         `সবচেয়ে ভালো সমাধানেও প্রায় ${money(best?.remaining_shortfall_minor ?? plan.gap_minor)} কম থাকে। আগেভাগে ব্যাংক বা এমএফআই-এর সাথে কথা বলুন; নিচে ঋণের খরচ দেখানো আছে।`))}</p></section>`;
   }
@@ -1204,7 +1204,7 @@ function rescueSummaryHtml(d) {
   const votes = plan.approvals || [];
   const pending = ["pending", "partially_approved"].includes(plan.status)
     && votes.every((vote) => vote.bundle_id === best.bundle_id && vote.operator_id !== state.operator.id);
-  return `<section class="card rescue-summary" aria-labelledby="rescue-summary-title"><span class="eyebrow">${L("Tideway's suggestion", "টাইডওয়ের পরামর্শ")}</span>
+  return `<section class="card rescue-summary" aria-labelledby="rescue-summary-title"><span class="eyebrow">${L("MoneyGuard's suggestion", "মানিগার্ডর পরামর্শ")}</span>
     <h2 id="rescue-summary-title">${L(`${best.actions.length} step${best.actions.length === 1 ? "" : "s"} to cover the gap of ${money(plan.gap_minor)}`, `${money(plan.gap_minor)} ঘাটতি মেটাতে ${best.actions.length}টি ধাপ`)}</h2>
     <ol class="rescue-steps">${best.actions.map((a) => `<li><span>${step(a)}</span></li>`).join("")}</ol>
     <div class="rescue-outcome">
@@ -1234,7 +1234,7 @@ function renderRescue() {
       ${canApprove() ? `<button class="button ${plan || d.mandates?.length ? "ghost" : "primary"}" data-action="run-agent">${icon("play")}${state.run ? "Run again" : "Run the rescue agent"}</button>` : ""}
     </div>`);
   }
-  if (state.run) parts.push(disclosure("rescue-timeline", "See how Tideway built the plan", timelineHtml(state.run.steps)));
+  if (state.run) parts.push(disclosure("rescue-timeline", "See how MoneyGuard built the plan", timelineHtml(state.run.steps)));
   if (plan) {
     const details = [];
     const owner = plan.owner_constraints;
@@ -1269,7 +1269,7 @@ function renderRescue() {
 // ---------------------------------------------------------------------------- assistant
 
 const tidelmOn = () => Boolean(state.config?.tidelm?.available);
-const tidelmLabel = () => state.config?.tidelm?.label || "TideLM · local Qwen3 + Tideway adapter";
+const tidelmLabel = () => state.config?.tidelm?.label || "TideLM · local Qwen3 + MoneyGuard adapter";
 const TIDELM_PROMPTS = ["Should I give Nila Traders 30 days credit on 50,000?", "Which customers pay late?",
   "What if Bay Logistics pays 15 days late?", "এই মাসে কি বেতন দিতে পারব?", "Nila Traders ২০ দিন দেরিতে টাকা দিলে কী হবে?",
   "beton dite parbo?", "Remind everyone who owes me", "pay Rahman now"];
@@ -2039,10 +2039,10 @@ ${esc(state.chatDraft)}</textarea>
     </form>
     <p id="chat-voice-help" class="hint voice-note" role="status">${canDictate ? "" : esc(VOICE_COPY[state.lang][window.isSecureContext ? "unsupported" : "https"])}</p></div>
     ${disclosure("assistant-prompts", "More example questions", `<div class="chips">${prompts.map((prompt) => `<button class="chip" data-action="prompt" data-prompt="${esc(prompt)}">${esc(prompt)}</button>`).join("")}</div>`)}
-    ${disclosure("assistant-details", "How Tideway answers", `${on ? "" : tidelmStatusCard("Ask Tideway still works with the local tool agent.")}
+    ${disclosure("assistant-details", "How MoneyGuard answers", `${on ? "" : tidelmStatusCard("Ask MoneyGuard still works with the local tool agent.")}
     ${consent ? `<div class="section-gap">${consent}</div>` : ""}
     ${feedbackSummaryHtml()}
-    <h3 class="section-gap">Guardrails</h3><ul class="small">${on ? `<li>TideLM writes a typed plan; Tideway validates every call (known tool, typed arguments, real counterparty names) before anything runs.</li><li>Tools are read or propose only. There is no approve, pay or transfer tool.</li><li>Replies are composed by code from tool output, so the model cannot invent a figure.</li><li>Runs on this computer: no text leaves it.</li>` : `<li>Every number comes from a tool; LLM answers are checked and invented figures are flagged.</li><li>Only scoped read or propose tools exist. There is no approve, pay or transfer tool.</li><li>Record free text and real names are never sent to a model.</li><li>Each tool call is written to the audit trail with an output hash.</li>`}</ul>`)}</section>`;
+    <h3 class="section-gap">Guardrails</h3><ul class="small">${on ? `<li>TideLM writes a typed plan; MoneyGuard validates every call (known tool, typed arguments, real counterparty names) before anything runs.</li><li>Tools are read or propose only. There is no approve, pay or transfer tool.</li><li>Replies are composed by code from tool output, so the model cannot invent a figure.</li><li>Runs on this computer: no text leaves it.</li>` : `<li>Every number comes from a tool; LLM answers are checked and invented figures are flagged.</li><li>Only scoped read or propose tools exist. There is no approve, pay or transfer tool.</li><li>Record free text and real names are never sent to a model.</li><li>Each tool call is written to the audit trail with an output hash.</li>`}</ul>`)}</section>`;
 }
 
 // TideLM first; a 503 falls back to the local agent, and a rejected plan is shown, not hidden.
@@ -2051,7 +2051,7 @@ async function askTideLM(text) {
     return {copilot: await api("/api/copilot/ask", {business_id: state.businessId, target_date: state.targetDate, message: text, input_currency: displayCurrency()})};
   } catch (error) {
     if (markTideLMDown(error)) return null;
-    if (error.status >= 400 && error.status < 500 && error.status !== 401) return {rejected: `Tideway rejected TideLM's plan, so nothing ran: ${error.message}`};
+    if (error.status >= 400 && error.status < 500 && error.status !== 401) return {rejected: `MoneyGuard rejected TideLM's plan, so nothing ran: ${error.message}`};
     throw error;
   }
 }
@@ -2408,7 +2408,7 @@ function renderEvidence() {
       <div class="row section-gap"><button class="button ghost" data-action="drill">${icon("chain")}Tamper drill (safe copy)</button><a class="button ghost" href="/api/export?kind=evidence&business_id=${encodeURIComponent(state.businessId)}">${icon("download")}Evidence JSON</a><a class="button ghost" href="/api/export?kind=receipts&business_id=${encodeURIComponent(state.businessId)}&display_currency=${encodeURIComponent(displayCurrency())}">${icon("download")}Receipts CSV</a><a class="button ghost" href="/api/export?kind=records&business_id=${encodeURIComponent(state.businessId)}&display_currency=${encodeURIComponent(displayCurrency())}">${icon("download")}Display-currency report</a></div>
       ${drill ? `<div class="alert ${drill.detected ? "success" : "critical"} section-gap">${icon(drill.detected ? "check" : "alert")}<div><strong>Edited entry ${esc(drill.edited_entry)} (${esc(drill.edited_action)}) → verification breaks at entry ${esc(drill.verification_breaks_at)}</strong><span>${esc(drill.explanation)} Live database modified: ${drill.live_database_modified ? "yes" : "no"}.</span></div></div>` : ""}
       <p class="hint section-gap">${esc(audit.note)}</p></div>
-    <form class="card" id="verify-form"><details><summary><strong>Advanced verification: check a signed mandate file</strong></summary><p class="small muted">For auditors. In normal use, press <em>Verify signature</em> on the mandate card instead. Paste a signed mandate JSON exported from Tideway; the server checks only its HMAC-SHA256 signature. A valid signature does not mean money moved, that the mandate is still active, or that it can be executed. Change one character and it fails.</p><label class="field section-gap">Signed mandate JSON<textarea id="verify-input" spellcheck="false"></textarea></label><div class="row section-gap"><button class="button primary" type="submit">Verify signature</button></div><div id="verify-result" class="section-gap"></div></details></form></section>
+    <form class="card" id="verify-form"><details><summary><strong>Advanced verification: check a signed mandate file</strong></summary><p class="small muted">For auditors. In normal use, press <em>Verify signature</em> on the mandate card instead. Paste a signed mandate JSON exported from MoneyGuard; the server checks only its HMAC-SHA256 signature. A valid signature does not mean money moved, that the mandate is still active, or that it can be executed. Change one character and it fails.</p><label class="field section-gap">Signed mandate JSON<textarea id="verify-input" spellcheck="false"></textarea></label><div class="row section-gap"><button class="button primary" type="submit">Verify signature</button></div><div id="verify-result" class="section-gap"></div></details></form></section>
     <section class="card section-gap"><div class="card-head"><div><h3>Audit trail (newest first)</h3><p>Who did what, under which permission tier.</p></div></div>
       <div class="table-wrap"><table><thead><tr><th>#</th><th>${dhakaTimeLabel()}</th><th>Action</th><th>Actor</th><th>Permission</th><th>Details</th></tr></thead><tbody>
       ${audit.entries.slice().reverse().slice(0, 200).map((entry) => `<tr><td>${esc(entry.id)}</td><td class="nowrap small"><time datetime="${esc(entry.timestamp)}" title="${esc(entry.timestamp)}">${esc(dhakaTimestamp(entry.timestamp))}</time></td><td><strong>${esc(entry.action)}</strong></td><td class="small">${esc(entry.actor)}</td><td><span class="tag ${entry.permission === "denied" ? "bad" : ""}">${esc(entry.permission)}</span></td><td><details><summary>${esc(entry.entry_hash.slice(0, 12))}…</summary><pre>${esc(JSON.stringify(entry.details, null, 2))}</pre></details></td></tr>`).join("")}
@@ -2861,6 +2861,6 @@ document.addEventListener("submit", async (event) => {
       if (!document.hidden) window.TidewayHome.refreshDate();
     });
   } catch (error) {
-    document.body.innerHTML = `<p class="loading">Tideway could not start: ${esc(error.message)}. Is the local server running?</p>`;
+    document.body.innerHTML = `<p class="loading">MoneyGuard could not start: ${esc(error.message)}. Is the local server running?</p>`;
   }
 }());

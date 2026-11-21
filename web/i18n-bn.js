@@ -149,7 +149,7 @@ window.TidewayBangla = (() => {
   }
 
   // Coverage check: interface text on screen that has no Bangla yet (used by scripts/bangla_coverage.mjs).
-  const ALLOWED = /^(?:[A-Z]{2,5}|TideLM|TidePay|TideVision|Tideway|bKash|Nagad|Rocket|BUET|MFI|SME|SMS|OTP|PIN|PDF|CSV|JSON|HTML|ISO|API|AI|URL|USSD|ID|UPI|TrxID|HMAC|Ed25519|SHA-256|sha256|Qwen3|MLX|LoRA|CUDA|OWASP|P10|P50|P80|P90|HHI|DSO|APR|IBAN|BDT|USD|EUR|NID|WhatsApp|Wise|SEPA|M-Pesa|GCash|Pix|Alipay|WeChat|PayNow|DuitNow|Hinglish|Banglish|English|বাংলা|Español|Français|Português|Bahasa|中文|v\d+)$/;
+  const ALLOWED = /^(?:[A-Z]{2,5}|TideLM|TidePay|TideVision|MoneyGuard|bKash|Nagad|Rocket|BUET|MFI|SME|SMS|OTP|PIN|PDF|CSV|JSON|HTML|ISO|API|AI|URL|USSD|ID|UPI|TrxID|HMAC|Ed25519|SHA-256|sha256|Qwen3|MLX|LoRA|CUDA|OWASP|P10|P50|P80|P90|HHI|DSO|APR|IBAN|BDT|USD|EUR|NID|WhatsApp|Wise|SEPA|M-Pesa|GCash|Pix|Alipay|WeChat|PayNow|DuitNow|Hinglish|Banglish|English|বাংলা|Español|Français|Português|Bahasa|中文|v\d+)$/;
   function missing(root = document.body) {
     const out = new Map();
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);

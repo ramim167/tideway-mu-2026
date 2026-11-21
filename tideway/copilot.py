@@ -234,7 +234,7 @@ def credit_check(app, business_id, customer, amount_units, terms_days, target_da
             "verdict": verdict, "advice": advice, "suggested_terms_days": safe_terms,
             "probabilities": dict(zip([b[2] for b in BUCKETS], probs)), "expected_delay_days": prediction["expected_delay_days"],
             "expected_payment_date": expected_arrival, "exposure_share_after": round(share, 3), "reasons": reasons,
-            "model": "TidePay (federated-trained, Tideway's own model)"}
+            "model": "TidePay (federated-trained, MoneyGuard's own model)"}
 
 
 def customer_report(app, business_id, customer=None):
@@ -278,7 +278,7 @@ def bank_pack(app, business_id, target_date=None):
             "funding_need_minor": analysis["projections"]["likely"]["reserve_shortfall_minor"],
             "recovery_plan": plan["explanation"] if plan else None,
             "evidence": {"audit_head": app.store.evidence(business_id)["head_hash"]},
-            "note": "Prepared from the business's own records by Tideway. Synthetic sandbox data; not a credit decision."}
+            "note": "Prepared from the business's own records by MoneyGuard. Synthetic sandbox data; not a credit decision."}
 
 
 def preflight_plan(app, business_id, target_date, plan, role="owner"):

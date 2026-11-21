@@ -7,7 +7,7 @@
 
 ## Purpose
 
-Banks, lenders and large buyers do not manage one SME; they manage thousands. Tideway's single-business
+Banks, lenders and large buyers do not manage one SME; they manage thousands. MoneyGuard's single-business
 cash weather answers "will *my* cash fall below my reserve?". The portfolio radar asks the lender's
 question: *which of my SMEs are most likely to breach their own reserve floor in the next 60 days, when,
 why, and what should my relationship managers do first?*
@@ -20,7 +20,7 @@ Code: `tideway/portfolio.py` (engine), `web/portfolio.js` (`window.TidewayPortfo
 **Portfolio generation** (`generate_portfolio(n=60, seed=2026)`). Each SME gets its own seeded stream:
 sector (services, wholesale, retail, manufacturing, print — the TidePay synthetic sectors), market
 (BD/BDT 40%, CN/CNY 20%, SG/SGD 20%, IN/INR 20%), monthly payroll (lognormal, USD 1.5k–45k scaled by
-Tideway's illustrative currency table), a latent health factor that drives billing-to-payroll and
+MoneyGuard's illustrative currency table), a latent health factor that drives billing-to-payroll and
 opening-cash-to-payroll multiples, a reserve floor of 15–45% of payroll, payroll on the 25th, month-end
 or semi-monthly, rent, utilities and two or three suppliers. Each SME has 3–8 customers with a latent
 payment personality (prompt / typical / slow / distressed, from `tideway/ml/synth.py`), payment terms,

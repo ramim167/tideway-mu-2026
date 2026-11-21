@@ -47,7 +47,7 @@ SCENARIO_LABELS = {
 }
 
 # ---- health score ------------------------------------------------------------------
-# Weights are Tideway design choices, not industry benchmarks. They sum to 100.
+# Weights are MoneyGuard design choices, not industry benchmarks. They sum to 100.
 HEALTH_WEIGHTS = {"collection_speed": 15, "overdue_share": 15, "concentration": 15,
                   "runway": 15, "reserve_coverage": 20, "breach_risk": 20}
 HEALTH_BANDS = ((75, "Strong"), (50, "Watch"), (0, "Weak"))
@@ -194,7 +194,7 @@ def twcf(snapshot, derived):
             "snapshot_hash": snapshot["snapshot_hash"], "reserve_floor_minor": snapshot["policy"]["reserve_floor_minor"],
             "scenarios": {name: twcf_scenario(snapshot, derived, name) for name in SCENARIOS},
             "read_only": True,
-            "method": ("Weekly buckets of Tideway's daily scheduled-cash projection from the ledger opening date (the sandbox "
+            "method": ("Weekly buckets of MoneyGuard's daily scheduled-cash projection from the ledger opening date (the sandbox "
                        "current date). Receipts are open invoices (by customer) and income transactions; disbursements are "
                        "supplier bills, payroll (bills or transactions marked payroll) and other expenses. Accepted "
                        "sandbox adjustments and customer promises are applied exactly as on the dashboard. A scheduled "
@@ -322,7 +322,7 @@ def health(snapshot, derived, plan=None, simulation=None):
                            "liquidity_gap_minor": simulation["liquidity_gap"]["additional_cash_minor"],
                            "horizon_end": simulation["end_date"]},
             "read_only": True,
-            "method": ("Weighted mean of component scores (0–100). Weights and scoring anchors are Tideway design "
+            "method": ("Weighted mean of component scores (0–100). Weights and scoring anchors are MoneyGuard design "
                        "parameters, not industry benchmarks; unavailable components are dropped and the remaining weights "
                        "renormalised. Synthetic data; not a credit rating.")}
 
@@ -500,7 +500,7 @@ def run_rules(bills, threshold, currency, verified_accounts):
         findings.append(_finding(
             "bank_details_changed", "high", f"Bank details {'missing' if item['code'] == 'account_missing' else 'changed'}: {row['payee']}",
             [row], {"expected_account": item["expected_account"], "new_account": item["new_account"], "code": item["code"],
-                    "existing_control": "Tideway already blocks actions on this bill until callback verification."},
+                    "existing_control": "MoneyGuard already blocks actions on this bill until callback verification."},
             item["reason"]))
     for item in payees["lookalikes"]:
         row = index[item["bill_id"]]
@@ -508,7 +508,7 @@ def run_rules(bills, threshold, currency, verified_accounts):
             "lookalike_payee", "high", f"Look-alike payee: {row['payee']}", [row],
             {"similar_to": item["similar_to"], "similarity": str(item["similarity"]),
              "account": analytics.mask_account(item.get("account")),
-             "existing_control": "Tideway already blocks actions on this bill until the payee is confirmed."},
+             "existing_control": "MoneyGuard already blocks actions on this bill until the payee is confirmed."},
             item["reason"]))
     # R5: round amounts far rounder than the payee's own history (or a large round first bill)
     for key in sorted(by_payee):
@@ -546,8 +546,8 @@ RULES = [
     {"rule": "amount_outlier", "description": f"Modified z-score above {OUTLIER_Z} against the payee's other bills "
                                               f"(at least {OUTLIER_MIN_HISTORY}; median and MAD) and at least "
                                               f"{round(OUTLIER_MIN_RELATIVE * 100)}% away from that median."},
-    {"rule": "bank_details_changed", "description": "Existing Tideway check: bank details differ from paid history or callback-verified account."},
-    {"rule": "lookalike_payee", "description": "Existing Tideway check: new payee name ≥ 85% similar to an established supplier."},
+    {"rule": "bank_details_changed", "description": "Existing MoneyGuard check: bank details differ from paid history or callback-verified account."},
+    {"rule": "lookalike_payee", "description": "Existing MoneyGuard check: new payee name ≥ 85% similar to an established supplier."},
     {"rule": "round_amount", "description": "Open bill that is a multiple of 1,000 currency units with at least 2 more trailing "
                                             "zeros than any of the payee's other bills (at least 2); or a first-time payee's "
                                             "round bill at or above the threshold."},
@@ -626,11 +626,11 @@ def scan(snapshot, derived=None, synthetic_sample_enabled=False):
     findings = run_rules(bills, threshold, business["currency"], verified)
     result = {"business_id": business["business_id"], "currency": business["currency"],
               "snapshot_hash": snapshot["snapshot_hash"], "threshold_minor": threshold,
-              "threshold_source": "policy.dual_approval_threshold_minor (Tideway's two-person approval threshold)",
+              "threshold_source": "policy.dual_approval_threshold_minor (MoneyGuard's two-person approval threshold)",
               "bills_scanned": len([row for row in bills if not row.get("_synthetic")]),
               "ledger_findings": [item for item in findings if item["source"] == "ledger"],
               "rules": RULES, "read_only": True,
-              "authority": "Advisory only. The scan cannot approve, block or execute anything; Tideway's existing payee "
+              "authority": "Advisory only. The scan cannot approve, block or execute anything; MoneyGuard's existing payee "
                            "blocks and approval rules remain authoritative.",
               "synthetic_sample": None}
     if synthetic_sample_enabled:
@@ -707,7 +707,7 @@ def build_passport(store_key, snapshot, plan, score, simulation, audit_evidence,
 
     document = {
         "type": "TidewayCreditPassport", "version": PASSPORT_VERSION, "passport_id": secrets.token_hex(16),
-        "issuer": {"name": "Tideway sandbox instance", "key_id": hashlib.sha256(passport_key(store_key)).hexdigest()[:16],
+        "issuer": {"name": "MoneyGuard sandbox instance", "key_id": hashlib.sha256(passport_key(store_key)).hexdigest()[:16],
                    "issued_by": issued_by},
         "business": {"business_id": business["business_id"], "name": business["name"], "currency": business["currency"],
                      "synthetic": bool(business.get("synthetic"))},
@@ -750,7 +750,7 @@ def verify_passport(store_key, document, business_id, now=None):
             document, passport_public_key(store_key)["public_key"]):
         return {**base, "reason": "signature_mismatch",
                 "message": "Signature does not match: the passport was altered after issuance or was not issued by this "
-                           "Tideway instance. A signature cannot show which field changed."}
+                           "MoneyGuard instance. A signature cannot show which field changed."}
     owner = document.get("business") if isinstance(document.get("business"), dict) else {}
     if owner.get("business_id") != business_id:
         return {**base, "reason": "wrong_business", "signature_valid": True,
@@ -762,7 +762,7 @@ def verify_passport(store_key, document, business_id, now=None):
             "public_key": document["public_signature"]["public_key"], "passport_id": document["passport_id"],
             "business_id": business_id, "issued_at": document["issued_at"], "expires_at": document["expires_at"],
             "snapshot_hash": document["snapshot_hash"],
-            "message": "Genuine and unaltered: issued by this Tideway instance for this business and not expired."}
+            "message": "Genuine and unaltered: issued by this MoneyGuard instance for this business and not expired."}
 
 
 # =========================================================================== service
