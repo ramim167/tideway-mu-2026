@@ -103,6 +103,13 @@ _ADVICE = re.compile(r"\b(?:never|do not|don['’]t)\s+(?:ask|read|share|give|te
                      r"(?:দেবেন|বলবেন|পাঠাবেন|শেয়ার করবেন) না|\b(?:deben|bolben|pathaben) na\b", re.I)
 _CLAUSE_BREAK = re.compile(r"[.!?;:,।\n]+|\b(?:but|however|kintu)\b|কিন্তু|তবে|"
                            r"\band\s+(?=(?:please\s+)?(?:send|tell|give|enter|reply|confirm)\b)", re.I)
+# A colon or comma introducing the credential belongs to the verb's clause.
+_SECRET_OBJECT_PUNCTUATION = re.compile(
+    r"((?:\b(?:share|send|tell|give|reply|confirm|enter|bolen|bolun|din|den|janan)\b|পাঠান|বলুন|বলেন|দিন|দেন|জানান)"
+    r"(?:\s+(?:it|us|me|with|to))*)\s*[:：,，]\s*"
+    r"(?=(?:(?:your|the|a|আপনার)\s+)?(?:\b(?:pin|otp|verification code|code|password)\b|পিন|ওটিপি|কোড|পাসওয়ার্ড))",
+    re.I,
+)
 _RECEIVED = re.compile(r"received|cash\s?in|joma|জমা|পেয়েছেন|credited|deposited", re.I)
 _TXN_NOTICE = re.compile(r"(?:received|cash\s?in|payment|send money|cash out).{0,80}(?:balance|trx\s?id|txn\s?id)", re.I)
 
@@ -239,7 +246,7 @@ def check(text, sender="", _model=None):
         if code == "asks_secret":
             # A safety reminder only negates a request in its own clause.
             matched = any(pattern.search(clause) and not _ADVICE.search(clause)
-                          for clause in _CLAUSE_BREAK.split(normal))
+                          for clause in _CLAUSE_BREAK.split(_SECRET_OBJECT_PUNCTUATION.sub(r"\g<1> ", normal)))
         else:
             matched = pattern.search(normal)
         if matched:

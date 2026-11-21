@@ -34,6 +34,13 @@ class ScamShieldRules(unittest.TestCase):
         trap = scam_shield.check("bKash never asks for your PIN, but please tell us the OTP now to stop the block.")
         self.assertIn("asks_secret", codes(trap))
 
+    def test_request_object_punctuation_retains_negation_scope(self):
+        for delimiter in ("", ":", ",", "："):
+            self.assertIn("asks_secret", codes(scam_shield.check(f"Please confirm{delimiter} your OTP.")))
+            self.assertNotIn("asks_secret", codes(scam_shield.check(f"Never share{delimiter} your OTP.")))
+        text = "Never share your PIN. Please confirm: your OTP."
+        self.assertIn("asks_secret", codes(scam_shield.check(text)))
+
     def test_disclaimer_only_applies_within_its_clause(self):
         for text in ("Never share your PIN. Send us your OTP.",
                      "Never give away your PIN; reply with the verification code.",
