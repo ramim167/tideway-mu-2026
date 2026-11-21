@@ -16,6 +16,7 @@ import {checkDecisionLab} from "./decision_lab_browser.mjs";
 import {checkOwnerView} from "./owner_view_browser.mjs";
 import {checkCurrency} from "./currency_browser.mjs";
 import {assertHomePayrollAnswer} from "./browser_assertions.mjs";
+import {checkChatComposer, testSpeechRecognition} from "./chat_composer_browser.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 function sourceDigest() {
@@ -190,6 +191,9 @@ try {
     listeners.forEach((listener) => listener(message));
   };
   await send("Page.enable"); await send("Runtime.enable"); await send("Log.enable");
+  if (!currencyOnly && !ownerOnly && !labOnly) {
+    await send("Page.addScriptToEvaluateOnNewDocument", {source: testSpeechRecognition});
+  }
   console.log(`Chrome ${version.Browser}`);
   await viewport(1440, 900);
   await send("Page.navigate", {url: `http://127.0.0.1:${PORT}/`});
@@ -298,6 +302,7 @@ try {
   await until("state.view === 'assistant' && !state.busy && state.chat.at(-1)?.role === 'agent' && !state.chat.at(-1).pending && state.chat.at(-2)?.text === 'Can I pay salaries this month?'", "Home question answered in the assistant");
   const homeAnswer = await evaluate("({reply:state.chat.at(-1),dashboard:state.dashboard})");
   assertHomePayrollAnswer(homeAnswer.reply, homeAnswer.dashboard);
+  await checkChatComposer({evaluate, click, viewport, shot, phoneCheck, send});
   await click('[data-view="overview"]');
   await until("!!document.querySelector('.owner-view')", "simple cash forecast");
   await click('[data-action=owner-detailed]');

@@ -157,6 +157,7 @@ function changeDisplayCurrency(code) {
     const el=field.id?document.getElementById(field.id):document.getElementById(field.form)?.elements.namedItem(field.name);
     if(el){if(field.type==='checkbox'||field.type==='radio')el.checked=field.checked;else el.value=field.value;}
   }
+  resizeChatInput();
 }
 function compact(minor) {
   const units = minor / 100;
@@ -248,6 +249,7 @@ function clearError() { $("#app-error").hidden = true; }
 function showLogin() {
   const options = document.getElementById("workspace-options");
   if (options) options.open = false;
+  cancelVoice();
   stopSpeaking();
   $("#shell").hidden = true;
   $("#login").hidden = false;
@@ -336,6 +338,7 @@ function playEntrance(previousView) {
 const ROLE_PILL = {owner: "teal", accountant: "info", viewer: ""};
 
 function clearPrivateContext() {
+  cancelVoice();
   window.TidewayShield.reset();
   state.recordQuery = "";
   state.recordFilter = "all";
@@ -605,6 +608,7 @@ function actAndReload(label, request) {
 let renderedContext = "";
 function render() {
   if (!viewAvailable(state.view)) state.view = "overview";
+  if (state.view !== "assistant") cancelVoice();
   const [title, subtitle] = ((state.lang === "bn" ? VIEWS_BN : VIEWS)[state.view]) || VIEWS.home;
   document.body.dataset.page = state.view;  // each page carries its own jewel-tone colour scheme (not data-view: that attribute means "navigate")
   const bnUi = state.lang === "bn";
@@ -661,7 +665,11 @@ function render() {
   window.TidewayQuickStart.render(state.dashboard ? {operatorId: state.operator?.id, businessId: state.businessId,
     role: role(), synthetic: state.dashboard.business.synthetic, view: state.view, hasProposal: !!plan,
     hasRecords: Object.values(state.dashboard.records || {}).some((rows) => Array.isArray(rows) && rows.length)} : null);
-  if (state.view === "assistant") { const log = $("#chat-log"); if (log) log.scrollTop = log.scrollHeight; }
+  if (chatLog) {
+    chatLog.scrollTop = chatLog.scrollHeight;
+    syncVoiceControls();
+    resizeChatInput();
+  }
 }
 
 function disclosure(id, title, content) {
@@ -1351,43 +1359,96 @@ function copilotHtml(c) {
 // Chrome and Edge send the audio to their speech service to turn it into text; the note under the box says so.
 // The words land in the question box for the owner to check; nothing is sent to Tideway until they press Ask.
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const CHAT_MAX_LENGTH = 2000;
 let voice = null;
-function voiceButtonHtml() {
-  if (!SpeechRec) return "";
-  const label = voice ? "Stop listening" : "Speak your question";
-  return `<button type="button" class="button ghost voice-button ${voice ? "on" : ""}" data-action="voice" aria-pressed="${voice ? "true" : "false"}" aria-label="${label}" title="${label}">${icon("mic")}</button>`;
+
+function resizeChatInput(input = document.getElementById("chat-input")) {
+  if (!input || window.CSS?.supports("field-sizing", "content")) return;
+  input.style.height = "auto";
+  input.style.height = `${input.scrollHeight + input.offsetHeight - input.clientHeight}px`;
 }
-function voiceNoteHtml() {
-  if (!SpeechRec) return "";
+
+function syncVoiceControls() {
+  if (!SpeechRec) return;
+  const button = $(".voice-button");
+  const note = $("#chat-voice-note");
+  if (!button || !note) return;
   const bn = state.lang === "bn";
-  return voice
-    ? `<p class="hint voice-note on" role="status" lang="${bn ? "bn" : "en"}">${bn ? "শুনছি… বাংলায় বলুন, তারপর লেখাটা মিলিয়ে নিয়ে প্রশ্ন বোতাম চাপুন।" : "Listening… speak in English, then check the words and press Ask."}</p>`
-    : `<p class="hint voice-note" lang="${bn ? "bn" : "en"}">${bn ? "মাইক্রোফোনে চাপ দিয়ে বাংলায় প্রশ্ন বলুন। আপনার ব্রাউজারের ভয়েস সেবা কথাকে লেখায় বদলে দেয়।" : "Tap the microphone to speak your question in English. Your browser's speech service turns it into text."}</p>`;
+  const listening = Boolean(voice);
+  const label = listening ? (bn ? "শোনা বন্ধ করুন" : "Stop listening") : (bn ? "প্রশ্নটি বলুন" : "Speak your question");
+  button.classList.toggle("on", listening);
+  button.setAttribute("aria-pressed", String(listening));
+  button.setAttribute("aria-label", label);
+  button.title = label;
+  note.classList.toggle("on", listening);
+  note.textContent = listening
+    ? (bn ? "শুনছি… পাঠানোর আগে লেখাটি মিলিয়ে নিন।" : "Listening… review the words before sending.")
+    : (bn ? "মাইক্রোফোনে চাপ দিন। আপনার ব্রাউজারের ভয়েস সেবা কথাগুলো খসড়ায় যোগ করবে।" : "Tap the microphone to add words to your draft using your browser’s speech service.");
 }
+
+function cancelVoice() {
+  if (!voice) return;
+  const rec = voice;
+  voice = null;
+  rec.abort();
+  syncVoiceControls();
+}
+
+function voiceDraft(prefix, results) {
+  // Result events can revise interim words. Rebuild only this recording's suffix.
+  const transcript = Array.from(results, (result) => result[0].transcript.trim()).filter(Boolean).join(" ");
+  if (!transcript || prefix.length >= CHAT_MAX_LENGTH) return prefix;
+  const separator = prefix && !/\s$/.test(prefix) ? " " : "";
+  const addition = (separator + transcript).slice(0, CHAT_MAX_LENGTH - prefix.length).replace(/[\uD800-\uDBFF]$/, "").trimEnd();
+  return prefix + addition;
+}
+
 function toggleVoice() {
   if (!SpeechRec) return;
   if (voice) { voice.stop(); return; }
+  const composer = document.getElementById("chat-input");
+  if (!composer) return;
+  const prefix = composer.value;
+  if (prefix.length >= CHAT_MAX_LENGTH) {
+    toast(state.lang === "bn" ? "খসড়া পূর্ণ। আরও কথা যোগ করতে কিছু লেখা মুছুন।" : "Your draft is full. Shorten it to add more words.");
+    return;
+  }
+  state.chatDraft = prefix;
   const rec = new SpeechRec();
   rec.lang = state.lang === "bn" ? "bn-BD" : "en-US";
   rec.interimResults = true;
   rec.maxAlternatives = 1;
   rec.onresult = (event) => {
-    const text = Array.from(event.results).map((result) => result[0].transcript).join("").trim();
-    state.chatDraft = text;
-    const input = $("#chat-input");
-    if (input) input.value = text;
+    if (voice !== rec) return;
+    state.chatDraft = voiceDraft(prefix, event.results);
+    const input = document.getElementById("chat-input");
+    if (input) {
+      input.value = state.chatDraft;
+      resizeChatInput(input);
+    }
   };
   rec.onerror = (event) => {
+    if (voice !== rec) return;
+    voice = null;
+    syncVoiceControls();
     const bn = state.lang === "bn";
     toast(event.error === "not-allowed" || event.error === "service-not-allowed"
       ? (bn ? "মাইক্রোফোন ব্যবহারের অনুমতি পাওয়া যায়নি। ব্রাউজারে অনুমতি দিন, অথবা প্রশ্নটি লিখুন।" : "Microphone access was refused. Allow it in the browser, or type your question.")
       : event.error === "no-speech" ? (bn ? "কোনো কথা শোনা যায়নি। মাইক্রোফোনে চাপ দিয়ে আবার বলুন।" : "No speech heard. Tap the microphone and try again.")
       : (bn ? "কথাকে লেখায় বদলানো গেল না। প্রশ্নটি লিখে দিন।" : "Could not turn speech into text. Please type your question."));
   };
-  rec.onend = () => { voice = null; if (state.view === "assistant") { render(); $("#chat-input")?.focus(); } };
+  rec.onend = () => {
+    if (voice !== rec) return;
+    voice = null;
+    syncVoiceControls();
+    if (document.activeElement?.classList.contains("voice-button")) $("#chat-input")?.focus({preventScroll: true});
+  };
   voice = rec;
-  try { rec.start(); } catch (_) { voice = null; }
-  render();
+  try { rec.start(); } catch (_) {
+    voice = null;
+    toast(state.lang === "bn" ? "মাইক্রোফোন চালু করা গেল না। আবার চেষ্টা করুন।" : "The microphone could not start. Try again.");
+  }
+  syncVoiceControls();
 }
 
 async function copyText(text) {
@@ -1409,7 +1470,15 @@ function renderAssistant() {
   return `<section class="assistant-layout"><div class="card chat ${on ? "with-mode" : ""}">${mode}<div class="chat-log" id="chat-log" aria-live="polite">${state.chat.map((item, index) => item.pending
       ? `<div class="msg agent pending" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>${esc(item.role === "user" ? item.text : moneyProse(item.text))}</div>`
       : `<div class="msg ${item.role === "user" ? "user" : "agent"} ${item.unverified?.length || item.rejected ? "warn" : ""}">${esc(item.role === "user" ? item.text : moneyProse(item.text))}${item.trace?.length ? `<div class="trace">${item.trace.map((t) => `<span>${esc(t.tool)} · ${esc(t.permission)}</span>`).join("")}</div>` : ""}${item.copilot ? copilotHtml(item.copilot) : ""}${item.aiNudge && state.config.ai_configured && !state.aiConsent ? `<div class="ai-nudge"><button type="button" class="button small primary" data-action="ai-retry" data-prompt="${esc(item.question)}">${icon("spark")}Turn on AI and ask again</button></div>` : ""}${item.question && !item.rejected ? feedbackHtml(item, index) : ""}${index === state.chat.length - 1 && item.role !== "user" ? suggestionsHtml(item.suggestions || (index === 0 ? prompts.slice(0, 3) : [])) : ""}</div>`).join("")}</div>
-    ${aiSwitch}${aiReady ? window.TidewayLab.chatPreview() : ""}<p class="hint">Money in questions: include ${esc(displayCurrency())}, e.g. ${esc(displayCurrency())} 100. Dates, days and percentages keep their own units.</p><form id="chat-form" class="chat-form"><label class="sr-only" for="chat-input">Your question</label><input id="chat-input" value="${esc(state.chatDraft)}" maxlength="2000" placeholder="${on ? "Ask in any language…" : "Ask about payroll, risk, a what-if or a plan…"}" autocomplete="off" required>${voiceButtonHtml()}<button class="button primary" type="submit">${icon("send")}Ask</button></form>${voiceNoteHtml()}</div>
+    ${aiSwitch}${aiReady ? window.TidewayLab.chatPreview() : ""}<p class="hint">Money in questions: include ${esc(displayCurrency())}, e.g. ${esc(displayCurrency())} 100. Dates, days and percentages keep their own units.</p>
+    <form id="chat-form" class="chat-form">
+      <label class="sr-only" for="chat-input">Your question</label>
+      <textarea id="chat-input" rows="1" maxlength="${CHAT_MAX_LENGTH}" placeholder="${on ? "Ask in any language…" : "Ask about payroll, risk, a what-if or a plan…"}" autocomplete="off" required>
+${esc(state.chatDraft)}</textarea>
+      ${SpeechRec ? `<button type="button" class="button ghost voice-button" data-action="voice">${icon("mic")}</button>` : ""}
+      <button class="button primary" type="submit">${icon("send")}Ask</button>
+    </form>
+    ${SpeechRec ? '<p id="chat-voice-note" class="hint voice-note" role="status"></p>' : ""}</div>
     ${disclosure("assistant-prompts", "More example questions", `<div class="chips">${prompts.map((prompt) => `<button class="chip" data-action="prompt" data-prompt="${esc(prompt)}">${esc(prompt)}</button>`).join("")}</div>`)}
     ${disclosure("assistant-details", "How Tideway answers", `${on ? "" : tidelmStatusCard("Ask Tideway still works with the local tool agent.")}
     ${consent ? `<div class="section-gap">${consent}</div>` : ""}
@@ -1431,7 +1500,7 @@ async function askTideLM(text) {
 async function ask(message) {
   const text = String(message || "").trim();
   if (!text || state.busy) return;
-  if (voice) voice.stop();
+  cancelVoice();
   // Earlier turns only: the server appends the current message itself.
   const history = state.chat.slice(-8).map((item) => ({role: item.role === "user" ? "user" : "assistant", content: item.text}));
   const consent = Boolean(state.config.ai_configured && state.aiConsent);
@@ -1979,6 +2048,12 @@ async function importCsv(event) {
 }
 
 document.addEventListener("keydown", (event) => {
+  if (event.target?.id === "chat-input" && event.key === "Enter" && !event.shiftKey && !event.ctrlKey
+      && !event.altKey && !event.metaKey && !event.isComposing && event.keyCode !== 229 && !event.defaultPrevented) {
+    event.preventDefault();
+    event.target.form.requestSubmit();
+    return;
+  }
   const options = document.getElementById("workspace-options");
   if (event.key === "Escape" && options?.open && options.contains(document.activeElement)) {
     options.open = false;
@@ -2152,7 +2227,12 @@ document.addEventListener("input", (event) => {
     if (output) output.textContent = `${target.value} days`;
   } else if (target.id === "whatif-expense") state.whatif.expense = moneyDraft(target,true);
   else if (target.form?.id === "policy-form") state.policyDraft[target.name] = target.hasAttribute("data-money-currency") ? moneyDraft(target,true) : target.value;
-  else if (target.id === "chat-input") state.chatDraft=target.value;
+  else if (target.id === "chat-input") {
+    state.chatDraft = target.value;
+    // Any manual edit takes precedence over a pending dictation update.
+    cancelVoice();
+    resizeChatInput(target);
+  }
   else if (target.id === "inbox-text") state.inbox.text = target.value;
   else if (target.dataset?.draft !== undefined && !["selected", "type"].includes(target.dataset.field)) {
     const draft = state.inbox.drafts?.[Number(target.dataset.draft)];
@@ -2175,7 +2255,7 @@ document.addEventListener("submit", async (event) => {
   if (form.id === "pin-form") return;
   event.preventDefault();
   try {
-    if (form.id === "chat-form") { const input = $("#chat-input"); const text = input.value; input.value = ""; await ask(text); }
+    if (form.id === "chat-form") await ask(document.getElementById("chat-input").value);
     else if (form.id === "whatif-form") await runWhatIf();
     else if (form.id === "demo-delay-form") await applyDemoDelay(form);
     else if (form.id === "inbox-form") await extractInbox();
@@ -2195,6 +2275,7 @@ document.addEventListener("submit", async (event) => {
     state.config = await api("/api/config");
     if (state.config.operator) await startShell(); else showLogin();
     window.setInterval(window.TidewayHome.refreshDate, 30_000);
+    window.addEventListener("resize", () => resizeChatInput());
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) window.TidewayHome.refreshDate();
     });
