@@ -142,7 +142,7 @@ def request_openrouter(payload, key, deadline=None):
         chat = attempt["payload"]
         request = urllib.request.Request(OPENROUTER_URL, data=json.dumps(chat, ensure_ascii=False).encode(),
                                          headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json",
-                                                  "HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "MoneyGuard"},
+                                                  "HTTP-Referer": "https://github.com/ramim167/moneyguard-mu-2026", "X-Title": "MoneyGuard"},
                                          method="POST")
         try:
             with open_provider_request(request, timeout=remaining_budget(deadline, 60)) as response:

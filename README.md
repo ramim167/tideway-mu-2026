@@ -165,8 +165,8 @@ Pure Python standard library at runtime: no packages, no API keys and no interne
 ## Quick start
 
 ```bash
-git clone https://github.com/ramim167/tideway-mu-2026.git
-cd tideway-mu-2026
+git clone https://github.com/ramim167/moneyguard-mu-2026.git
+cd moneyguard-mu-2026
 python run.py
 ```
 

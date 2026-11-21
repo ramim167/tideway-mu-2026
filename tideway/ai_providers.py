@@ -87,7 +87,7 @@ def label(providers):
 def _post(provider, chat, deadline):
     headers = {"Authorization": f"Bearer {provider.key}", "Content-Type": "application/json"}
     if provider.name == "openrouter":
-        headers.update({"HTTP-Referer": "https://github.com/ramim167/tideway-mu-2026", "X-Title": "MoneyGuard"})
+        headers.update({"HTTP-Referer": "https://github.com/ramim167/moneyguard-mu-2026", "X-Title": "MoneyGuard"})
     request = urllib.request.Request(provider.url, data=json.dumps(chat, ensure_ascii=False).encode(), headers=headers, method="POST")
     with open_provider_request(request, timeout=remaining_budget(deadline, TIMEOUT_SECONDS)) as response:
         raw = response.read(262145)
