@@ -8,6 +8,7 @@ import os
 import re
 import secrets
 import sys
+import threading
 import time
 from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -21,6 +22,8 @@ from .security import RateLimiter
 from .service import Tideway
 from .tidelm import TideLM, TideLMUnavailable, confirm as confirm_inbox
 from .vision import MAX_BYTES as MAX_PHOTO_BYTES, MAX_PHOTO_BODY, TideVision, TideVisionUnavailable
+
+_SELFTEST_LOCK = threading.Lock()
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -504,20 +507,59 @@ class Application:
             return self.store.tamper_drill(business_id)
         if path == "/api/selftest":
             self.fields(body, ())
-            self.require(operator, "owner", "accountant")
-            self.selftest_cache = selftest.run()
+            self.require(operator)
+            # Only an owner or accountant of an existing business may run the 13-second self-test, one run at a time.
+            if not any(item["role"] in ("owner", "accountant") for item in self.store.businesses_for(operator["id"])):
+                raise PermissionError("This action needs the owner or accountant role in a business.")
+            # The self-test is isolated and deterministic, so a recent result is reused rather than re-run on demand.
+            if self.selftest_cache and time.monotonic() - getattr(self, "_selftest_at", 0) < 60:
+                return self.selftest_cache
+            if not _SELFTEST_LOCK.acquire(blocking=False):
+                raise ValidationError("A self-test is already running. Try again when it finishes.")
+            try:
+                self.selftest_cache = selftest.run()
+                self._selftest_at = time.monotonic()
+            finally:
+                _SELFTEST_LOCK.release()
             return self.selftest_cache
         raise LookupError(path)
 
 
+def public_hosts(env=None):
+    """Hostnames a hosted deployment answers to, besides loopback (for example Render's public hostname).
+
+    Only names listed explicitly (TIDEWAY_PUBLIC_HOSTS, comma-separated) or set by Render itself
+    (RENDER_EXTERNAL_HOSTNAME) are accepted, so DNS rebinding still cannot reach a local copy."""
+    env = os.environ if env is None else env
+    names = [*str(env.get("TIDEWAY_PUBLIC_HOSTS", "")).split(","), str(env.get("RENDER_EXTERNAL_HOSTNAME", ""))]
+    return frozenset(name.strip().lower() for name in names
+                     if re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+", name.strip().lower()))
+
+
 def make_handler(app):
+    hosted = public_hosts()
     class Handler(BaseHTTPRequestHandler):
         server_version = "Tideway/3.0"
 
         def trusted_host(self):
             port = self.server.server_port
+            host = self.headers.get("Host", "")
             return (len(self.headers.get_all("Host", [])) == 1
-                    and self.headers.get("Host") in (f"127.0.0.1:{port}", f"localhost:{port}"))
+                    and (host in (f"127.0.0.1:{port}", f"localhost:{port}") or host.lower() in hosted))
+
+        def client_ip(self):
+            """The visitor's address. Behind a hosting proxy (public hostname only) every request comes from the proxy,
+            so use the last X-Forwarded-For entry, which the proxy itself appends and a visitor cannot forge."""
+            if self.headers.get("Host", "").lower() in hosted and self.headers.get("X-Forwarded-For"):
+                last = self.headers.get("X-Forwarded-For").split(",")[-1].strip()
+                if re.fullmatch(r"[0-9a-fA-F.:]{3,45}", last):
+                    return last
+            return self.client_address[0]
+
+        def public_https(self):
+            """True for a request to a configured public hostname that arrived over HTTPS at the host's proxy."""
+            return (self.headers.get("Host", "").lower() in hosted
+                    and self.headers.get("X-Forwarded-Proto", "").lower() == "https")
 
         def session(self):
             if len(self.headers.get_all("Cookie", [])) > 1:
@@ -652,7 +694,8 @@ def make_handler(app):
             port = self.server.server_port
             origin = self.headers.get("Origin")
             if (len(self.headers.get_all("Origin", [])) > 1 or
-                    origin is not None and origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}")):
+                    origin is not None and origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}")
+                    and origin.lower() not in {f"https://{name}" for name in hosted}):
                 return self.deny_post(403, "Cross-origin writes are not allowed.")
             if len(self.headers.get_all("X-Tideway-Token", [])) != 1 or not secrets.compare_digest(self.headers.get("X-Tideway-Token", "").encode("utf-8", "surrogateescape"),
                                           app.csrf.encode()):
@@ -662,7 +705,7 @@ def make_handler(app):
             path = urlsplit(self.path).path
             token, operator = self.session()
             limiter = app.login_limiter if path in ("/api/session/login", "/api/signup", "/api/team/join") else app.post_limiter
-            key = self.client_address[0] if limiter is app.login_limiter else token or self.client_address[0]
+            key = self.client_ip() if limiter is app.login_limiter else token or self.client_ip()
             if not limiter.allow(key):
                 return self.deny_post(429, "Too many requests. Slow down and try again shortly.")
             business_id = None
@@ -684,12 +727,17 @@ def make_handler(app):
                 if not isinstance(body, dict):
                     raise ValidationError("Request must be a JSON object.")
                 candidate = body.get("business_id")
-                if isinstance(candidate, str) and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", candidate):
-                    business_id = candidate if any(item["id"] == candidate for item in app.store.list_businesses()) else None
-                result = app.post(path, body, operator, token, self.client_address[0])
+                # Rejections are written to a business's audit log only for its own members, so nobody can plant
+                # text in another tenant's audit chain.
+                if (operator and isinstance(candidate, str) and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", candidate)
+                        and app.store.membership_role(operator["id"], candidate)):
+                    business_id = candidate
+                result = app.post(path, body, operator, token, self.client_ip())
                 cookie = None
                 if isinstance(result, dict) and "_set_session" in result:
                     cookie = f"{COOKIE}={result.pop('_set_session')}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800"
+                    if self.public_https():
+                        cookie += "; Secure"
                 elif isinstance(result, dict) and result.pop("_clear_session", False):
                     cookie = f"{COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0"
                 return self.reply(200, result, cookie=cookie)
