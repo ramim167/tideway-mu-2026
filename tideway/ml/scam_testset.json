@@ -1,0 +1,156 @@
+{
+ "note": "Independent Scam Shield test set: hand-written Bangladeshi messages (English, Bangla, Banglish) kept apart from tideway/ml/scam_corpus.json and never used for training. Synthetic; all numbers and IDs are fictional.",
+ "version": "scam-testset-v1",
+ "messages": [
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "ami bKash theke bolchi, apnar account e somossa hoyeche. apnar mobile e ekta code geche, code ta bolen"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "Apnar parcel ashche. Delivery charge 120 tk age bKash korun 01811223344 number e, tarpor parcel pathano hobe"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "Your Daraz order is ready. Pay 150 tk delivery charge first to 01755667788 to confirm."
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "আপনার মোবাইলে একটি কোড গেছে, কোডটা একটু বলেন তো ভাই"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "Nagad office theke bolchi, apnar account verify korte hobe. 6 digit number ta bolen"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "apnar bkash account e 25000 taka bonus ase, nite hole ekhon 500 taka pathan"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "Congratulations! Apni Grameenphone lucky draw te 1 lakh taka jitechen. Registration fee 1000 tk bKash korun"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "vai amar maa hospital e, khub bipode achi, 2000 taka dhar den, kalke ferot dibo. ei number e bkash koren"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "Your SIM will be blocked in 2 hours. Update your NID by calling 01911223344 now"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "আপনার বিকাশ একাউন্ট আপডেট করতে নিচের লিংকে ক্লিক করুন bkash-update.xyz"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "Job offer: ghore bose din e 3000 taka income. Registration korte 500 taka pathan"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "Apnar nambare bhul kore 5000 taka chole geche, please ferot den"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "Customer care theke bolchi, apnar Nagad PIN ta reset korte hobe, current PIN ta bolun"
+  },
+  {
+   "label": "scam",
+   "sender": "01812345678",
+   "text": "You have received Tk 3,000.00 from 01712345678. Ref gift. Balance Tk 3,200.00 TrxID 9X8Y7Z6W5V"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "আপনার সন্তান পরীক্ষায় বৃত্তি পেয়েছে। উপবৃত্তির টাকা পেতে আপনার বিকাশ নম্বর ও ওটিপি দিন"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "Apnar Rocket account e cashback pending. Verification er jonno SMS e asha 4 digit code ta pathan"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "Agent number e 50000 tk cash in hoyeche bhul kore, ferot pathan noile police case korbo"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "pls kaj er jonno advance 1000 tk deposit korte hobe, tarpor salary 25000"
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "Your loan of Tk 200,000 is approved. Pay processing charge Tk 2,500 to receive."
+  },
+  {
+   "label": "scam",
+   "sender": "",
+   "text": "ভাই আমি বিকাশ অফিসের লোক, আপনার একাউন্টে সমস্যা, আপনার ফোনে যে নম্বর গেছে সেটা বলেন"
+  },
+  {
+   "label": "legit",
+   "sender": "bKash",
+   "text": "Cash Out Tk 3,000.00 to Agent 01755667788 successful. Fee Tk 55.50. Balance Tk 1,944.50. TrxID 3B4N5M6K7L at 21/11/2026 11:40"
+  },
+  {
+   "label": "legit",
+   "sender": "bKash",
+   "text": "Cash In Tk 2,000.00 from 01812345678 successful. Fee Tk 0.00. Balance Tk 2,450.00. TrxID 7M6L5K4J3H at 21/11/2026 09:02"
+  },
+  {
+   "label": "legit",
+   "sender": "bKash",
+   "text": "Your bKash verification code is 482910. Never share this code with anyone. bKash never asks for your code."
+  },
+  {
+   "label": "legit",
+   "sender": "01712345678",
+   "text": "Bhai kalke 5000 taka pathabo, delivery charge soho. Order ta confirm korlam."
+  },
+  {
+   "label": "legit",
+   "sender": "01812345678",
+   "text": "Delivery charge 60 tk cash on delivery, product pouche gele diben."
+  },
+  {
+   "label": "legit",
+   "sender": "NAGAD",
+   "text": "Nagad: You have paid Tk 500.00 to merchant ShopUp. Balance Tk 1,240.00. TxnID 71AB2C3D"
+  },
+  {
+   "label": "legit",
+   "sender": "01712345678",
+   "text": "Invoice INV-104 for Tk 25,000 is due on 30 Nov. Please pay to our usual account."
+  },
+  {
+   "label": "legit",
+   "sender": "01712345678",
+   "text": "ki khobor bhai, kalke dokane ashben? notun maal eseche"
+  },
+  {
+   "label": "legit",
+   "sender": "Pathao",
+   "text": "আপনার অর্ডারটি পাঠানো হয়েছে। ডেলিভারির সময় ক্যাশ অন ডেলিভারি ৬০ টাকা দিতে হবে।"
+  },
+  {
+   "label": "legit",
+   "sender": "DESCO",
+   "text": "Reminder: your electricity bill Tk 1,250 is due on 25 Nov. Pay via bKash Pay Bill."
+  }
+ ]
+}

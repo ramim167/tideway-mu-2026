@@ -6,7 +6,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.11%2B-0b2a45?logo=python&logoColor=white)
 ![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-none-1f8a96)
-![Tests](https://img.shields.io/badge/tests-679%20passing-1f8a96)
+![Tests](https://img.shields.io/badge/tests-695%20passing-1f8a96)
 ![Self-test](https://img.shields.io/badge/attacks%20blocked-25%2F25-d4a72c)
 ![License](https://img.shields.io/badge/license-MIT-0b2a45)
 
@@ -76,7 +76,7 @@ Treasury hub, lender radar, decision lab and the tamper-evident audit trail are 
 Paste a bKash, Nagad or Rocket SMS, a WhatsApp message or what a caller said, plus (optionally) the sender shown on the phone. Scam Shield returns **Likely scam / Suspicious / No known red flags**, a 0–100 risk score, every reason in **English and বাংলা**, and safe next steps (check the balance in the official app or USSD code, never return money because of an SMS, report to the official helpline).
 
 - **Explainable rules** for the patterns common in Bangladesh: PIN/OTP requests (with negation handling, so "bKash never asks for your PIN" is not flagged), the wrong-send refund trick, fake cash-in SMS sent from a personal 01X number, prize/loan/job/parcel fees, account-block threats, fake officials, phishing links, payments to a "new" personal number, secrecy and instruction-injection text.
-- **A learned text model**: multinomial naive Bayes over words and character n-grams, so Bangla script and Banglish spelling variants both work. Trained on a labelled synthetic corpus of 104 messages; on a deterministic 20-message hold-out the model alone scores 85% accuracy (recall 100%, false alarms 27%), and rules + model flag 9/9 scams with 0/11 false alarms. The set is small and synthetic, so treat these as a smoke test, not a field accuracy claim.
+- **A learned text model**: multinomial naive Bayes over words and character n-grams, so Bangla script and Banglish spelling variants both work. Trained on 190 labelled synthetic messages; on a deterministic 37-message hold-out the model alone scores 89% accuracy (recall 100%, false alarms 21%) and rules + model flag 18/18 scams with 0/19 false alarms. On a separate 30-message test set never used for training, the shipped shield marks 19/20 scams "likely scam" (1 "suspicious") with 0/10 false alarms. The sets are small and synthetic, so treat these as a smoke test, not a field accuracy claim.
 - **Advice only.** Scam Shield saves nothing, blocks nothing and moves no money. It also runs automatically on every message pasted into the Inbox.
 
 ```bash
@@ -125,7 +125,7 @@ Trained by the team, running on the device. The language model can only propose;
 | **TidePay** | Predicts how late each invoice will be paid (federated training across 40 simulated SMEs) | Mean error **8.56 days** vs 10.23 for a history heuristic, on 7,427 unseen invoices |
 | **TideLM** (Qwen3-4B + LoRA, Apple Silicon) | Turns questions and pasted alerts into typed tool plans and draft records | Exact plans **26.7% → 96.7%**, extraction F1 **0.83 → 0.969** |
 | **TideLM** (Qwen3-1.7B + LoRA, NVIDIA RTX 3060 Ti) | The same task, trained in **7.3 minutes** on a consumer GPU | Exact plans **21.3% → 92.7%**, extraction F1 **0.30 → 0.99**, injection flags **62% → 100%** |
-| **Scam Shield text model** (naive Bayes, words + character n-grams) | Scores how similar a pasted MFS message is to known scam patterns, in English, বাংলা and Banglish | Model alone **85%** accuracy on a 20-message hold-out; rules + model **9/9** scams flagged, **0/11** false alarms (small synthetic set) |
+| **Scam Shield text model** (naive Bayes, words + character n-grams) | Scores how similar a pasted MFS message is to known scam patterns, in English, বাংলা and Banglish | Rules + model **18/18** hold-out scams, **0/19** false alarms; independent test set **19/20** "likely scam", **0/10** false alarms (small synthetic sets) |
 
 Details: [model card](docs/MODEL_CARD.md) · [Scam Shield](docs/SCAM_SHIELD.md) · [GPU training](docs/TIDELM_CUDA.md) · [TidePay evaluation](docs/DEPLOYED_MODEL_EVALUATION.md)
 

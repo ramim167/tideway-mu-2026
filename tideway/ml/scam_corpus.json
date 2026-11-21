@@ -1,6 +1,6 @@
 {
- "note": "Synthetic, hand-written training and evaluation messages for Tideway Scam Shield. They imitate common mobile-financial-service (MFS) scam patterns reported in Bangladesh and ordinary business messages. No message is copied from a real person; all numbers and IDs are fictional.",
- "version": "scam-corpus-v1",
+ "note": "Synthetic, hand-written training and evaluation messages for Tideway Scam Shield. They imitate common mobile-financial-service (MFS) scam patterns reported in Bangladesh and ordinary business messages. No message is copied from a real person; all numbers and IDs are fictional. v2 adds Bangladeshi scripts for fake office callers asking for a code, delivery-charge-first, job advance deposits, loan processing charges and fake relatives, with matching genuine messages (OTP notices, cash on delivery, salary, loan instalments).",
+ "version": "scam-corpus-v2",
  "messages": [
   {
    "label": "scam",
@@ -417,6 +417,350 @@
   {
    "label": "scam",
    "text": "Sir, wrong cash in of 4,000 tk to your account. Please send back fast, agent will lose job."
+  },
+  {
+   "label": "scam",
+   "text": "Ami Nagad office theke bolchi, apnar account verify hoy nai. Mobile e ekta code jabe, oita amake bolen"
+  },
+  {
+   "label": "scam",
+   "text": "bKash customer service theke bolchi bhai, apnar phone e 6 digit er ekta number geche, number ta bole den"
+  },
+  {
+   "label": "scam",
+   "text": "রকেট অফিস থেকে বলছি, আপনার একাউন্টে সমস্যা হয়েছে। মোবাইলে যে কোড গেছে সেটা জানান"
+  },
+  {
+   "label": "scam",
+   "text": "Hello sir, bank theke bolchi. Your card will be blocked today. Please tell me the OTP you just received."
+  },
+  {
+   "label": "scam",
+   "text": "apnar sim e ekta message jabe, sheikhane je code ta ase seta amake pathan, tahole bonus chalu hobe"
+  },
+  {
+   "label": "scam",
+   "text": "ভাই আমি নগদের লোক, আপনার একাউন্ট আপডেট করতে হবে, এসএমএসে আসা নাম্বারটা বলেন"
+  },
+  {
+   "label": "scam",
+   "text": "Your parcel is waiting at our hub. Pay Tk 130 delivery charge in advance to 01788990011 to release it."
+  },
+  {
+   "label": "scam",
+   "text": "Apnar courier ashche, delivery charge 100 tk age bkash koren 01933445566 e, na hole parcel ferot jabe"
+  },
+  {
+   "label": "scam",
+   "text": "পার্সেল পাঠানোর আগে ডেলিভারি চার্জ ১৫০ টাকা অগ্রিম বিকাশ করুন এই নাম্বারে ০১৭১১২২৩৩৪৪"
+  },
+  {
+   "label": "scam",
+   "text": "Order confirm korte advance delivery fee 200 taka nagad korun 01822334455, tarpor product pathabo"
+  },
+  {
+   "label": "scam",
+   "text": "Garments e chakri, beton 18000. Joining er age 1500 taka jamanot bkash korte hobe"
+  },
+  {
+   "label": "scam",
+   "text": "Online part time job: daily 2000 taka income. Account khulte 300 taka advance pathan"
+  },
+  {
+   "label": "scam",
+   "text": "সরকারি অফিসে চাকরি নিশ্চিত, জামানত হিসেবে ৫০০০ টাকা বিকাশ করুন"
+  },
+  {
+   "label": "scam",
+   "text": "Work from home job available. Pay Tk 800 registration deposit to start earning Tk 30,000 monthly."
+  },
+  {
+   "label": "scam",
+   "text": "kaj pete hole age 1000 tk agrim dite hobe, tarpor training o salary shuru"
+  },
+  {
+   "label": "scam",
+   "text": "Your microloan of Tk 50,000 is sanctioned. Send Tk 1,500 processing charge by bKash to get the money today."
+  },
+  {
+   "label": "scam",
+   "text": "লোন অনুমোদিত হয়েছে। টাকা পেতে প্রসেসিং চার্জ ১২০০ টাকা নগদ করুন"
+  },
+  {
+   "label": "scam",
+   "text": "Easy loan without papers, 1 lakh taka. Insurance fee 2000 tk age pathan"
+  },
+  {
+   "label": "scam",
+   "text": "Apni Robi lucky draw te Tk 50,000 jitechen. Claim korte 700 tk tax bkash korun"
+  },
+  {
+   "label": "scam",
+   "text": "অভিনন্দন! আপনি ঈদ উপহার হিসেবে ১০,০০০ টাকা পেয়েছেন। পেতে রেজিস্ট্রেশন ফি ২০০ টাকা পাঠান"
+  },
+  {
+   "label": "scam",
+   "text": "Bhul kore apnar number e 3000 tk recharge hoye geche, please ota amar ei number e ferot pathan"
+  },
+  {
+   "label": "scam",
+   "text": "আমার ভুলে আপনার বিকাশে ২০০০ টাকা চলে গেছে, দয়া করে ফেরত দিন, খুব দরকার"
+  },
+  {
+   "label": "scam",
+   "text": "Apnar account e 10000 tk cash in hoyeche bhul kore, ekhoni ferot na dile account bondho hobe"
+  },
+  {
+   "label": "scam",
+   "text": "Your bKash account has been suspended. Verify now at bkash-verify.top to avoid closure."
+  },
+  {
+   "label": "scam",
+   "text": "নগদ একাউন্ট ২৪ ঘণ্টার মধ্যে বন্ধ হয়ে যাবে। এখনই এই লিংকে গিয়ে তথ্য দিন nagad-kyc.click"
+  },
+  {
+   "label": "scam",
+   "text": "Your NID verification failed. Your SIM will be deactivated. Call 01944556677 immediately."
+  },
+  {
+   "label": "scam",
+   "text": "Bangladesh Bank theke bolchi, apnar account e sondehojonok lenden, PIN ta confirm korun"
+  },
+  {
+   "label": "scam",
+   "text": "সরকারি অনুদানের ২০০০০ টাকা পেতে আপনার বিকাশ পিন দিন"
+  },
+  {
+   "label": "scam",
+   "text": "Uppobritti r taka pathano hobe, apnar bkash e ashle OTP ta amake bolben"
+  },
+  {
+   "label": "scam",
+   "text": "Invest 5000 tk, 7 dine double. 100% guaranteed profit, today only."
+  },
+  {
+   "label": "scam",
+   "text": "Crypto group e join koren, protidin 10% profit. Shuru korte 2000 tk pathan"
+  },
+  {
+   "label": "scam",
+   "text": "শেয়ার ব্যবসায় মাসে টাকা দ্বিগুণ, আজই বিনিয়োগ করুন"
+  },
+  {
+   "label": "scam",
+   "text": "Supplier update: our bKash merchant number changed. Pay the pending bill to the new number 01755443322 today."
+  },
+  {
+   "label": "scam",
+   "text": "আমাদের নতুন ব্যাংক একাউন্টে বিল পরিশোধ করুন, আগের একাউন্ট আর চলবে না, কাউকে বলবেন না"
+  },
+  {
+   "label": "scam",
+   "text": "Dear customer, cashback Tk 500 pending. Reply with the 4 digit code sent to you to receive it."
+  },
+  {
+   "label": "scam",
+   "text": "Apnar Nagad e reward point ase, redeem korte SMS er code ta reply koren"
+  },
+  {
+   "label": "scam",
+   "text": "ভাই একটা বিপদে পড়েছি, আমার নাম্বার বন্ধ, এই নাম্বারে ৩০০০ টাকা বিকাশ করো, কাউকে বলো না"
+  },
+  {
+   "label": "scam",
+   "text": "Ami apnar chachato bhai, notun number. hospital e achi, 5000 taka ekhoni pathao, kalke ferot dibo"
+  },
+  {
+   "label": "scam",
+   "text": "Daraz theke bolchi, apnar order er jonno 99 tk confirmation fee age pathan noile order cancel"
+  },
+  {
+   "label": "scam",
+   "text": "আপনার ইলেকট্রিসিটি সংযোগ আজ রাতে কেটে দেওয়া হবে। বকেয়া পরিশোধ করুন এই বিকাশ নাম্বারে ০১৮৮৭৭৬৬৫৫৪"
+  },
+  {
+   "label": "scam",
+   "text": "Your electricity connection will be cut tonight. Pay the due bill to personal bKash 01877665544 now."
+  },
+  {
+   "label": "scam",
+   "text": "Apnar bKash e 2 bar taka katche, refund pete PIN number ta din"
+  },
+  {
+   "label": "scam",
+   "text": "Visa er jonno processing fee 5000 taka bkash koren, job confirm Saudi te"
+  },
+  {
+   "label": "scam",
+   "text": "আপনার মোবাইল নম্বর জিতেছে ১ লক্ষ টাকা। ক্লিয়ারেন্স চার্জ ২০০০ টাকা পাঠান"
+  },
+  {
+   "label": "scam",
+   "text": "This is Nagad head office. Your account limit will be blocked. Share your PIN to keep it active."
+  },
+  {
+   "label": "scam",
+   "text": "Rocket agent bolchi, apnar account e 5000 tk ashche, verify korte 4 digit code ta bolen"
+  },
+  {
+   "label": "legit",
+   "text": "Your Nagad verification code is 318204. It is valid for 2 minutes. Do not share it with anyone."
+  },
+  {
+   "label": "legit",
+   "text": "bKash: Your OTP is 551902. bKash never asks for your OTP or PIN. Do not share it."
+  },
+  {
+   "label": "legit",
+   "text": "আপনার রকেট ভেরিফিকেশন কোড ৭৭৪১২০। কাউকে এই কোড দেবেন না।"
+  },
+  {
+   "label": "legit",
+   "text": "Delivery charge 70 taka, product hate pawar por cash e diben."
+  },
+  {
+   "label": "legit",
+   "text": "আপনার পার্সেল আজ পৌঁছাবে। ডেলিভারি চার্জ ৬০ টাকা ডেলিভারির সময় দিতে হবে।"
+  },
+  {
+   "label": "legit",
+   "text": "Order received. Total Tk 1,250 including Tk 60 delivery charge, cash on delivery."
+  },
+  {
+   "label": "legit",
+   "text": "Bhai maal pathiye dilam, courier charge ami dilam, apni pore bill er sathe diben"
+  },
+  {
+   "label": "legit",
+   "text": "Your Pathao parcel is out for delivery. Please keep Tk 450 ready for cash on delivery."
+  },
+  {
+   "label": "legit",
+   "text": "Salary for November will be paid on the 1st by bank transfer. Thank you for your work."
+  },
+  {
+   "label": "legit",
+   "text": "Kalke theke kaj shuru, sokal 9 tay office e chole ashben. Beton mash shese."
+  },
+  {
+   "label": "legit",
+   "text": "আগামী মাস থেকে আপনার বেতন ২০০০ টাকা বাড়ানো হলো।"
+  },
+  {
+   "label": "legit",
+   "text": "Your loan installment of Tk 4,500 is due on 5 Dec. Pay at any branch or through the BRAC app."
+  },
+  {
+   "label": "legit",
+   "text": "Apnar kisti 3000 tk 10 tarikhe dite hobe, branch e eshe diben."
+  },
+  {
+   "label": "legit",
+   "text": "Loan application received. Our officer will visit your shop for verification. No fee is charged."
+  },
+  {
+   "label": "legit",
+   "text": "You have received Tk 2,500.00 from 01711223344. Ref invoice 104. Fee Tk 0.00. Balance Tk 9,100.00. TrxID 6H5G4F3D2S"
+  },
+  {
+   "label": "legit",
+   "text": "Cash In Tk 10,000.00 from Agent 01822334455 successful. Fee Tk 0.00. Balance Tk 12,300.00. TrxID 1A2S3D4F5G"
+  },
+  {
+   "label": "legit",
+   "text": "Send Money Tk 1,000.00 to 01933445566 successful. Fee Tk 5.00. Balance Tk 3,200.00. TrxID 9L8K7J6H5G"
+  },
+  {
+   "label": "legit",
+   "text": "Payment Tk 650.00 to Merchant ShwapnoBD successful. Balance Tk 2,150.00. TxnID 4R5T6Y7U"
+  },
+  {
+   "label": "legit",
+   "text": "আপনার একাউন্টে ৩,০০০ টাকা জমা হয়েছে। বর্তমান ব্যালেন্স ৫,৪২০ টাকা।"
+  },
+  {
+   "label": "legit",
+   "text": "Bhai taka pathaisi 5000, check kore janaben. Bill er baki 2000 porer shoptahe dibo."
+  },
+  {
+   "label": "legit",
+   "text": "Rahman Supplies: invoice R-221 for Tk 18,000 is due on 30 Nov. Pay to our usual account as before."
+  },
+  {
+   "label": "legit",
+   "text": "Nila Traders: payment of Tk 20,000 will be made on Friday by bank transfer."
+  },
+  {
+   "label": "legit",
+   "text": "Kalke dokan bondho thakbe, porshu theke abar khola."
+  },
+  {
+   "label": "legit",
+   "text": "আসসালামু আলাইকুম, আগামীকাল মাল পৌঁছে যাবে। বিল পরে পাঠাচ্ছি।"
+  },
+  {
+   "label": "legit",
+   "text": "Eid er chuti 3 din. Shobaike Eid Mubarak!"
+  },
+  {
+   "label": "legit",
+   "text": "Meeting today at 4 pm about the new order from Bay Logistics."
+  },
+  {
+   "label": "legit",
+   "text": "Your DESCO bill Tk 1,860 for October is due on 25 Nov. Pay via bKash Pay Bill or the DESCO app."
+  },
+  {
+   "label": "legit",
+   "text": "Titas gas bill paid successfully. Amount Tk 975. Thank you."
+  },
+  {
+   "label": "legit",
+   "text": "Reminder: shop rent Tk 15,000 due on the 5th. Pay the landlord as usual."
+  },
+  {
+   "label": "legit",
+   "text": "Apnar recharge 100 tk successful. Balance 112.50 tk."
+  },
+  {
+   "label": "legit",
+   "text": "GP: You have successfully purchased 10GB internet pack for Tk 299."
+  },
+  {
+   "label": "legit",
+   "text": "Bank alert: Tk 25,000.00 credited to A/C xx4521 on 20-11-2026. Available balance Tk 61,240.00."
+  },
+  {
+   "label": "legit",
+   "text": "Bank alert: Tk 8,000.00 debited from A/C xx4521 for cheque 004512. Balance Tk 53,240.00."
+  },
+  {
+   "label": "legit",
+   "text": "আপনার চেক নম্বর ০০৪৫১২ পাস হয়েছে।"
+  },
+  {
+   "label": "legit",
+   "text": "Customer care: your complaint 55120 is resolved. We never ask for your PIN or OTP."
+  },
+  {
+   "label": "legit",
+   "text": "bKash: Never share your PIN or OTP with anyone. bKash will never call to ask for it."
+  },
+  {
+   "label": "legit",
+   "text": "নগদ কখনো আপনার পিন বা ওটিপি চায় না। কাউকে বলবেন না।"
+  },
+  {
+   "label": "legit",
+   "text": "Daraz: your order #45120 has been shipped and will arrive in 2-3 days. Pay on delivery."
+  },
+  {
+   "label": "legit",
+   "text": "Apnar order cancel kora hoyeche, taka 3 kormo dibosher moddhe ferot ashbe original payment method e."
+  },
+  {
+   "label": "legit",
+   "text": "আপনার রিফান্ড ১,২০০ টাকা মূল পেমেন্ট মাধ্যমে ফেরত পাঠানো হয়েছে।"
   }
  ]
 }

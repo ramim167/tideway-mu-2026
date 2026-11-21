@@ -76,7 +76,7 @@ footer { margin-top: 6px; padding-top: 5px; border-top: 1px solid #dde3ec; font-
   <tr><th style="width:22%">Model</th><th>Role</th><th style="width:31%">Data and status</th></tr>
   <tr><td><strong>TidePay</strong></td><td>Predicts how many days late each open invoice will be paid (probability per lateness band); drives the "likely" forecast and credit checks.</td><td>Federated training across 40 simulated SMEs; mean error 8.56 days vs 10.23 for a history rule on 7,427 unseen synthetic invoices.</td></tr>
   <tr><td><strong>TideLM</strong></td><td>A small open LLM (Qwen3, LoRA fine-tuned) that turns questions and pasted alerts into typed tool plans and draft records. It only proposes; validators check every call and figure.</td><td>Runs on the owner's own computer (Apple Silicon today), no cloud. Exact plans 21% → 93% after fine-tuning on held-out synthetic tests. Elsewhere a rule-based agent answers; optional free cloud models can be switched on per message, with names hidden.</td></tr>
-  <tr><td><strong>Scam Shield model</strong></td><td>Naive Bayes over words and character n-grams (handles Bangla script and Banglish spelling), combined with explainable red-flag rules and a sender check.</td><td>104 labelled synthetic messages; rules + model flagged 9/9 held-out scams with 0/11 false alarms. Small set: next step is real, consented scam reports.</td></tr>
+  <tr><td><strong>Scam Shield model</strong></td><td>Naive Bayes over words and character n-grams (handles Bangla script and Banglish spelling), combined with explainable red-flag rules and a sender check.</td><td>190 labelled synthetic Bangla, Banglish and English messages; 19/20 scams caught as "likely scam" with 0/10 false alarms on a separate test set never used for training. Next step: real, consented scam reports.</td></tr>
   <tr><td><strong>Monte Carlo + optimiser</strong></td><td>1,000 seeded futures estimate shortfall odds; an exact optimiser searches rescue bundles under the owner's policy limits.</td><td>Deterministic, auditable, integer-money arithmetic.</td></tr>
 </table>
 
@@ -115,7 +115,7 @@ footer { margin-top: 6px; padding-top: 5px; border-top: 1px solid #dde3ec; font-
 <ul>
   <li><strong>A working prototype already exists</strong> (open source, MIT): web app, three Sylhet demo businesses in BDT, Scam Shield, Bangla assistant, treasury hub, lender radar.</li>
   <li>Runs on any laptop with Python 3.11, no paid API, no internet needed for the core app.</li>
-  <li>679 automated tests; a 30-case self-test blocks 25/25 simulated attacks (prompt injection, payee change, tampering, replay).</li>
+  <li>695 automated tests; a 30-case self-test blocks 25/25 simulated attacks (prompt injection, payee change, tampering, replay).</li>
   <li>Security by design: role checks, CSRF, rate limits, kill switch, hash-chained audit with an independent witness.</li>
 </ul>
 </div>

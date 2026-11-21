@@ -47,19 +47,27 @@ return money because of an SMS; do not open links or call numbers from the messa
 
 ## Evaluation (honest limits)
 
-The corpus has 104 hand-written synthetic messages (48 scam, 56 legitimate) in English, Bangla and Banglish. No message
-comes from a real person. A deterministic hold-out (every fifth message of each label, 20 messages) gives:
+The training corpus (`scam-corpus-v2`) has 190 hand-written synthetic messages (94 scam, 96 legitimate) in English,
+Bangla and Banglish. v2 added common Bangladeshi scripts: fake "bKash/Nagad office theke bolchi" callers asking for "the
+code that went to your phone", delivery-charge-first parcels, job advance deposits, loan processing charges and fake
+relatives, together with genuine look-alikes (OTP notices saying "never share", cash-on-delivery charges, salary and loan
+instalment messages). No message comes from a real person. A deterministic hold-out (every fifth message of each label,
+37 messages) gives:
 
 | | Accuracy | Scam recall | False alarm rate |
 |---|---|---|---|
-| Learned model alone | 85% | 100% (9/9) | 27% (3/11) |
-| Rules + model (the shipped shield) | 100% | 100% (9/9) | 0% (0/11) |
+| Learned model alone | 89% | 100% (18/18) | 21% (4/19) |
+| Rules + model (the shipped shield) | 100% | 100% (18/18) | 0% (0/19) |
 
-The rules were written by the same people who wrote the corpus, so the combined score is optimistic. The next step is a
+A separate **independent test set** (`tideway/ml/scam_testset.json`, 30 messages written apart from the corpus and never
+used for training) scores the shipped shield at **19/20 scams "likely scam"**, 1/20 "suspicious" (a relative asking for
+an emergency loan, which can be genuine) and **0/10 false alarms**.
+
+The rules and both sets were written by the same team, so these scores are optimistic. The next step is a
 consented, anonymised set of real scam reports, for example from MFS providers' public awareness campaigns, with a
 held-out set nobody on the team has read.
 
 ```bash
-python -c "from tideway import scam_shield; print(scam_shield.evaluate())"
-python -m unittest tests.test_scam_shield
+python -c "from tideway import scam_shield; print(scam_shield.evaluate()); print(scam_shield.evaluate_independent())"
+python -m unittest tests.test_scam_shield tests.test_scam_shield_bd
 ```

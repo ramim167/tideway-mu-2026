@@ -45,8 +45,12 @@ _RULES = (
     ("asks_secret", 65,
      r"(?:share|send|tell|give|reply|confirm|enter|bolen|bolun|din|den|janan|পাঠান|বলুন|বলেন|দিন|দেন|জানান).{0,60}"
      r"(?:\bpin\b|\botp\b|verification code|\bcode\b|password|পিন|ওটিপি|কোড|পাসওয়ার্ড)|"
-     r"(?:\bpin\b|\botp\b|verification code|\b\d\s?digit code|পিন|ওটিপি|কোড)(?: number| nombor| নম্বর| নাম্বার)?\s*(?:ta|ti|টা|টি)?\s*"
-     r".{0,40}(?:share|send|tell|give|reply|bolen|bolun|din|den|pathan|পাঠান|বলুন|বলেন|দিন)",
+     r"(?:\bpin\b|\botp\b|\bcode\b|verification code|\b\d\s?digit (?:code|number|pin)|পিন|ওটিপি|কোড)(?: number| nombor| নম্বর| নাম্বার)?\s*(?:ta|ti|টা|টি)?\s*"
+     r".{0,40}(?:share|send|tell|give|reply|bolen|bolun|din|den|pathan|পাঠান|বলুন|বলেন|দিন)|"
+     # "a code/number has gone to your phone - tell it to me": the OTP request without the word OTP
+     r"(?:phone|mobile|sms|ফোনে|মোবাইলে|এসএমএস).{0,30}(?:\bcode\b|number|nombor|কোড|নম্বর|নাম্বার).{0,30}"
+     r"(?:geche|gese|esheche|asche|ashbe|গেছে|এসেছে|আসবে|গিয়েছে).{0,40}"
+     r"(?:bolen|bolun|din|den|pathan|janan|বলেন|বলুন|দিন|দেন|জানান|পাঠান)",
      "It asks for a PIN, OTP or verification code. bKash, Nagad, Rocket and banks never ask for these.",
      "পিন, ওটিপি বা ভেরিফিকেশন কোড চাওয়া হয়েছে। বিকাশ, নগদ, রকেট বা কোনো ব্যাংক কখনো এগুলো চায় না।"),
     ("wrong_send_refund", 50,
@@ -55,10 +59,17 @@ _RULES = (
      r"please return",
      "It is the 'sent by mistake, please send it back' trick. The first SMS is often fake, or the sender reverses the payment later.",
      "এটি 'ভুল করে টাকা পাঠিয়েছি, ফেরত দিন' প্রতারণা। প্রথম এসএমএসটি প্রায়ই ভুয়া হয়।"),
-    ("fee_to_receive", 40,
+    ("fee_to_receive", 60,
      r"(?:won|winner|prize|lottery|lucky draw|gift|bonus|cashback|stipend|loan|job|parcel|offer|anudan|অনুদান|পুরস্কার|লটারি|"
      r"জিতেছেন|উপহার|লোন|চাকরি|পার্সেল|lottery).{0,120}(?:\bfee\b|charge|registration|processing|clearance|deposit|ফি\b|চার্জ)|"
-     r"(?:to (?:receive|claim|get|unlock|release)|nite|পেতে).{0,60}(?:send|pay|deposit|pathan|পাঠান|বিকাশ করুন|নগদ করুন)",
+     r"(?:to (?:receive|claim|get|unlock|release)|nite|পেতে).{0,60}(?:send|pay|deposit|pathan|পাঠান|বিকাশ করুন|নগদ করুন)|"
+     # parcel / courier "delivery charge first" (a real cash-on-delivery charge is paid on arrival)
+     r"(?:delivery|courier|parcel|shipping|ডেলিভারি|কুরিয়ার|পার্সেল)\s*(?:charge|fee|cost|চার্জ|ফি|খরচ)"
+     r".{0,60}(?:\bfirst\b|\bage\b|\badvance\b|\bagrim\b|before|আগে|অগ্রিম)|"
+     r"(?:\bfirst\b|\bage\b|\badvance\b|আগে|অগ্রিম).{0,30}(?:delivery|courier|ডেলিভারি|কুরিয়ার)\s*(?:charge|fee|চার্জ|ফি)|"
+     # job / salary offers that need an advance or deposit first
+     r"(?:\bjob\b|\bkaj\b|\bchakri\b|salary|income|চাকরি|কাজ|বেতন).{0,80}(?:\badvance\b|\bdeposit\b|\bagrim\b|জামানত|অগ্রিম)|"
+     r"(?:\badvance\b|\bagrim\b|অগ্রিম).{0,60}(?:\bjob\b|\bkaj\b|\bchakri\b|salary|চাকরি|কাজ|বেতন)",
      "It asks you to pay a fee to receive a prize, loan, job, gift or parcel. Real prizes never need a fee.",
      "পুরস্কার, লোন, চাকরি বা পার্সেল পেতে আগে টাকা চাওয়া হয়েছে। আসল পুরস্কারে কোনো ফি লাগে না।"),
     ("account_threat", 30,
@@ -67,7 +78,8 @@ _RULES = (
      "It threatens to block your account or take action unless you act now.",
      "একাউন্ট বন্ধ বা আইনি ব্যবস্থার ভয় দেখানো হয়েছে।"),
     ("fake_official", 25,
-     r"head office|customer (?:care|service|support)|\bsupport\b|office theke|অফিস থেকে|bangladesh bank|government|সরকারি|"
+     r"head office|customer (?:care|service|support)|\bsupport\b|office theke|অফিস থেকে|অফিসের লোক|bangladesh bank|government|সরকারি|"
+     r"(?:bkash|nagad|rocket|bank|office|বিকাশ|নগদ|রকেট|ব্যাংক)\s*(?:theke|থেকে)\s*(?:bolchi|bolsi|বলছি)|"
      r"(?:bkash|nagad|rocket) agent",
      "It claims to be from an MFS office, customer care, the government or Bangladesh Bank. Official teams do not contact you from personal numbers.",
      "নিজেকে বিকাশ/নগদ অফিস, কাস্টমার কেয়ার বা সরকারি দপ্তর বলে দাবি করছে।"),
@@ -110,6 +122,9 @@ _SECRET_OBJECT_PUNCTUATION = re.compile(
     r"(?=(?:(?:your|the|a|আপনার)\s+)?(?:\b(?:pin|otp|verification code|code|password)\b|পিন|ওটিপি|কোড|পাসওয়ার্ড))",
     re.I,
 )
+# "No fee is charged" is the opposite of an advance-fee demand.
+_NO_FEE = re.compile(r"\bno (?:fee|charge)s?\b|without (?:any )?(?:fee|charge)|free of (?:charge|cost)|"
+                     r"\b(?:fee|charge) (?:is|will be) not\b|ফি লাগে না|কোনো ফি নেই|কোনো চার্জ নেই|চার্জ লাগে না", re.I)
 _RECEIVED = re.compile(r"received|cash\s?in|joma|জমা|পেয়েছেন|credited|deposited", re.I)
 _TXN_NOTICE = re.compile(r"(?:received|cash\s?in|payment|send money|cash out).{0,80}(?:balance|trx\s?id|txn\s?id)", re.I)
 
@@ -209,6 +224,22 @@ def evaluate():
             "learned_model_only": metrics("model_scam"), "rules_plus_model": metrics("shield_flag")}
 
 
+TESTSET = Path(__file__).resolve().parent / "ml" / "scam_testset.json"
+
+
+def evaluate_independent():
+    """The shipped shield on a separate hand-written test set that is never used for training."""
+    rows = json.loads(TESTSET.read_text(encoding="utf-8"))["messages"]
+    training = {text for text, _label in load_corpus()}
+    verdicts = [(row["label"], check(row["text"], row.get("sender", ""))["verdict"]) for row in rows]
+    scams = [verdict for label, verdict in verdicts if label == "scam"]
+    legit = [verdict for label, verdict in verdicts if label == "legit"]
+    return {"messages": len(rows), "overlap_with_training": sum(row["text"] in training for row in rows),
+            "scams": len(scams), "scams_likely": scams.count("likely_scam"), "scams_suspicious": scams.count("suspicious"),
+            "scams_missed": scams.count("no_red_flags"), "legit": len(legit),
+            "false_alarms": sum(verdict != "no_red_flags" for verdict in legit), "synthetic_data": True}
+
+
 # ---- the check -----------------------------------------------------------------------------------
 
 def _amount(text):
@@ -247,6 +278,8 @@ def check(text, sender="", _model=None):
             # A safety reminder only negates a request in its own clause.
             matched = any(pattern.search(clause) and not _ADVICE.search(clause)
                           for clause in _CLAUSE_BREAK.split(_SECRET_OBJECT_PUNCTUATION.sub(r"\g<1> ", normal)))
+        elif code == "fee_to_receive":
+            matched = pattern.search(normal) and not _NO_FEE.search(normal)
         else:
             matched = pattern.search(normal)
         if matched:
@@ -269,10 +302,19 @@ def check(text, sender="", _model=None):
 
     learned = _model or model()
     probability, top_words = learned.probability(normal)
-    if probability >= 0.9:
+    # A genuine provider notice ("your code is 482910, never share it") uses the same words as scams; with no rule
+    # signal, a safety reminder in the message means the model alone does not raise an alarm.
+    if not signals and _ADVICE.search(normal):
+        probability_signal = 0.0
+    else:
+        probability_signal = probability
+    if probability_signal >= 0.95:
+        add("learned_model", 35, f"Tideway's text model finds it very similar to known scam messages ({round(probability * 100)}%).",
+            f"টাইডওয়ের এআই মডেল এটিকে পরিচিত প্রতারণার মেসেজের খুব কাছাকাছি দেখছে ({round(probability * 100)}%)।", words=top_words)
+    elif probability_signal >= 0.9:
         add("learned_model", 30, f"Tideway's text model finds it very similar to known scam messages ({round(probability * 100)}%).",
             f"টাইডওয়ের এআই মডেল এটিকে পরিচিত প্রতারণার মেসেজের মতো দেখছে ({round(probability * 100)}%)।", words=top_words)
-    elif probability >= 0.75:
+    elif probability_signal >= 0.75:
         add("learned_model", 15, f"Tideway's text model finds some similarity to scam messages ({round(probability * 100)}%).",
             f"টাইডওয়ের এআই মডেল কিছু মিল খুঁজে পেয়েছে ({round(probability * 100)}%)।", words=top_words)
 
@@ -318,7 +360,7 @@ def check(text, sender="", _model=None):
         "claims": {"money_received": claims_received, "amount_bdt": _amount(normal),
                    "transaction_id": trx.group(1) if trx else None, "phone_numbers_in_message": phones},
         "model": {"name": "Scam Shield naive Bayes (words + character n-grams)", "probability_scam": round(probability, 3),
-                  "top_words": top_words, "training": "synthetic labelled corpus (scam-corpus-v1)"},
+                  "top_words": top_words, "training": "synthetic labelled corpus (scam-corpus-v2)"},
         "signals": signals,
         "actions": [{"en": en, "bn": bn} for en, bn in actions],
         "advisory_only": True,

@@ -310,6 +310,7 @@ window.TIDEWAY_BN = {
  "Delegate": "দায়িত্ব দিন",
  "Delegate issues a signed standing mandate: the agent may send zero-cash reminders alone, at most {0} a day. Money-related actions still need people.": "দায়িত্ব দিলে একটি স্বাক্ষরিত স্থায়ী ম্যান্ডেট তৈরি হয়: এজেন্ট নিজে দিনে সর্বোচ্চ {0}টি টাকা-ছাড়া রিমাইন্ডার পাঠাতে পারে। টাকার যেকোনো কাজে এখনো মানুষ লাগে।",
  "Delegated autonomy: zero-cash reminders under a standing mandate": "দায়িত্ব দেওয়া স্বাধীনতা: স্থায়ী ম্যান্ডেটের অধীনে টাকা-ছাড়া রিমাইন্ডার",
+ "Delivery charge first": "আগে ডেলিভারি চার্জ",
  "Demo": "ডেমো",
  "Demo ledgers contain few anomalies. Tick the synthetic test sample to see every rule fire with evidence.": "ডেমো খাতায় অস্বাভাবিক ঘটনা কম। প্রমাণসহ প্রতিটি নিয়ম কাজ করতে দেখতে কৃত্রিম পরীক্ষার নমুনায় টিক দিন।",
  "Demonstrate a real payment delay": "আসল পেমেন্ট দেরি দেখান",
@@ -1588,5 +1589,6 @@ window.TIDEWAY_BN = {
  "আসসালামু আলাইকুম, Guest": "আসসালামু আলাইকুম, অতিথি",
  "আসসালামু আলাইকুম, Nadia": "আসসালামু আলাইকুম, Nadia",
  "“Sent by mistake” call": "“ভুল করে পাঠিয়েছি” কল",
+ "“Tell me the code” call": "“কোডটা বলেন” ফোন",
  "≈ {0} a year": "≈ বছরে {0}"
 };
