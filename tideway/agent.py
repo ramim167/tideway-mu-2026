@@ -332,17 +332,58 @@ def grounding_check(text, tool_outputs, currency=None, lang=None):
     allowed = {fact for row in rows if isinstance(row, dict) for fact in
                financial_statements(row, currency or row.get("currency", ""), lang)}
     normalized = text.translate(_OTHER_DIGITS)
-    if not re.search(r"\d", normalized):
-        # Spelled-out amounts also need a typed monetary field.
-        if re.search(r"[$€£৳₹]|\b(?:BDT|USD|EUR|GBP|INR|taka|dollars?|pounds?|euros?|rupees?|cents?|poisha)\b|টাকা|পয়সা", normalized, re.I):
-            return ["unsupported monetary statement"]
-        return []
-    lines = [line.strip().rstrip(".।") for line in normalized.splitlines() if line.strip()]
-    # A separate untrusted qualifier can invert the meaning of a copied fact.
-    if lines and all(line in allowed for line in lines):
-        return []
-    return NUMBER_RE.findall(normalized)
+    # An amount written in words: a magnitude word, or a number word next to a currency ("thirty dollars").
+    bn_word = lambda words: rf"(?<![ঀ-৿])(?:{words})(?![ঀ-৿])"  # whole Bangla words only (not একজন, শতাংশ)
+    magnitude = re.compile(r"\b(?:hundred|thousand|million|billion|lakh|lac|crore)s?\b|" + bn_word("শত|হাজার|লক্ষ|লাখ|কোটি"), re.I)
+    number_word = re.compile(r"\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|"
+                             r"forty|fifty|sixty|seventy|eighty|ninety)\b|" +
+                             bn_word("দুই|তিন|চার|পাঁচ|ছয়|সাত|আট|দশ|বিশ|ত্রিশ|পঞ্চাশ"), re.I)
+    currency_word = re.compile(r"[$€£৳₹]|\b(?:BDT|USD|EUR|GBP|INR|taka|tk|dollars?|pounds?|euros?|rupees?|cents?|poisha)\b|"
+                               r"টাকা|পয়সা", re.I)
 
+    def spelled_amount(line):
+        return bool(magnitude.search(line) or (number_word.search(line) and currency_word.search(line)))
+    unverified = []
+    # Every line that carries a number must be a complete checked statement, copied exactly, so a value can never
+    # move to another field, unit, scenario or date. Lines without any digit are plain explanation, unless they
+    # spell out an amount.
+    for raw in normalized.splitlines():
+        line = raw.strip().lstrip("-•*· ").strip().rstrip(".।")
+        if not line:
+            continue
+        if not re.search(r"\d", line):
+            if spelled_amount(line):
+                unverified.append("unsupported monetary statement")
+            continue
+        if line not in allowed:
+            unverified.extend(NUMBER_RE.findall(line))
+    return unverified
+
+
+
+def keep_checked(text, tool_outputs, currency=None, lang=None):
+    """The reply without sentences whose figures are not checked facts, or "" when no checked fact line survives.
+
+    Checked fact lines and number-free sentences are kept as written; any sentence that still fails the grounding
+    check is dropped whole, never edited, so a figure cannot change meaning."""
+    kept, facts = [], 0
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if not grounding_check(line, tool_outputs, currency, lang):
+            kept.append(line)
+            facts += bool(re.search(r"\d", line.translate(_OTHER_DIGITS)))
+            continue
+        sentences = [s for s in re.split(r"(?<=[.!?।])\s+", line)
+                     if s.strip() and not re.search(r"\d", s.translate(_OTHER_DIGITS))
+                     and not grounding_check(s, tool_outputs, currency, lang)]
+        if sentences:
+            kept.append(" ".join(sentences))
+    result = "\n".join(kept).strip()
+    if not facts or grounding_check(result, tool_outputs, currency, lang):
+        return ""
+    return result
 
 
 REWRITE_REQUEST = {
@@ -370,7 +411,9 @@ class Agent:
     def provider_payload(self, target, inputs, role, ui_lang=None):
         allowed = TOOL_NAMES if role in PLANNER_ROLES else tuple(n for n in TOOL_NAMES if n != "compare_plans")
         style = ("\nWrite plain text only: no Markdown, no asterisks, no backticks, no headings, no field or tool names. "
-                 "Write every number with Western digits 0-9 and copy amounts exactly as the tools give them (for example BDT 80,000).")
+                 "Write every number with Western digits 0-9. Whenever you give an amount, date or count, copy one complete line "
+                 "from checked_statements in the tool output exactly as written, on its own line. Write your explanation "
+                 "and advice in separate short sentences that contain no digits and no amounts.")
         language = ("\nAlways reply in standard Bangla (Bengali script) only, as spoken in Bangladesh, in 2 to 5 short sentences a shop owner "
                     "understands. Never use Hindi, Punjabi, Arabic, Korean, Chinese or any other script, and never put English "
                     "letters inside a Bangla word. Use everyday words: বেতন (salary), নগদ টাকা (cash), খরচ (costs), "
@@ -568,15 +611,20 @@ class Agent:
         """ui_lang "bn" means the app is in Bangla: Latin-script (Banglish or English) questions are answered in Bangla too."""
         if not isinstance(message, str) or not message.strip() or len(message) > 2000:
             raise ValidationError("Message must contain 1-2,000 characters.")
+        # Bangla or Banglish questions get Bangla answers even when the app is in English.
+        ui_lang = conversation.reply_language(message, ui_lang)
         try:
-            if self.key and consent:
+            # Greetings and "what can you do" need no model: answer at once from the local agent.
+            if self.key and consent and not conversation.classify(message):
                 answer = self._llm(business_id, target_date, message, history or [], actor, role, ui_lang)
-                if answer.get("quality_issues"):
-                    # The AI reply is still garbled after a rewrite: show the checked answer when the local agent knows it.
+                if answer.get("quality_issues") or answer.get("grounding_rejected"):
+                    # The AI reply is garbled or its figures are not checked facts: show the checked answer when the
+                    # local agent knows the question; otherwise the checked fact list the AI turn produced.
                     local = self._local(business_id, target_date, message, actor, role, name, ui_lang)
                     if local.get("understood", True) and local.get("trace"):
                         note = FALLBACK_NOTE.get(ui_lang, FALLBACK_NOTE["en"])
-                        return {**local, "text": local["text"] + "\n\n" + note, "ai_fallback": True}
+                        return {**local, "text": local["text"] + "\n\n" + note, "ai_fallback": True,
+                                "grounding_rejected": bool(answer.get("grounding_rejected"))}
                 return answer
             return self._local(business_id, target_date, message, actor, role, name, ui_lang)
         except ValidationError as exc:  # answer like a colleague, not with an HTTP error
@@ -829,18 +877,22 @@ class Agent:
                     text = clean_answer(text, ui_lang)
                     unverified = grounding_check(text, outputs, snapshot["business"]["currency"], ui_lang)
                     problems = issues + (["unverified_numbers"] if unverified else [])
-                    if problems and not rewrite_asked and time.monotonic() - started < 90:
-                        # One chance to fix a garbled reply or wrong figures; the tools already ran, so this is one short call.
+                    # One rewrite for a garbled reply (wrong script, field names) whose figures are fine. Unchecked
+                    # figures skip the extra, slow call: the caller shows Tideway's own checked answer instead.
+                    if issues and not unverified and not rewrite_asked and time.monotonic() - started < 60:
                         rewrite_asked, first = True, (text, problems)
                         request = REWRITE_REQUEST.get(ui_lang, REWRITE_REQUEST["en"])
-                        if unverified:
-                            request += (" These claims do not match checked tool statements: " + ", ".join(unverified[:6]) +
-                                        ". Return complete checked_statements from the tool response, one per line.")
                         inputs += [{"role": "assistant", "content": text[:2000]}, {"role": "user", "content": request}]
                         continue
                     if rewrite_asked and problems and len(first[1]) < len(problems):
                         text, problems = first
                         unverified = grounding_check(text, outputs, snapshot["business"]["currency"], ui_lang)
+                    if unverified:
+                        # Keep the checked fact lines and number-free sentences; drop only sentences whose figures
+                        # are not checked facts. Nothing unchecked is ever shown.
+                        kept = keep_checked(text, outputs, snapshot["business"]["currency"], ui_lang)
+                        if kept:
+                            text, unverified = kept, []
                     restored = aliases.restore(text)
                     self.store.audit(business_id, "agent.answer", actor, "agent_read",
                                      {"mode": "llm", "model": self.model, "tools": [item["tool"] for item in trace],

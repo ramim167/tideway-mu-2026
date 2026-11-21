@@ -106,5 +106,52 @@ class GarbledAnswers(unittest.TestCase):
         self.assertEqual(clean_answer("ঝুঁকি আছে।পরিকল্পনা দরকার।", "bn"), "ঝুঁকি আছে। পরিকল্পনা দরকার।")
 
 
+class EverydayChat(unittest.TestCase):
+    def test_banglish_and_bangla_get_bangla_even_in_english_mode(self):
+        from tideway.conversation import reply_language
+        for message in ("kemon acho", "ki koro", "beton dite parbo ei mashe?", "এই মাসে কি বেতন দিতে পারব?"):
+            self.assertEqual(reply_language(message, "en"), "bn", message)
+        for message in ("Can I pay payroll on time?", "What if Nila Traders pays 10 days late?", "hi"):
+            self.assertEqual(reply_language(message, "en"), "en", message)
+
+    def test_small_talk_is_answered_at_once_without_the_model(self):
+        calls = []
+
+        def transport(payload, key):
+            calls.append(payload)
+            raise AssertionError("small talk must not call the model")
+        bot = Agent(Tideway(":memory:"), "k", "m:free", transport=transport)
+        for message in ("kemon acho", "ki koro", "কেমন আছেন", "hi"):
+            reply = bot.chat(SHAPLA, None, message, [], True, "agent:llm", "owner", "Nadia", "en")
+            self.assertEqual(reply["mode"], "local", message)
+        self.assertEqual(calls, [])
+        self.assertIn("আসসালামু আলাইকুম", bot.chat(SHAPLA, None, "kemon acho", [], True, "agent:llm", "owner", "Nadia", "en")["text"])
+
+    def test_explanation_lines_pass_and_every_number_line_must_be_a_checked_fact(self):
+        outputs = [{"currency": "BDT", "payroll_outflow_minor": 8000000}]
+        fact = "বেতন ব্যয়: BDT 80,000"
+        self.assertEqual(grounding_check(f"এই মাসে বেতন দিতে ঝুঁকি আছে, টাকা কম পড়বে।\n{fact}\nউদ্ধার পরিকল্পনা দেখুন।",
+                                         outputs, "BDT", "bn"), [])
+        self.assertEqual(grounding_check("Payroll is at risk.\nPayroll outflow: BDT 80,000", outputs, "BDT", "en"), [])
+        self.assertTrue(grounding_check("বেতন BDT 90,000।", outputs, "BDT", "bn"))          # wrong amount
+        self.assertTrue(grounding_check("বেতন দিতে এক লক্ষ টাকা লাগবে।", outputs, "BDT", "bn"))  # amount in words
+
+    def test_only_sentences_with_unchecked_figures_are_dropped(self):
+        from tideway.agent import keep_checked
+        outputs = [{"currency": "BDT", "payroll_outflow_minor": 8000000}]
+        reply = "Payroll outflow: BDT 80,000\nPayroll is at risk with 100 percent odds. Ask for a rescue plan."
+        self.assertEqual(keep_checked(reply, outputs, "BDT", "en"), "Payroll outflow: BDT 80,000\nAsk for a rescue plan.")
+        self.assertEqual(keep_checked("You will be fine. You have BDT 999,999.", outputs, "BDT", "en"), "")  # no checked fact left
+
+    def test_unchecked_figures_fall_back_to_the_checked_answer_without_a_second_call(self):
+        sent = []
+        bot = scripted_bot(["এই মাসে বেতন BDT 12,345 কম পড়বে।"], sent)
+        reply = bot.chat(SHAPLA, None, "এই মাসে কি বেতন দিতে পারব?", [], True, "agent:llm", "owner", "Nadia", "en")
+        self.assertEqual(len(sent), 1)
+        self.assertTrue(reply.get("ai_fallback"))
+        self.assertNotIn("12,345", reply["text"])
+        self.assertIn("বেতন", reply["text"])
+
+
 if __name__ == "__main__":
     unittest.main()

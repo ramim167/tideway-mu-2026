@@ -16,14 +16,14 @@ from .i18n import ask, day, t
 _GREETING = re.compile(
     r"^(hi+|hey+|hello+|hiya|yo|good (morning|afternoon|evening|day)|greetings|howdy|salam|salaam|assalamu? ?alaikum|"
     r"as-?salamu alaykum|namaste|namaskar|adab|hola|buen(os|as) (d[ií]as|tardes|noches)|bonjour|salut|bonsoir|ol[aá]|"
-    r"oi|bom dia|boa tarde|halo|hai|selamat (pagi|siang|sore|malam)|apa kabar|kemon (acho|achen)|ki khobor|kya haal|"
+    r"oi|bom dia|boa tarde|halo|hai|selamat (pagi|siang|sore|malam)|apa kabar|kemon (acho|achen|aso|asen|achis)|ki khobor|ki obostha|kya haal|"
     r"你好|您好|嗨|早上好|晚上好|大家好|مرحبا|السلام عليكم)[\s!.,?]*(there|tideway|tidelm|bot|team)?[\s!.,?]*$", re.I)
 _THANKS = re.compile(
     r"^(thanks?( you)?( so much| a lot)?|thx|ty|cheers|great,? thanks|ok(ay)? thanks|dhonnobad|dhanyabad|dhanyavaad|"
     r"shukriya|shukran|谢谢(你|您)?|多谢|gracias|merci( beaucoup)?|obrigad[oa]|terima kasih|makasih|شكرا)[\s!.,]*$", re.I)
 _HELP = re.compile(
     r"^(help|menu|start|\?|what can you do\??|what do you do\??|how (do|can) (i|you) use (this|you)\??|who are you\??|"
-    r"what are you\??|features|commands|ayuda|aide|bantuan|madad|ki korte paro\??|tumi ki korte paro\??|"
+    r"what are you\??|features|commands|ayuda|aide|bantuan|madad|ki korte paro\??|tumi ki korte paro\??|(?:tumi |apni )?ki (?:koro|korcho|koren|korchen)\??|"
     r"你能做什么[？?]?|你是谁[？?]?|帮助|怎么用[？?]?)[\s!.]*$", re.I)
 _STATUS = re.compile(
     r"^(how('s| is| are)? (my business|business|we|things|it) (doing|going|looking)\??|status|overview|summary|"
@@ -35,14 +35,35 @@ _STATUS = re.compile(
 
 _BN_END = r"[\s!.,?।]*$"
 _BN_SMALL = (
-    ("greeting", re.compile(r"^(আসসালামু আলাইকুম|আস্সালামু আলাইকুম|সালাম|হ্যালো|হাই|নমস্কার|আদাব|শুভ (সকাল|দুপুর|সন্ধ্যা))"
+    ("greeting", re.compile(r"^(আসসালামু আলাইকুম|আস্সালামু আলাইকুম|সালাম|হ্যালো|হাই|নমস্কার|আদাব|শুভ (সকাল|দুপুর|সন্ধ্যা)|"
+                            r"কেমন আছ(?:ো|েন|িস)?|কী খবর|কি খবর)"
                             r"[\s!.,?।]*(টাইডওয়ে|ভাই|আপা)?" + _BN_END)),
     ("thanks", re.compile(r"^(ধন্যবাদ|অনেক ধন্যবাদ|থ্যাংক ইউ|শুকরিয়া)" + _BN_END)),
     ("help", re.compile(r"^(সাহায্য|হেল্প|মেনু|তুমি কী করতে পারো|তুমি কি করতে পারো|আপনি কী করতে পারেন|আপনি কি করতে পারেন|"
-                        r"তুমি কে|আপনি কে)" + _BN_END)),
+                        r"তুমি কে|আপনি কে|(?:তুমি |আপনি )?(?:কী|কি) (?:করো|করছ|করছো|করেন|করছেন))" + _BN_END)),
     ("status", re.compile(r"^(ব্যবসা কেমন চলছে|আমার ব্যবসা কেমন চলছে|অবস্থা কেমন|আজকের সারাংশ|সারাংশ|কী খবর|কি খবর|"
                           r"ব্যবসার অবস্থা কেমন)" + _BN_END)),
 )
+
+
+# Common Banglish (Bangla written in Latin letters) words that ordinary English questions do not use.
+_BANGLISH = frozenset(
+    "ki kemon acho achen aso asen koro koren korbo korte korcho korchen ami amar amra apni apnar tumi tomar taka "
+    "beton parbo parben parbe pari hobe hoy ache ase nai nei keno kivabe kibhabe koto kake kar kara dibo debo dite "
+    "nite nibo dao bolo bolen ekhon mase mashe ei eta oi shob sob kono jodi tahole karon lagbe bhai vai khobor obostha "
+    "cholche dhonnobad baki bakir paona khoroch chai chaibo".split())
+
+
+def reply_language(message, ui_lang=None):
+    """"bn" when the app is in Bangla or the question is written in Bangla or Banglish; otherwise the app's language."""
+    text = str(message)
+    if ui_lang == "bn" or re.search("[ঀ-৿]", text):
+        return "bn"
+    tokens = re.findall(r"[a-z]+", text.casefold())
+    hits = sum(token in _BANGLISH for token in tokens)
+    if hits >= 2 or (hits and hits * 2 >= len(tokens)):
+        return "bn"
+    return ui_lang
 
 
 def classify(message):

@@ -67,13 +67,13 @@ class MultilingualLocalAgent(unittest.TestCase):
         figures = FIGURES.findall(english)
         for greeting, opening in (("hi", "Hi Nadia!"), ("你好", "Nadia，你好！"), ("hola", "¡Hola, Nadia!"),
                                   ("bonjour", "Bonjour Nadia !"), ("olá", "Olá, Nadia!"), ("halo", "Halo Nadia!"),
-                                  ("salam", "Hi Nadia!"), ("assalamualaikum", "Hi Nadia!"), ("kemon acho", "Hi Nadia!"),
+                                  ("salam", "Hi Nadia!"), ("assalamualaikum", "Hi Nadia!"), ("kemon acho", "Nadia, আসসালামু আলাইকুম!"),
                                   ("¿cómo va el negocio?", "¡Hola!"), ("comment vont les affaires ?", "Bonjour !")):
             with self.subTest(greeting=greeting):
                 text = self.ask(greeting)["text"]
                 self.assertTrue(text.startswith(opening), text[:40])
                 self.assertIn("Shapla Services", text)
-                self.assertEqual(FIGURES.findall(text), figures)
+                self.assertEqual([f.rstrip(",") for f in FIGURES.findall(text)], [f.rstrip(",") for f in figures])
 
     def test_payroll_and_cash_risk_use_the_same_simulation_in_every_language(self):
         risk = self.app.analysis(SHAPLA, None)["simulation"]
@@ -81,7 +81,7 @@ class MultilingualLocalAgent(unittest.TestCase):
         for lang, question in (("es", "¿Puedo pagar los sueldos este mes?"), ("zh", "这个月工资发得出来吗？"),
                                ("fr", "Est-ce que je peux payer les salaires ce mois-ci ?"),
                                ("pt", "Consigo pagar os salários este mês?"), ("id", "Bisa bayar gaji karyawan bulan ini?"),
-                               ("en", "staff der beton dite parbo to?")):
+                               ("bn", "staff der beton dite parbo to?")):
             with self.subTest(question=question):
                 reply = self.ask(question)
                 self.assertEqual(reply["lang"], lang)

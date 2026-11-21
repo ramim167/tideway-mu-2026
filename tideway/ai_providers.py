@@ -34,7 +34,7 @@ KNOWN = {
 DEFAULT_ORDER = ("gemini", "groq", "openrouter", "custom")
 NEXT_MODEL = (404, 408, 409, 429, 500, 502, 503, 504)   # try this provider's next model
 NEXT_PROVIDER = (401, 402, 403)                          # key or quota problem: skip to the next provider
-TIMEOUT_SECONDS = 30
+TIMEOUT_SECONDS = 20  # a stuck model gives way to the next one sooner
 
 
 @dataclass

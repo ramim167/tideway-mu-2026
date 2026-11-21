@@ -121,7 +121,7 @@ class Fallback(unittest.TestCase):
         with mock.patch("tideway.provider_http.monotonic", side_effect=lambda: clock[0]), \
                 mock.patch.object(ai_providers, "open_provider_request", busy), self.assertRaises(DeadlineExpired):
             transport(PAYLOAD, deadline=95)
-        self.assertEqual(timeouts, [30, 30, 30, 5])
+        self.assertEqual(timeouts, [20, 20, 20, 20, 15])  # 20 s per model, never past the 95 s deadline
 
     def test_bangla_preview_shows_wire_body_with_lab_disabled(self):
         from tideway.server import Application
