@@ -206,6 +206,23 @@ class StoreRegressions(unittest.TestCase):
             result = web.tideway.import_csv(business, body, "x", False)
             self.assertEqual(result["total_added"], 0, business)
 
+    def test_large_native_csv_round_trip_and_import_screening(self):
+        web = Application(":memory:")
+        self.addCleanup(web.store.close)
+        header = "record_type,id,date,description,amount,type,currency,category,risk_flags\n"
+        records = []
+        for n in range(5100):
+            description = ("Recorded sale " + "x" * 280) if n else "Screen\u200bing"
+            records.append(f"transaction,restore-{n},2026-10-02,{description},10,income,BDT,Sales,untrusted-input")
+        csv_text = header + "\n".join(records)
+        self.assertGreater(len(csv_text), 1_500_000)
+        result = web.tideway.import_csv(SHAPLA, csv_text, "x")
+        self.assertEqual(result["total_added"], 5100)
+        self.assertEqual(result["quarantined_text"],
+                         [{"kind": "transaction", "id": "restore-0", "flags": ["hidden_characters"]}])
+        exported, _, _ = web.export({"kind": ["records"], "business_id": [SHAPLA]}, self.owner)
+        self.assertEqual(web.tideway.import_csv(SHAPLA, exported, "x")["total_added"], 0)
+
     def test_identical_rows_with_ids_are_both_kept(self):  # bug 12
         csv_text = ("record_type,id,date,description,amount,type,currency,category\n"
                     "transaction,t-a,2026-09-01,Taxi,10.00,expense,BDT,Travel\n"

@@ -443,6 +443,7 @@ CSV_COLUMNS = ("record_type", "business_id", "id", "date", "description", "amoun
                "currency", "category", "due_date", "status", "customer", "payee", "payee_account",
                "issue_date", "expected_collection_date", "paid_date", "priority", "reschedule_allowed",
                "rescheduled_date", "risk_flags", "source")
+MAX_CSV_BYTES = 32 * 1024 * 1024
 IGNORED_CSV_COLUMNS = ("risk_flags", "source")  # written by Tideway's export; recomputed on import, never trusted
 
 
@@ -456,8 +457,8 @@ def _unguard(value):
 def parse_combined_csv(text: str, business_id: str, currency: str) -> dict:
     """Validate a transaction/invoice/bill CSV completely before persistence."""
     business_id = validate_business_id(business_id)
-    if not isinstance(text, str) or len(text.encode("utf-8")) > 1_500_000:
-        raise ValidationError("CSV must be UTF-8 text and no larger than 1.5 MB.")
+    if not isinstance(text, str) or len(text.encode("utf-8")) > MAX_CSV_BYTES:
+        raise ValidationError("CSV must be UTF-8 text and no larger than 32 MiB.")
     try:
         reader = csv.DictReader(io.StringIO(text.lstrip("﻿")), strict=True)
         if not reader.fieldnames:
@@ -474,8 +475,6 @@ def parse_combined_csv(text: str, business_id: str, currency: str) -> dict:
         rows = {"transactions": [], "invoices": [], "bills": []}
         seen = set()
         for line, raw in enumerate(reader, 2):
-            if line > 5001:
-                raise ValidationError("Import at most 5,000 rows at a time.")
             if None in raw:
                 raise ValidationError(f"Row {line}: too many columns.")
             raw = {key: _unguard(value) for key, value in raw.items() if key not in IGNORED_CSV_COLUMNS}

@@ -16,7 +16,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from . import selftest
 from .agent import Agent
-from .domain import SecurityError, ValidationError, canonical_json, parse_strict_json, validate_business_id
+from .domain import MAX_CSV_BYTES, SecurityError, ValidationError, canonical_json, parse_strict_json, validate_business_id
 from .security import RateLimiter
 from .service import Tideway
 from .tidelm import TideLM, TideLMUnavailable, confirm as confirm_inbox
@@ -671,10 +671,13 @@ def make_handler(app):
                 if (self.headers.get_all("Transfer-Encoding", [])
                         or len(self.headers.get_all("Content-Length", [])) != 1):
                     return self.deny_post(400, "Use one Content-Length and no Transfer-Encoding.")
-                if not raw_length.isascii() or not raw_length.isdigit() or len(raw_length) > 7:
+                if not raw_length.isascii() or not raw_length.isdigit() or len(raw_length) > 9:
                     return self.reply(400, {"error": "Invalid Content-Length.", "code": "validation_error"})
                 length = int(raw_length)
                 limit = MAX_PHOTO_BODY if path == "/api/inbox/photo" else 2_000_000
+                if path == "/api/import" and operator is not None:
+                    # JSON can escape each original byte as six ASCII characters.
+                    limit = MAX_CSV_BYTES * 6 + 1024
                 if not 0 < length <= limit:
                     return self.reply(413, {"error": f"Request body must be between 1 and {limit} bytes."})
                 body = parse_strict_json(self.read_body(length))

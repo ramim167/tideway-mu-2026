@@ -2237,7 +2237,7 @@ async function importCsv(event) {
   const file = $("#csv-file").files?.[0];
   if (!file) return;
   try {
-    if (file.size > 1500000) throw new Error("The file exceeds 1.5 MB.");
+    if (file.size > 32 * 1024 * 1024) throw new Error("The file exceeds 32 MiB.");
     const text = new TextDecoder("utf-8", {fatal: true}).decode(await file.arrayBuffer());
     const result = await api("/api/import", {business_id: state.businessId, csv: text, replace_demo: $("#replace-demo").checked});
     $("#import-dialog").close();

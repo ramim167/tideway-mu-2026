@@ -991,7 +991,7 @@ window.TIDEWAY_BN = {
  "The agent proposes supplier deferrals and early-payment offers. Nothing happens until you approve.": "এজেন্ট সরবরাহকারীকে পেমেন্ট পেছানো ও আগাম পেমেন্টে ছাড়ের প্রস্তাব দেয়। আপনি অনুমোদন না করা পর্যন্ত কিছুই হয় না।",
  "The day you care about, such as payroll day. Tideway also looks 14 days beyond it so problems can't hide just after.": "যে দিনটি আপনার কাছে গুরুত্বপূর্ণ, যেমন বেতনের দিন। Tideway তার পরের 14 দিনও দেখে, যাতে ঠিক পরেই কোনো সমস্যা লুকিয়ে না থাকে।",
  "The dots round the exact {0} from all {1} simulated runs to a {2}-dot picture; each dot is not one separate run.": "বিন্দুগুলো {1}টি সিমুলেশনের হুবহু {0}-কে গোল করে {2}টি বিন্দুর ছবিতে দেখায়; প্রতিটি বিন্দু আলাদা একটি সিমুলেশন নয়।",
- "The file exceeds 1.5 MB.": "ফাইলটি 1.5 MB-এর বেশি।",
+ "The file exceeds 32 MiB.": "ফাইলটি 32 MiB-এর বেশি।",
  "The forecast can still be wrong. Risk is the share of simulated cash paths falling below reserve; it is not a real-world guarantee.": "পূর্বাভাস তবুও ভুল হতে পারে। ঝুঁকি মানে সিমুলেশনে নগদের কত অংশ পথ নিরাপত্তার টাকার নিচে নামে; এটি বাস্তবে কোনো নিশ্চয়তা নয়।",
  "The international bank file format for payment instructions. Tideway only drafts it; it is never sent.": "পেমেন্ট নির্দেশের আন্তর্জাতিক ব্যাংক ফাইল ফরম্যাট। Tideway শুধু খসড়া তৈরি করে; এটি কখনো পাঠানো হয় না।",
  "The kill switch pauses the AI instantly; only the owner can resume it.": "কিল সুইচ সঙ্গে সঙ্গে AI থামিয়ে দেয়; শুধু মালিক আবার চালু করতে পারেন।",

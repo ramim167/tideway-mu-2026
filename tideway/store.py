@@ -943,14 +943,24 @@ class Store(EventStoreMixin):
             self._business_row(db, business_id)
             return self._records(db, business_id)
 
-    def import_records(self, business_id, parsed, actor, source="csv", replace_demo=False):
+    def import_records(self, business_id, parsed, actor, source="csv", replace_demo=False, *, screened=False):
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             business = self._business_row(db, business_id)
             currency = business["currency"]
-            transactions = [validate_transaction(row, business_id, currency) for row in parsed.get("transactions", [])]
-            invoices = [validate_invoice(row, business_id, currency) for row in parsed.get("invoices", [])]
-            bills = [validate_bill(row, business_id, currency) for row in parsed.get("bills", [])]
+            def validated(kind, validator):
+                records = []
+                for raw in parsed.get(kind, []):
+                    row = validator(raw, business_id, currency)
+                    if screened:
+                        # These flags came from an in-process validator of the original text.
+                        row["risk_flags"] = list(dict.fromkeys(row["risk_flags"] + raw["risk_flags"]))
+                    records.append(row)
+                return records
+
+            transactions = validated("transactions", validate_transaction)
+            invoices = validated("invoices", validate_invoice)
+            bills = validated("bills", validate_bill)
             if not (transactions or invoices or bills):
                 raise ValidationError("At least one transaction, invoice or bill is required.")
             state = self._state(db, business_id)

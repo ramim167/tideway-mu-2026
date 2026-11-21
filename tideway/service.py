@@ -700,4 +700,4 @@ class Tideway:
     def import_csv(self, business_id, text, actor, replace_demo=False):
         business = self.store.get_business(business_id)
         parsed = parse_combined_csv(text, business_id, business["currency"])
-        return self.store.import_records(business_id, parsed, actor, "csv", replace_demo)
+        return self.store.import_records(business_id, parsed, actor, "csv", replace_demo, screened=True)
