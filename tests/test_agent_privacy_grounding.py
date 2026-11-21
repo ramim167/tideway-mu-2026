@@ -65,6 +65,19 @@ class GroundingCheckRegressionTests(unittest.TestCase):
             with self.subTest(change=(old,new)):
                 self.assertTrue(grounding_check(fact.replace(old,new), outputs, "BDT"))
 
+    def test_spelled_amounts_and_payroll_verdicts_require_evidence(self):
+        app = Tideway(":memory:")
+        self.addCleanup(app.store.close)
+        for claim in ("Payroll is covered for ten days.", "You owe thirteen dollars.",
+                      "The business is solvent.", "বেতন দিতে তেরো দিন বাকি।"):
+            with self.subTest(claim=claim):
+                def transport(payload, key):
+                    return {"output": [{"type": "message", "content": [{"type": "output_text", "text": claim}]}]}
+                result = Agent(app, "test", transport=transport).chat(
+                    BUSINESS, None, "How long can I pay salaries?", consent=True, ui_lang="en")
+                self.assertTrue(result.get("grounding_rejected"), result)
+                self.assertNotIn(claim, result["text"])
+
     def test_unresolved_cloud_claim_is_withheld_even_without_recognized_question(self):
         app = Tideway(":memory:")
         self.addCleanup(app.store.close)

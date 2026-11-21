@@ -307,6 +307,11 @@ def financial_statements(output, currency, lang=None):
         if scenario:
             en_name, bn_name = _SCENARIO_NAMES[scenario]
             prefix = (bn_name if bn else en_name) + " · "
+        if row.get("payroll_recorded") is True and type(row.get("payroll_at_risk")) is bool:
+            at_risk = row["payroll_at_risk"]
+            status = ("বেতন ঝুঁকিতে আছে" if at_risk else "বেতনের জন্য তহবিল আছে") if bn else (
+                "Payroll is at risk" if at_risk else "Payroll is funded")
+            facts.append(prefix + status)
         for field, (en_label, bn_label, date_field) in _MONEY_FACTS.items():
             if type(row.get(field)) is not int:
                 continue
@@ -332,31 +337,32 @@ def grounding_check(text, tool_outputs, currency=None, lang=None):
     allowed = {fact for row in rows if isinstance(row, dict) for fact in
                financial_statements(row, currency or row.get("currency", ""), lang)}
     normalized = text.translate(_OTHER_DIGITS)
-    # An amount written in words: a magnitude word, or a number word next to a currency ("thirty dollars").
-    bn_word = lambda words: rf"(?<![ঀ-৿])(?:{words})(?![ঀ-৿])"  # whole Bangla words only (not একজন, শতাংশ)
+    bn_word = lambda words: rf"(?<![ঀ-৿])(?:{words})(?![ঀ-৿])"
     magnitude = re.compile(r"\b(?:hundred|thousand|million|billion|lakh|lac|crore)s?\b|" + bn_word("শত|হাজার|লক্ষ|লাখ|কোটি"), re.I)
-    number_word = re.compile(r"\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|"
-                             r"forty|fifty|sixty|seventy|eighty|ninety)\b|" +
-                             bn_word("দুই|তিন|চার|পাঁচ|ছয়|সাত|আট|দশ|বিশ|ত্রিশ|পঞ্চাশ"), re.I)
-    currency_word = re.compile(r"[$€£৳₹]|\b(?:BDT|USD|EUR|GBP|INR|taka|tk|dollars?|pounds?|euros?|rupees?|cents?|poisha)\b|"
-                               r"টাকা|পয়সা", re.I)
-
-    def spelled_amount(line):
-        return bool(magnitude.search(line) or (number_word.search(line) and currency_word.search(line)))
+    number_word = re.compile(r"\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|"
+                             r"fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|"
+                             r"sixty|seventy|eighty|ninety|first|second|third|fourth|fifth|sixth|seventh|"
+                             r"eighth|ninth|tenth)\b|" +
+                             bn_word("শূন্য|এক|দুই|তিন|চার|পাঁচ|ছয়|সাত|আট|নয়|দশ|এগারো|বারো|তেরো|বিশ|ত্রিশ|পঞ্চাশ"), re.I)
+    unit = re.compile(r"[$€£৳₹]|\b(?:BDT|USD|EUR|GBP|INR|taka|tk|dollars?|pounds?|euros?|rupees?|cents?|poisha|"
+                      r"days?|weeks?|months?|years?|percent|January|February|March|April|May|June|July|August|"
+                      r"September|October|November|December)\b|টাকা|পয়সা|দিন|সপ্তাহ|মাস|বছর|শতাংশ", re.I)
+    payroll = re.compile(r"\b(?:payroll|salar(?:y|ies)|wages)\b|বেতন|মজুরি", re.I)
+    verdict = re.compile(r"\b(?:funded|funding|covered|safe|at risk|enough|can pay|cannot pay|will miss|afford)\b|"
+                         r"ঝুঁকি|তহবিল আছে|কম পড়বে|দিতে পারবেন|দেওয়া যাবে", re.I)
+    solvency = re.compile(r"\b(?:solvent|insolvent|cash is (?:safe|fine|sufficient)|"
+                          r"(?:can|cannot|will) (?:cover|meet) (?:your |all )?(?:bills|obligations)|"
+                          r"(?:above|below|breach(?:es)?) (?:the |your )?reserve)\b|সঞ্চয়ে ঘাটতি|নগদ ঠিক আছে", re.I)
     unverified = []
-    # Every line that carries a number must be a complete checked statement, copied exactly, so a value can never
-    # move to another field, unit, scenario or date. Lines without any digit are plain explanation, unless they
-    # spell out an amount.
     for raw in normalized.splitlines():
         line = raw.strip().lstrip("-•*· ").strip().rstrip(".।")
-        if not line:
+        if not line or line in allowed:
             continue
-        if not re.search(r"\d", line):
-            if spelled_amount(line):
-                unverified.append("unsupported monetary statement")
-            continue
-        if line not in allowed:
-            unverified.extend(NUMBER_RE.findall(line))
+        if re.search(r"\d", line):
+            unverified.extend(NUMBER_RE.findall(line) or ["unsupported numeric statement"])
+        elif (magnitude.search(line) or (number_word.search(line) and unit.search(line))
+              or (payroll.search(line) and verdict.search(line)) or solvency.search(line)):
+            unverified.append("unsupported financial statement")
     return unverified
 
 

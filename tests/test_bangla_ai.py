@@ -41,7 +41,7 @@ class AiAnswerSafety(unittest.TestCase):
 
     def test_bangla_instruction_reaches_the_model(self):
         sent = []
-        replies = iter([{"choices": [{"message": {"content": "**বেতন ঝুঁকিতে আছে।**"}}]}])
+        replies = iter([{"choices": [{"message": {"content": "**হিসাব দেখতে পূর্বাভাস খুলুন।**"}}]}])
 
         def transport(payload, key):
             sent.append(responses_to_chat(payload))
@@ -50,7 +50,7 @@ class AiAnswerSafety(unittest.TestCase):
         bot = Agent(Tideway(":memory:"), "k", "m:free", transport=transport)
         reply = bot.chat(SHAPLA, None, "beton dite parbo?", [], True, "agent:llm", "owner", "Nadia", "bn")
         self.assertIn("Always reply in standard Bangla", sent[0]["messages"][0]["content"])
-        self.assertEqual(reply["text"], "বেতন ঝুঁকিতে আছে।")
+        self.assertEqual(reply["text"], "হিসাব দেখতে পূর্বাভাস খুলুন।")
 
 
 GARBLED = "নহীঁ, বেতন (পে,রোল) আপসেট। payroll_at_risk: true। ক্যাশ-ফ্লো কopilot ار"
@@ -76,9 +76,9 @@ class GarbledAnswers(unittest.TestCase):
 
     def test_a_garbled_reply_is_rewritten_once(self):
         sent = []
-        bot = scripted_bot([GARBLED, "এই মাসে বেতন দিতে ঝুঁকি আছে।"], sent)
+        bot = scripted_bot([GARBLED, "হিসাব দেখতে পূর্বাভাস খুলুন।"], sent)
         reply = bot.chat(SHAPLA, None, "beton dite parbo?", [], True, "agent:llm", "owner", "Nadia", "bn")
-        self.assertEqual((reply["mode"], reply["text"]), ("llm", "এই মাসে বেতন দিতে ঝুঁকি আছে।"))
+        self.assertEqual((reply["mode"], reply["text"]), ("llm", "হিসাব দেখতে পূর্বাভাস খুলুন।"))
         self.assertIn("Rewrite the same answer in clean", sent[1]["messages"][-1]["content"])
 
     def test_still_garbled_falls_back_to_the_checked_local_answer(self):
@@ -128,9 +128,9 @@ class EverydayChat(unittest.TestCase):
         self.assertIn("আসসালামু আলাইকুম", bot.chat(SHAPLA, None, "kemon acho", [], True, "agent:llm", "owner", "Nadia", "en")["text"])
 
     def test_explanation_lines_pass_and_every_number_line_must_be_a_checked_fact(self):
-        outputs = [{"currency": "BDT", "payroll_outflow_minor": 8000000}]
+        outputs = [{"currency": "BDT", "payroll_outflow_minor": 8000000, "payroll_recorded": True, "payroll_at_risk": True}]
         fact = "বেতন ব্যয়: BDT 80,000"
-        self.assertEqual(grounding_check(f"এই মাসে বেতন দিতে ঝুঁকি আছে, টাকা কম পড়বে।\n{fact}\nউদ্ধার পরিকল্পনা দেখুন।",
+        self.assertEqual(grounding_check(f"বেতন ঝুঁকিতে আছে।\n{fact}\nউদ্ধার পরিকল্পনা দেখুন।",
                                          outputs, "BDT", "bn"), [])
         self.assertEqual(grounding_check("Payroll is at risk.\nPayroll outflow: BDT 80,000", outputs, "BDT", "en"), [])
         self.assertTrue(grounding_check("বেতন BDT 90,000।", outputs, "BDT", "bn"))          # wrong amount

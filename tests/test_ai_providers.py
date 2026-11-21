@@ -12,6 +12,47 @@ from tideway.ai_providers import label, make_transport, providers_from_env
 PAYLOAD = {"model": "ignored", "instructions": "S", "input": [{"role": "user", "content": "hi"}], "tools": []}
 
 
+class TransportBudget(unittest.TestCase):
+    def test_trickling_response_closes_within_connection_budget(self):
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+        from threading import Event, Thread
+        from time import monotonic
+        from urllib.request import Request
+
+        from tideway.provider_http import open_provider_request
+
+        closed = Event()
+
+        class SlowResponse(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Length", "1000")
+                self.end_headers()
+                try:
+                    for _ in range(100):
+                        self.wfile.write(b"x")
+                        closed.wait(.03)
+                except OSError:
+                    closed.set()
+
+            def log_message(self, *_args):
+                pass
+
+        with ThreadingHTTPServer(("127.0.0.1", 0), SlowResponse) as server:
+            worker = Thread(target=server.serve_forever, daemon=True)
+            worker.start()
+            try:
+                started = monotonic()
+                request = Request(f"http://127.0.0.1:{server.server_port}")
+                with self.assertRaises(TimeoutError), open_provider_request(request, .2) as response:
+                    response.read(1000)
+                self.assertLess(monotonic() - started, 1.5)
+                self.assertTrue(closed.wait(1))
+            finally:
+                server.shutdown()
+                worker.join()
+
+
 class Response(io.BytesIO):
     def __enter__(self): return self
     def __exit__(self, *a): return False
